@@ -1,0 +1,44 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r tests/requirements.txt
+      - run: python -m unittest discover -s tests -q
+      - run: node --check custom_components/rollladenplaner/frontend/rollladenplaner-card.js
+      - run: python scripts/build_release.py --check-only
+      - run: npm install --prefix .ci playwright
+      - run: npx --prefix .ci playwright install --with-deps chromium
+      - name: Browser and save-flow tests
+        env:
+          NODE_PATH: ${{ github.workspace }}/.ci/node_modules
+        run: |
+          node tests/ui-test.cjs
+          node tests/save-flow.cjs
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hacs/action@main
+        with:
+          category: integration
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master

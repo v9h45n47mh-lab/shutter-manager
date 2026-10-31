@@ -1,0 +1,5 @@
+type: custom:rollladenplaner-card
+title: Beschattungsmanager
+grid_options:
+  columns: 12
+  rows: auto

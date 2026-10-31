@@ -1,0 +1,14 @@
+{
+  "title": "Beschattungsmanager",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Beschattungsmanager einrichten",
+        "description": "Rollläden, Sensoren und Programme werden anschließend in der Dashboard-Karte eingerichtet. Programme werden einzeln aktiviert."
+      }
+    },
+    "abort": {
+      "already_configured": "Der Beschattungsmanager ist bereits eingerichtet."
+    }
+  }
+}

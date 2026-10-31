@@ -1,0 +1,14 @@
+{
+  "title": "Beschattungsmanager",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Beschattungsmanager",
+        "description": "Configure covers, sensors and schedules in the dashboard card. Enable programs individually."
+      }
+    },
+    "abort": {
+      "already_configured": "Beschattungsmanager is already configured."
+    }
+  }
+}
