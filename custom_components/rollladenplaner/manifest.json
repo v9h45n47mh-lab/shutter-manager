@@ -1,6 +1,6 @@
 {
   "domain": "rollladenplaner",
-  "name": "Beschattungsmanager",
+  "name": "Shutter Manager",
   "codeowners": [
     "@v9h45n47mh-lab"
   ],
@@ -11,9 +11,9 @@
     "websocket_api",
     "sun"
   ],
-  "documentation": "https://github.com/v9h45n47mh-lab/beschattungsmanager",
+  "documentation": "https://github.com/v9h45n47mh-lab/shutter-manager",
   "integration_type": "service",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/v9h45n47mh-lab/beschattungsmanager/issues",
-  "version": "0.10.1"
+  "issue_tracker": "https://github.com/v9h45n47mh-lab/shutter-manager/issues",
+  "version": "1.0.0"
 }

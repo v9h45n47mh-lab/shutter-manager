@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  const page=await browser.newPage({viewport:{width:1100,height:1000}});page.setDefaultTimeout(8000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('http://planner.test/**',async route=>{
-  if(route.request().url().endsWith('/card.js'))await route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(__dirname,'../custom_components/rollladenplaner/frontend/rollladenplaner-card.js'),'utf8')});
+  if(route.request().url().endsWith('/card.js'))await route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(__dirname,'../custom_components/rollladenplaner/frontend/shutter-manager-card.js'),'utf8')});
   else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{font-family:Arial;background:#f5f7fa;padding:24px;--primary-text-color:#243449;--secondary-text-color:#63748b;--primary-color:#087eaa;--card-background-color:white;--divider-color:#dce3eb}rollladenplaner-card{max-width:920px;display:block;margin:auto}ha-card{display:block}</style><script type="module" src="/card.js"></script><rollladenplaner-card></rollladenplaner-card></html>'});
  });
  await page.goto('http://planner.test');await page.waitForFunction(()=>customElements.get('rollladenplaner-card'));
@@ -17,7 +17,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    connectedCallback(){queueMicrotask(()=>{this.shadowRoot.innerHTML='<slot></slot>';});}
  }));
  await page.evaluate(()=>{
-  window.model={backend_version:'0.10.1',config_schema:4,admin:true,controls:{p:true},revision:1,config:{enabled:true,vacation:false,windows:[{id:'w',name:'Jalousie Wohnen',cover:'cover.wohnen',enabled:true,contacts:[{entity:'binary_sensor.fenster',open_state:'on',policy:'defer'}],sensor_rules:[{id:'main',name:'Sommer',lux_entity:'sensor.lux',temp_entity:'sensor.temp',lux_on:30000,lux_off:20000,temp_on:25,temp_off:23,release_delay_seconds:300}]}],programs:[{id:'p',name:'Wohnbereich · Wochentage',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[{id:'r',name:'Morgens',enabled:true,skip_next:false,targets:['w'],event:'sunrise',time:'07:00',offset:0,earliest:'06:00',latest:'08:00',position:0,tilt:50,defer_minutes:120}]}]},upcoming:[{time:'2026-11-02T06:30:00Z',name:'Wohnbereich / Morgens',program:'p',ride:'r',skip:false}],planned_date:'2026-10-30',planned:[],pending:{},moving:[]};
+  window.model={backend_version:'1.0.0',config_schema:4,admin:true,controls:{p:true},revision:1,config:{enabled:true,vacation:false,windows:[{id:'w',name:'Jalousie Wohnen',cover:'cover.wohnen',enabled:true,contacts:[{entity:'binary_sensor.fenster',open_state:'on',policy:'defer'}],sensor_rules:[{id:'main',name:'Sommer',lux_entity:'sensor.lux',temp_entity:'sensor.temp',lux_on:30000,lux_off:20000,temp_on:25,temp_off:23,release_delay_seconds:300}]}],programs:[{id:'p',name:'Wohnbereich · Wochentage',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[{id:'r',name:'Morgens',enabled:true,skip_next:false,targets:['w'],event:'sunrise',time:'07:00',offset:0,earliest:'06:00',latest:'08:00',position:0,tilt:50,defer_minutes:120}]}]},upcoming:[{time:'2026-11-02T06:30:00Z',name:'Wohnbereich / Morgens',program:'p',ride:'r',skip:false}],planned_date:'2026-10-30',planned:[],pending:{},moving:[]};
   window.calls=[];
   window.host={user:{id:'test_admin'},states:{'cover.wohnen':{state:'open',attributes:{friendly_name:'Jalousie Wohnen',device_class:'blind',supported_features:140}},'cover.essen':{state:'closed',attributes:{friendly_name:'Jalousie Essen',device_class:'blind',supported_features:140}},'cover.kueche':{state:'open',attributes:{friendly_name:'Küche Fenster',device_class:'shutter',supported_features:12}},'cover.garage':{state:'closed',attributes:{friendly_name:'Garagentor',device_class:'garage',supported_features:12}},'cover.ohne_position':{state:'open',attributes:{friendly_name:'Ohne Position',device_class:'shutter',supported_features:3}},'binary_sensor.fenster':{state:'off',attributes:{friendly_name:'Fenster Wohnen'}},'sensor.power':{state:'500',attributes:{friendly_name:'Leistung',device_class:'power',unit_of_measurement:'W'}},'sensor.lux':{state:'10000',attributes:{friendly_name:'Helligkeit',device_class:'illuminance',unit_of_measurement:'lx'}},'sensor.temp':{state:'22',attributes:{friendly_name:'Temperatur',device_class:'temperature',unit_of_measurement:'°C'}}},callWS:async msg=>{
    calls.push(structuredClone(msg));
@@ -82,6 +82,13 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByText('Steuerung ausgeschaltet',{exact:true}).count(),0);
  assert.equal(await card.getByText(/Nächste Fahrt:|Keine bevorstehende Zeitfahrt/).count(),0);
  assert.equal(await card.locator('.ride').count(),0,'program starts collapsed');
+ await card.getByRole('button',{name:'Programm kopieren',exact:true}).click();
+ const copied=await page.evaluate(()=>{const e=document.querySelector('rollladenplaner-card').editor;return {program:e.item,source:model.config.programs[0]};});
+ assert.notEqual(copied.program.id,copied.source.id,'copied program receives a new ID');
+ assert.notEqual(copied.program.rides[0].id,copied.source.rides[0].id,'copied actions receive new IDs');
+ assert.equal(copied.program.name,'Wohnbereich · Wochentage (Kopie)');
+ await dialog.getByRole('button',{name:'Abbrechen',exact:true}).click();
+ assert.equal(await page.evaluate(()=>model.config.programs.length),1,'copy is an editable draft until saved');
  assert.equal(await card.getByRole('button',{name:'Howto',exact:true}).evaluate(b=>b.nextElementSibling?.getAttribute('aria-label')),'Einstellungen');
  await card.getByRole('button',{name:'Howto',exact:true}).click();
  assert.equal(await overview.count(),0,'no measurements on Howto');
@@ -493,6 +500,18 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByRole('button',{name:'Rollläden hinzufügen',exact:true}).count(),0);
  await card.getByRole('button',{name:'Howto',exact:true}).click();
  assert.equal(await card.getByRole('heading',{name:'Schnellstart',exact:true}).count(),1,'howto is available without admin permission');
+ await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
+ await card.locator('[data-action=set-language][data-language=en]').click();
+ assert.equal(await card.getByRole('heading',{name:'Language',exact:true}).count(),1,'language picker is translated and available without admin permission');
+ await card.getByRole('button',{name:'Programs',exact:true}).click();
+ assert.equal(await card.getByRole('button',{name:'Schedule',exact:true}).count(),1,'tab labels switch to English');
+ await card.getByRole('button',{name:'Guide',exact:true}).click();
+ assert.equal(await card.getByRole('heading',{name:'Quick start',exact:true}).count(),1,'guide is fully available in English');
+ assert.equal(await card.getByRole('heading',{name:'Shutter Manager 1.0.0',exact:true}).count(),1);
+ await card.getByRole('button',{name:'Settings',exact:true}).click();
+ await card.locator('[data-action=set-language][data-language=de]').click();
+ assert.equal(await card.getByRole('heading',{name:'Sprache',exact:true}).count(),1,'language selection switches back to German');
+ assert.equal(await page.evaluate(()=>localStorage.getItem('shutter-manager:language:test_admin')),'de','language choice persists per user');
  assert.deepEqual(errors,[]);
  console.log('PASS: pencil edit actions and contact-opening program editor with filtered devices, time window and tilt settings; asynchronous HA shadow-slot host, collapsed existing/new programs, deferred layout frames; long desktop/mobile editors preserve scroll offset and focus after cover/trigger edits, and added rides scroll into view with cover-selector focus; Programme-only, foldable grouped overview with alphabetic ordering, solar symbols, lock states, one-decimal temperatures and compact lx/klx formatting; current-day solar header, unique assigned sensor values, live zero/unavailable updates without losing editor input, local aliases without HA renaming; browser checks for embedded howto beside settings on desktop/mobile and for non-admin users, actual sensor assignment filtering with safe type conversion and named-rule selection, validity label without explanatory text; HA-themed card and accessible switches, keyboard program controls, settings gear with vacation and backup, renamed time tab, removed global control and ride hints, plus annual validity on programs only, winter ranges, today sensor tab, pause/resume with correct cover permissions, responsive sensor rows and empty list; bulk cover import, local renaming, single-cover dropdowns, unchanged height percentages, four compact time fields, no catch-up timeout, headerless layout, live percent sliders, manual blind types, single or paired AND sensors, typed sensor lists and 300-second new-rule defaults, collapsed programs and individual/all editor rides with stable IDs, retained unsaved input, keyboard/mobile controls and folded saves for time/sensor programs, today-only skip/undo, waiting sensor cancellation, permissions and XSS.');
  await browser.close();

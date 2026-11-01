@@ -1,6 +1,8 @@
-# Howto – Beschattungsmanager 0.10.1
+# Shutter Manager Guide / Anleitung 1.0.0
 
-Der Beschattungsmanager verbindet Zeitprogramme, Temperatur-/Helligkeitsbeschattung und Öffnungsprogramme mit Fensterkontakten. Einstellungen definieren Geräte und benannte Sensorregeln. Programme bestimmen, wann diese Regeln gelten und welche Fahrten sie auslösen. Eine Sensorregel allein fährt keinen Rollladen.
+## Deutsch
+
+Der Shutter Manager verbindet Zeitprogramme, Temperatur-/Helligkeitsbeschattung und Öffnungsprogramme mit Fensterkontakten. Einstellungen definieren Geräte und benannte Sensorregeln. Programme bestimmen, wann diese Regeln gelten und welche Fahrten sie auslösen. Eine Sensorregel allein fährt keinen Rollladen.
 
 ## Schnellstart
 
@@ -29,7 +31,7 @@ Der Messwertebereich steht nur im Reiter Programme. Über „Messwerte“ lässt
 
 Alle an den sichtbaren Rollläden zugeordneten Temperatur-, Helligkeits- und Öffnungssensoren erscheinen einmalig mit ihrem aktuellen Wert. Die Gruppen Öffnung, Temperatur und Helligkeit sind jeweils alphabetisch nach Anzeigename sortiert. Innerhalb jeder Gruppe stehen die Einträge nebeneinander und fließen bei Platzmangel in die nächste Zeile. Name und Zustand stehen nebeneinander. Öffnung zeigt ein offenes oder geschlossenes Schloss, Temperatur ein Thermometer und genau eine Nachkommastelle. Helligkeit wird ab 1.000 lx in Tausendern ohne Nachkommastelle gekürzt: 20.300 lx → 20k lx. Kleinere Werte bleiben in lx; klx wird vor der Formatierung umgerechnet. Auch Zuordnungen deaktivierter Programme zählen. Zahlen verwenden deutsche Formatierung und die gemeldete Einheit. „Nicht verfügbar“ und „Unbekannt“ sind keine Messwerte und werden nicht als 0 angezeigt. Die Kopfzeile aktualisiert sich auch bei geöffnetem Bearbeitungsdialog. Native Leserechte für die Sensorentität sind erforderlich.
 
-Unter **Einstellungen → Sensoranzeigenamen → Bearbeiten** vergeben Administratoren eigene Namen. Ein leerer Eintrag verwendet wieder den Home-Assistant-Namen. Diese Namen gelten nur im Beschattungsmanager, bleiben nach Neustart erhalten und sind Teil der Konfigurationssicherung. Reine Anzeigenamenänderungen stoppen keine laufende Fahrt und lösen keine Fahrt aus.
+Unter **Einstellungen → Sensoranzeigenamen → Bearbeiten** vergeben Administratoren eigene Namen. Ein leerer Eintrag verwendet wieder den Home-Assistant-Namen. Diese Namen gelten nur im Shutter Manager, bleiben nach Neustart erhalten und sind Teil der Konfigurationssicherung. Reine Anzeigenamenänderungen stoppen keine laufende Fahrt und lösen keine Fahrt aus.
 
 ## Öffnungsprogramme
 
@@ -39,7 +41,7 @@ Unter **Einstellungen → Sensoranzeigenamen → Bearbeiten** vergeben Administr
 4. Eine Fahrt hinzufügen. Es werden nur Geräte mit Öffnungskontakt angeboten. Zielhöhe einstellen; bei Jalousien zusätzlich die Lamellen. Für ganz oben gilt **100 %**, für unten **0 %**. Die Höhe ist erforderlich, Lamellen können unverändert bleiben.
 5. Speichern und aktivieren. Standardmäßig startet die Fahrt bei einer neu erkannten Öffnung innerhalb der Gültigkeit. **Bei bereits geöffnetem Fenster starten** erlaubt zusätzlich den Start bei einem schon offenen Kontakt, etwa nach Neustart oder beim Beginn des Zeitfensters.
 
-Der Öffnungsvorrang bleibt bis zum bestätigten Schließen aller zugeordneten Kontakte bestehen, auch nach Ende des Zeitfensters, Tages-/Saisonwechsel und Neustart. Ein offener Kontakt genügt zum Halten; unbekannte oder nicht verfügbare Kontakte zählen nicht als geschlossen. Das Öffnungsprogramm darf trotz seines eigenen offenen Kontakts die eingestellte Position anfahren. Andere automatische Fahrten desselben Geräts im Beschattungsmanager warten.
+Der Öffnungsvorrang bleibt bis zum bestätigten Schließen aller zugeordneten Kontakte bestehen, auch nach Ende des Zeitfensters, Tages-/Saisonwechsel und Neustart. Ein offener Kontakt genügt zum Halten; unbekannte oder nicht verfügbare Kontakte zählen nicht als geschlossen. Das Öffnungsprogramm darf trotz seines eigenen offenen Kontakts die eingestellte Position anfahren. Andere automatische Fahrten desselben Geräts im Shutter Manager warten.
 
 Nach dem Schließen wird das Ziel neu bestimmt, in dieser Reihenfolge:
 
@@ -51,7 +53,7 @@ Damit überschreibt kein während des Lüftens veraltetes Ziel die aktuelle Lage
 
 Ein Zeitfenster über Mitternacht ist möglich; für den Teil nach Mitternacht gelten Wochentag und Saison des vorherigen Starttags. Überlappende aktive Öffnungsprogramme für dasselbe Gerät werden beim Speichern abgewiesen. Unterschiedliche, nicht überlappende Zeitfenster sind möglich.
 
-Im Reiter **Sensorprogramme** wird ein bestehender Öffnungsvorrang auch außerhalb seines Zeitfensters angezeigt. Die Tagespause unterbindet neue Auslösungen. Ein bereits gestarteter Öffnungszyklus behält seinen Schutz bis zum Schließen und kehrt danach zum passenden Ziel zurück. Manuelle Bedienung und andere Integrationen bleiben unabhängig; der Schutz sperrt ausschließlich niedrigere Fahrten dieses Beschattungsmanagers.
+Im Reiter **Sensorprogramme** wird ein bestehender Öffnungsvorrang auch außerhalb seines Zeitfensters angezeigt. Die Tagespause unterbindet neue Auslösungen. Ein bereits gestarteter Öffnungszyklus behält seinen Schutz bis zum Schließen und kehrt danach zum passenden Ziel zurück. Manuelle Bedienung und andere Integrationen bleiben unabhängig; der Schutz sperrt ausschließlich niedrigere Fahrten dieses Shutter Managers.
 
 ## Benannte Sensorregeln
 
@@ -126,3 +128,8 @@ Die Fehlermeldung steht direkt über den Speicherknöpfen. Eingaben bleiben erha
 ## Versionen prüfen
 
 Im Howto und in den Einstellungen stehen Oberfläche und tatsächlich geladene Integration getrennt. Eine Versionsnummer im Titel der Anleitung allein bezeichnet nur die Kartenoberfläche. Fehlt die Meldung der Integration oder unterstützt diese die Sensorregeln noch nicht, bleiben Schreibzugriffe gesperrt. Nach einem Code-Update Home Assistant vollständig neu starten, beispielsweise mit `ha core restart` im Terminal, und danach Browser/App neu laden. Ein Neuladen nur der Integration ersetzt diesen Neustart nicht. Die Karte kontrolliert zusätzlich, ob die gespeicherten Sensorregeln in der Antwort der Integration enthalten sind.
+
+
+## English
+
+Choose the 🇬🇧 flag in **Settings** to switch the dashboard card and in-card guide to English. The 🇩🇪 flag returns the card to German. The selection is stored per Home Assistant user in this browser. The guide covers schedules, opening priority, sensor rules, validity periods, pending actions, and backup.

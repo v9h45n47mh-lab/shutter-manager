@@ -115,12 +115,15 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.assertEqual(path, '/rollladenplaner/rollladenplaner-card.js')
         self.assertTrue(Path(filename).is_file())
         self.assertFalse(cache)
-        self.assertEqual(add_js.call_args.args[1], path+'?v='+adapter.INTEGRATION_VERSION)
+        self.assertEqual(add_js.call_count, 2)
+        self.assertEqual(add_js.call_args_list[0].args[1], '/rollladenplaner/rollladenplaner-card.js?v='+adapter.INTEGRATION_VERSION)
+        self.assertEqual(add_js.call_args_list[1].args[1], '/shutter-manager/shutter-manager-card.js?v='+adapter.INTEGRATION_VERSION)
+        self.assertEqual(hass.http.async_register_static_paths.call_args.args[0][1][0], '/shutter-manager/shutter-manager-card.js')
         self.assertEqual(register_ws.call_count, 3)
 
     async def test_product_rename_preserves_custom_entry_names(self):
         from unittest.mock import Mock
-        for title in ('Rollladenplaner', 'Blind Planner', 'Meine Beschattung', 'Beschattungsmanager'):
+        for title in ('Rollladenplaner', 'Blind Planner', 'Beschattungsmanager', 'Meine Beschattung'):
             with self.subTest(title=title):
                 manager=types.SimpleNamespace(load=AsyncMock(), pulse=AsyncMock())
                 entry=types.SimpleNamespace(title=title)
@@ -128,8 +131,8 @@ class AdapterTests(IsolatedAsyncioTestCase):
                 hass=types.SimpleNamespace(data={}, config_entries=entries)
                 with patch.object(adapter, 'Manager', return_value=manager):
                     self.assertTrue(await adapter.async_setup_entry(hass, entry))
-                if title in ('Rollladenplaner', 'Blind Planner'):
-                    entries.async_update_entry.assert_called_once_with(entry, title='Beschattungsmanager')
+                if title in ('Rollladenplaner', 'Blind Planner', 'Beschattungsmanager'):
+                    entries.async_update_entry.assert_called_once_with(entry, title='Shutter Manager')
                 else:
                     entries.async_update_entry.assert_not_called()
                 self.assertIs(hass.data['rollladenplaner'], manager)
@@ -448,7 +451,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
 
     async def test_snapshot_identifies_loaded_backend_and_sensor_rule_schema(self):
         snapshot=self.m.snapshot(types.SimpleNamespace(is_admin=True))
-        self.assertEqual(snapshot['backend_version'],'0.10.1')
+        self.assertEqual(snapshot['backend_version'],'1.0.0')
         self.assertEqual(snapshot['config_schema'],4)
 
     async def test_overview_uses_today_in_ha_timezone_even_after_sunset(self):

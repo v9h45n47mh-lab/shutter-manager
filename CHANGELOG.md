@@ -1,4 +1,12 @@
-# Änderungen
+# Changelog / Änderungen
+
+## 1.0.0
+
+- Renamed the product to Shutter Manager across the user interface, integration metadata, card registration, documentation, and release archives. The Home Assistant domain `rollladenplaner` and old card/resource aliases remain for compatibility.
+- Added English card and guide translations with a persistent 🇩🇪 / 🇬🇧 language picker in Settings.
+- Added editable full-program copies with unique program and action IDs.
+- Reset saved program expansion state for this release so programs open collapsed by default.
+- Prepared version 1.0.0 HACS and manual release archives.
 
 ## 0.10.1
 

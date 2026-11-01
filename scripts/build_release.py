@@ -33,14 +33,14 @@ def validate_layout(tag=None):
         raise ValueError('Genau eine Integration pro Repository ist erforderlich.')
     for relative in ('README.md', 'HOWTO.md', 'LICENSE', 'hacs.json', 'custom_components/rollladenplaner/brand/icon.png',
                      'custom_components/rollladenplaner/translations/en.json',
-                     'custom_components/rollladenplaner/frontend/rollladenplaner-card.js'):
+                     'custom_components/rollladenplaner/frontend/shutter-manager-card.js'):
         if not (ROOT / relative).is_file():
             raise ValueError(f'Datei fehlt: {relative}')
-    frontend = (COMPONENT / 'frontend/rollladenplaner-card.js').read_text()
+    frontend = (COMPONENT / 'frontend/shutter-manager-card.js').read_text()
     adapter = (COMPONENT / '__init__.py').read_text()
     if f"const CARD_VERSION = '{version}'" not in frontend or f"INTEGRATION_VERSION = '{version}'" not in adapter:
         raise ValueError('Versionsangaben von Frontend und Integration unterscheiden sich.')
-    if f'rollladenplaner-card.js?v={version}' not in adapter:
+    if f'shutter-manager-card.js?v={version}' not in adapter:
         raise ValueError('Der Ressourcenpfad benötigt die aktuelle Version.')
     py_schema = re.search(r'^CONFIG_SCHEMA_VERSION = (\d+)$', adapter, re.M)
     js_schema = re.search(r'^const CONFIG_SCHEMA = (\d+);$', frontend, re.M)
@@ -80,15 +80,15 @@ def main():
         return
     args.output_dir.mkdir(parents=True, exist_ok=True)
     integration_files = source_files(COMPONENT)
-    integration_zip = args.output_dir / 'rollladenplaner.zip'
+    integration_zip = args.output_dir / 'shutter-manager.zip'
     write_zip(integration_zip, integration_files, COMPONENT)
     allowed = {'README.md','HOWTO.md','LICENSE','CHANGELOG.md','hacs.json','dashboard.yaml',
-               'test-results.txt','save-test-results.txt','ui-test-results.txt','.gitignore'}
+               '.gitignore'}
     files = [p for p in ROOT.iterdir() if p.is_file() and p.name in allowed]
     for directory in ('custom_components','tests','scripts','.github'):
         if (ROOT / directory).is_dir():
             files.extend(source_files(ROOT / directory))
-    manual_zip = args.output_dir / f'Beschattungsmanager-{version}.zip'
+    manual_zip = args.output_dir / f'Shutter-Manager-{version}.zip'
     write_zip(manual_zip, files, ROOT)
     print(json.dumps({'version':version,'integration_zip':str(integration_zip.resolve()),'manual_zip':str(manual_zip.resolve())}))
 

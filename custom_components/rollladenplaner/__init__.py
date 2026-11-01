@@ -1,4 +1,4 @@
-"""Beschattungsmanager: schedules, sensor guards and dashboard editing."""
+"""Shutter Manager: schedules, sensor guards and dashboard editing."""
 from __future__ import annotations
 
 import asyncio
@@ -22,7 +22,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '0.10.1'
+INTEGRATION_VERSION = '1.0.0'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 4
 SIGNAL = DOMAIN + '_update'
@@ -35,11 +35,14 @@ def utcnow():
 
 
 async def async_setup(hass, config):
+    card_path = str(Path(__file__).parent / 'frontend' / 'shutter-manager-card.js')
     await hass.http.async_register_static_paths([
-        StaticPathConfig('/rollladenplaner/rollladenplaner-card.js',
-                         str(Path(__file__).parent / 'frontend' / 'rollladenplaner-card.js'), False)
+        StaticPathConfig('/rollladenplaner/rollladenplaner-card.js', card_path, False),
+        StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=0.10.1')
+    # Keep the old resource URL working for existing dashboards while publishing the new name.
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.0.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.0.0')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -53,8 +56,8 @@ async def async_setup(hass, config):
 
 
 async def async_setup_entry(hass, entry):
-    if entry.title in ('Rollladenplaner', 'Blind Planner'):
-        hass.config_entries.async_update_entry(entry, title='Beschattungsmanager')
+    if entry.title in ('Rollladenplaner', 'Blind Planner', 'Beschattungsmanager'):
+        hass.config_entries.async_update_entry(entry, title='Shutter Manager')
     manager = Manager(hass)
     await manager.load()
     hass.data[DOMAIN] = manager
@@ -221,7 +224,7 @@ class Manager:
             try:
                 await self._pulse_locked()
             except Exception:
-                _LOGGER.exception('Beschattungsmanager: Auswertung fehlgeschlagen')
+                _LOGGER.exception('Shutter Manager: Auswertung fehlgeschlagen')
 
     def permitted(self, user, entity, policy):
         return user.is_admin or user.permissions.check_entity(entity, policy)

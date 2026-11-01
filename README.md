@@ -1,97 +1,81 @@
-# Beschattungsmanager
+# Shutter Manager
 
-A local Home Assistant integration and dashboard card for cover schedules, sensor shading and window-contact opening programs.
+A local Home Assistant integration and dashboard card for cover schedules, sensor shading, and window-contact opening programs.
 
-**Version 0.10.1 · Home Assistant Core ab 2026.10.0 · deutsche Dashboard-Oberfläche**
+**Version 1.0.0 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
 
-Der Beschattungsmanager steuert Rollläden und Jalousien über bereits vorhandene `cover`-Entitäten. Geräte, Sensorregeln und Programme werden in einer Dashboard-Karte gepflegt.
+Shutter Manager controls existing `cover` entities. Manage covers, sensor rules, and programs in one dashboard card. Choose German 🇩🇪 or English 🇬🇧 in Settings.
 
-## Funktionen
+## Features
 
-- Zeitprogramme mit einzeln auswählbaren Wochentagen, festen Uhrzeiten oder Sonnenaufgang/-untergang, Versatz sowie frühestens/spätestens.
-- Höhe und bei Jalousien Lamellen; eine Fahrt steuert genau ein Gerät. 0 % Höhe bedeutet unten, 100 % oben.
-- Temperatur- und/oder Helligkeitsregeln mit Hysterese und Freigabeverzögerung. Bei zwei Sensoren gilt eine UND-Verknüpfung.
-- Öffnungskontakte können Fahrten erlauben, verwerfen oder bis zum Schließen zurückstellen. Neuere fällige Fahrten ersetzen ältere wartende Ziele.
-- Öffnungsprogramme mit Wochentagen, Zeitfenster, Zielhöhe und Lamellen. Die Position bleibt bis zum Schließen aller Kontakte vor niedrigeren Programmen geschützt, auch nach Zeitfensterende und Neustart.
-- Priorität beim Schließen: aktive Temperatur-/Helligkeitsbeschattung, aktueller Zeitplan, sonst Position vor dem Öffnen einschließlich Lamellen.
-- Jährliche Gültigkeitszeiträume, Urlaubsausnahmen und Tagespausen für Sensorprogramme.
-- Kompakte Liste zukünftiger und nachzuholender Fahrten mit sichtbarem Wartegrund und einmaligem Auslassen.
-- Einklappbare Programme/Fahrten, Kopieren und Verschieben, Stift-Symbole zum Bearbeiten, Sensoranzeigenamen und Konfigurationssicherung.
+- Schedules for selected weekdays, fixed times, sunrise/sunset, offsets, and earliest/latest limits.
+- Position and, for supported blinds, tilt. Each action controls one cover. 0% is fully down; 100% is fully up.
+- Temperature and/or brightness rules with hysteresis and a release delay. When both sensors are assigned, activation uses AND logic.
+- Contact policies to proceed, discard, or retry an action after the window or door closes.
+- Opening programs that keep a cover at its opening position until all assigned contacts close.
+- Return priority after closing: active temperature/brightness shading, current schedule, then the position recorded before opening.
+- Annual validity periods and vacation pauses for sensor programs.
+- A compact list of future and pending actions, with one-time skip controls.
+- Collapsible programs and actions, copy/move actions, full-program copy, sensor display names, and configuration backup.
 
-Die vollständige Anleitung ist unter **Howto ?** in der Karte und in [HOWTO.md](HOWTO.md) enthalten. Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
+The in-card Guide and [HOWTO.md](HOWTO.md) explain the features and their interaction. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
-## Installation über HACS
+## Install with HACS
 
-Dieses Repository wird zunächst als **benutzerdefiniertes Repository** hinzugefügt. Es ist dadurch nicht automatisch Bestandteil des HACS-Standardkatalogs.
+Add this repository as a custom repository in HACS. The repository is not part of the HACS default catalog.
 
-1. HACS öffnen → Menü oben rechts → **Benutzerdefinierte Repositories**.
-2. Repository `https://github.com/v9h45n47mh-lab/beschattungsmanager` eintragen und Typ **Integration** auswählen.
-3. **Beschattungsmanager** suchen, herunterladen und Home Assistant vollständig neu starten.
-4. **Einstellungen → Geräte & Dienste → Integration hinzufügen → Beschattungsmanager**.
-5. Dem Dashboard eine manuelle Karte hinzufügen:
+1. In HACS, open the menu and choose **Custom repositories**.
+2. Add `https://github.com/v9h45n47mh-lab/shutter-manager` with type **Integration**.
+3. Find **Shutter Manager**, download it, and restart Home Assistant Core.
+4. Go to **Settings → Devices & services → Add integration** and add **Shutter Manager**.
+5. Add a manual card to your dashboard:
 
 ```yaml
-type: custom:rollladenplaner-card
+type: custom:shutter-manager-card
 grid_options:
   columns: 12
   rows: auto
 ```
 
-Die Integration lädt die Kartendatei selbst. Eine zusätzliche Dashboard-Ressource ist normalerweise nicht erforderlich. Die interne Domain `rollladenplaner` bleibt aus Kompatibilitätsgründen erhalten.
+The integration registers the card resource automatically. A separate dashboard resource is normally unnecessary. The legacy card type `custom:rollladenplaner-card` and old resource URL remain available for existing dashboards.
 
-### Bestehende manuelle Installation übernehmen
+The Home Assistant integration domain and folder stay `rollladenplaner` to preserve existing installations and stored configuration. The visible product name, card type, new resource URL, and release file names use **Shutter Manager**.
 
-Die bestehende Integration und ihre Programme beibehalten. Das Repository wie oben in HACS hinzufügen, herunterladen und Home Assistant vollständig neu starten. Danach Browser/App vollständig neu laden. Unter Howto müssen Oberfläche und Integration dieselbe Version anzeigen.
+## Existing installations
 
-Nicht gleichzeitig alte und neue manuelle Dashboard-Ressourcen laden. Falls bereits eine manuelle Ressource gepflegt wird, lautet die versionsbezogene URL `/rollladenplaner/rollladenplaner-card.js?v=0.10.1`.
+Update the custom HACS repository, download the release, restart Home Assistant Core, and reload the browser or app. Check the card's Guide or Settings to confirm that the card and integration both report version 1.0.0.
 
-## Manueller Download
+If you have manually added the old resource URL, it remains supported. New manual resources can use `/shutter-manager/shutter-manager-card.js?v=1.0.0`. Do not load both URLs on the same dashboard.
 
-Unter **Releases** werden folgende Archive bereitgestellt:
+## Release files
 
-- `Beschattungsmanager-0.10.1.zip`: vollständiges Paket mit `custom_components/rollladenplaner/`, Anleitung und Tests.
-- `rollladenplaner.zip`: nur der Inhalt des Integrationsordners; direkt nach `/config/custom_components/rollladenplaner/` entpacken.
+GitHub Releases provide:
 
-Für das vollständige Paket nach Upload nach `/config/`:
+- `Shutter-Manager-1.0.0.zip`: complete package with the integration folder, documentation, and tests.
+- `shutter-manager.zip`: integration folder only, for manual installation under `/config/custom_components/rollladenplaner/`.
 
-```bash
-unzip -o /config/Beschattungsmanager-0.10.1.zip 'custom_components/rollladenplaner/*' -d /config
-ha core restart
-```
+The release workflow builds and attaches both archives when a release is published. The version in the release tag must match `manifest.json`.
 
-Danach Browser/App vollständig neu laden. Die normale HACS-Installation nutzt das Repository-Layout `custom_components/rollladenplaner` und funktioniert unabhängig von den zusätzlich erzeugten ZIP-Assets.
+## Operation and limits
 
-## Betrieb und Grenzen
+The underlying cover entities must provide position control and position feedback. A manually selected cover type cannot add capabilities the entity does not expose. The integration commands the position first and tilt second. If a movement phase has no target confirmation after 150 seconds, it logs an error and stops the device when supported.
 
-Die Integration benötigt vorhandene Positionssteuerung und Positionsrückmeldungen. Ein manuell gewählter Gerätetyp erzeugt keine fehlende Aktor-Funktion. Es wird zuerst die Höhe, dann die Lamellenposition geprüft. Nach 150 Sekunden je Bewegungsphase ohne Zielbestätigung wird ein Fehler protokolliert und, falls unterstützt, gestoppt.
+The integration evaluates every five seconds. Unavailable contacts are not treated as closed. Opening priority applies to automatic actions from Shutter Manager; manual controls and other integrations operate independently. Holiday data, wind protection, and frost protection are not built in.
 
-Die Auswertung erfolgt alle fünf Sekunden. Unbekannte Kontakte gelten nicht als geschlossen. Öffnungsvorrang betrifft nur automatische Fahrten dieses Beschattungsmanagers; manuelle Bedienung und andere Integrationen arbeiten unabhängig. Wind-, Regen- und Frostschutz sowie Feiertagsdaten sind nicht eingebaut.
+Administrators configure the integration. Other users need Home Assistant read and control permissions for the relevant entities. Configuration and pending actions are stored locally.
 
-Administratoren konfigurieren. Andere Benutzer benötigen passende native Lese- und Steuerrechte. Konfiguration und offene Aufträge werden lokal gespeichert. Die Dashboard-Oberfläche ist deutsch; die Integration enthält deutsche und englische Übersetzungen.
-
-## Entwicklung und Prüfung
+## Development checks
 
 ```bash
 python3 -m pip install -r tests/requirements.txt
 python3 -m unittest discover -s tests -q
-node --check custom_components/rollladenplaner/frontend/rollladenplaner-card.js
-python3 scripts/build_release.py --check-only
-python3 scripts/build_release.py --tag v0.10.1
+node --check custom_components/rollladenplaner/frontend/shutter-manager-card.js
+python3 scripts/build_release.py --check-only --tag v1.0.0
+python3 scripts/build_release.py --tag v1.0.0
 ```
 
-Browserprüfungen verwenden Playwright und Chromium:
+Browser tests use Playwright and Chromium. GitHub Actions runs behavior tests plus HACS and Hassfest validation.
 
-```bash
-npm install --prefix .ci playwright
-npx --prefix .ci playwright install --with-deps chromium
-NODE_PATH="$PWD/.ci/node_modules" node tests/ui-test.cjs
-NODE_PATH="$PWD/.ci/node_modules" node tests/save-flow.cjs
-```
-
-234 Verhaltenstests sowie Browser- und Speichertests prüfen unter anderem Prioritäten, Neustarts, Rückkehrpositionen, Konflikte, Motorsequenz und Rechte. Die Tests simulieren Home Assistant und Motoren; sie ersetzen keine Prüfung an realen Aktoren.
-
-GitHub Actions prüft Tests, HACS und Hassfest. Nach dem Veröffentlichen einer Release baut der Release-Workflow die ZIP-Dateien und hängt sie an. Der Tag muss zur Version in `manifest.json` passen.
-
-## Lizenz
+## License
 
 [MIT](LICENSE)

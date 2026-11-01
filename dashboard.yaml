@@ -1,5 +1,5 @@
-type: custom:rollladenplaner-card
-title: Beschattungsmanager
+type: custom:shutter-manager-card
+title: Shutter Manager
 grid_options:
   columns: 12
   rows: auto

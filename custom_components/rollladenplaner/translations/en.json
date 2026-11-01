@@ -1,14 +1,14 @@
 {
-  "title": "Beschattungsmanager",
+  "title": "Shutter Manager",
   "config": {
     "step": {
       "user": {
-        "title": "Set up Beschattungsmanager",
+        "title": "Set up Shutter Manager",
         "description": "Configure covers, sensors and schedules in the dashboard card. Enable programs individually."
       }
     },
     "abort": {
-      "already_configured": "Beschattungsmanager is already configured."
+      "already_configured": "Shutter Manager is already configured."
     }
   }
 }

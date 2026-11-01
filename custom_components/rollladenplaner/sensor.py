@@ -9,7 +9,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
 
 class PlannerSensor(SensorEntity):
-    _attr_name = 'Beschattungsmanager'
+    _attr_name = 'Shutter Manager'
     _attr_unique_id = DOMAIN + '_status'
     _attr_icon = 'mdi:window-shutter-auto'
     _attr_should_poll = False
