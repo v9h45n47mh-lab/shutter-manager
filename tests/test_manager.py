@@ -55,15 +55,15 @@ class AdapterTests(IsolatedAsyncioTestCase):
     async def test_opening_preempts_motion_holds_then_returns_to_time_goal(self):
         from test_opening import opening_fixture
         self.c,self.s=opening_fixture()
-        original,_=fixture();original['programs'][0]['rides'][0].update(time='09:00',earliest='00:00',latest='23:59')
+        original,_=fixture();original['programs'][0]['rides'][0].update(time='09:01',earliest='00:00',latest='23:59')
         self.c['programs'].append(original['programs'][0]);self.m.engine=adapter.Engine(self.c)
         self.now=at('2026-10-30T08:59:55');await self.m._pulse_locked()
         self.now+=timedelta(seconds=5);await self.m._pulse_locked()
-        self.assertEqual(self.hass.services.async_call.call_args.args[2]['position'],0)
+        self.hass.services.async_call.assert_not_called()
         self.hass.services.async_call.reset_mock()
         self.s['binary_sensor.fenster']['state']='on';self.now+=timedelta(seconds=5)
         await self.m._pulse_locked()
-        self.assertEqual([c.args[1] for c in self.hass.services.async_call.call_args_list],['stop_cover','set_cover_position'])
+        self.assertEqual([c.args[1] for c in self.hass.services.async_call.call_args_list],['set_cover_position'])
         self.assertEqual(self.hass.services.async_call.call_args.args[2]['position'],100)
         self.s['cover.wohnen']['attributes']['current_position']=100
         self.now+=timedelta(seconds=5);await self.m._pulse_locked()
@@ -73,6 +73,8 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.now+=timedelta(seconds=5);await self.m._pulse_locked()
         self.hass.services.async_call.reset_mock();self.now+=timedelta(seconds=5);await self.m._pulse_locked()
         self.hass.services.async_call.assert_not_called()
+        self.now=at('2026-10-30T09:01');await self.m._pulse_locked()
+        self.hass.services.async_call.assert_not_called()
         self.assertIn('w',self.m.engine.rt['opening_holds'])
         user=types.SimpleNamespace(is_admin=True)
         self.assertTrue(self.m.snapshot(user)['sensor_programs'][0]['triggered'])
@@ -80,7 +82,9 @@ class AdapterTests(IsolatedAsyncioTestCase):
         await self.m._pulse_locked()
         self.assertEqual(self.hass.services.async_call.call_args.args[2]['position'],0)
         self.assertEqual(self.m.snapshot(user)['planned'][0]['kind'],'opening')
-        self.s['cover.wohnen']['attributes'].update(current_position=0,current_tilt_position=50)
+        release=self.m.engine.rt['pending']['w']['opening']
+        self.assertEqual((release['position'],release['tilt']),(0,50))
+        self.s['cover.wohnen']['attributes'].update(current_position=release['position'],current_tilt_position=release['tilt'])
         self.now+=timedelta(seconds=5);await self.m._pulse_locked()
         self.now+=timedelta(seconds=5);await self.m._pulse_locked()
         self.assertNotIn('w',self.m.engine.rt['opening_holds']);self.assertEqual(self.m.snapshot(user)['planned'],[])
@@ -451,7 +455,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
 
     async def test_snapshot_identifies_loaded_backend_and_sensor_rule_schema(self):
         snapshot=self.m.snapshot(types.SimpleNamespace(is_admin=True))
-        self.assertEqual(snapshot['backend_version'],'1.0.0')
+        self.assertEqual(snapshot['backend_version'],'1.1.0')
         self.assertEqual(snapshot['config_schema'],4)
 
     async def test_overview_uses_today_in_ha_timezone_even_after_sunset(self):

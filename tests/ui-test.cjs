@@ -17,7 +17,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    connectedCallback(){queueMicrotask(()=>{this.shadowRoot.innerHTML='<slot></slot>';});}
  }));
  await page.evaluate(()=>{
-  window.model={backend_version:'1.0.0',config_schema:4,admin:true,controls:{p:true},revision:1,config:{enabled:true,vacation:false,windows:[{id:'w',name:'Jalousie Wohnen',cover:'cover.wohnen',enabled:true,contacts:[{entity:'binary_sensor.fenster',open_state:'on',policy:'defer'}],sensor_rules:[{id:'main',name:'Sommer',lux_entity:'sensor.lux',temp_entity:'sensor.temp',lux_on:30000,lux_off:20000,temp_on:25,temp_off:23,release_delay_seconds:300}]}],programs:[{id:'p',name:'Wohnbereich · Wochentage',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[{id:'r',name:'Morgens',enabled:true,skip_next:false,targets:['w'],event:'sunrise',time:'07:00',offset:0,earliest:'06:00',latest:'08:00',position:0,tilt:50,defer_minutes:120}]}]},upcoming:[{time:'2026-11-02T06:30:00Z',name:'Wohnbereich / Morgens',program:'p',ride:'r',skip:false}],planned_date:'2026-10-30',planned:[],pending:{},moving:[]};
+  window.model={backend_version:'1.1.0',config_schema:4,admin:true,controls:{p:true},revision:1,config:{enabled:true,vacation:false,windows:[{id:'w',name:'Jalousie Wohnen',cover:'cover.wohnen',enabled:true,contacts:[{entity:'binary_sensor.fenster',open_state:'on',policy:'defer'}],sensor_rules:[{id:'main',name:'Sommer',lux_entity:'sensor.lux',temp_entity:'sensor.temp',lux_on:30000,lux_off:20000,temp_on:25,temp_off:23,release_delay_seconds:300}]}],programs:[{id:'p',name:'Wohnbereich · Wochentage',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[{id:'r',name:'Morgens',enabled:true,skip_next:false,targets:['w'],event:'sunrise',time:'07:00',offset:0,earliest:'06:00',latest:'08:00',position:0,tilt:50,defer_minutes:120}]}]},upcoming:[{time:'2026-11-02T06:30:00Z',name:'Wohnbereich / Morgens',program:'p',ride:'r',skip:false}],planned_date:'2026-10-30',planned:[],pending:{},moving:[]};
   window.calls=[];
   window.host={user:{id:'test_admin'},states:{'cover.wohnen':{state:'open',attributes:{friendly_name:'Jalousie Wohnen',device_class:'blind',supported_features:140}},'cover.essen':{state:'closed',attributes:{friendly_name:'Jalousie Essen',device_class:'blind',supported_features:140}},'cover.kueche':{state:'open',attributes:{friendly_name:'Küche Fenster',device_class:'shutter',supported_features:12}},'cover.garage':{state:'closed',attributes:{friendly_name:'Garagentor',device_class:'garage',supported_features:12}},'cover.ohne_position':{state:'open',attributes:{friendly_name:'Ohne Position',device_class:'shutter',supported_features:3}},'binary_sensor.fenster':{state:'off',attributes:{friendly_name:'Fenster Wohnen'}},'sensor.power':{state:'500',attributes:{friendly_name:'Leistung',device_class:'power',unit_of_measurement:'W'}},'sensor.lux':{state:'10000',attributes:{friendly_name:'Helligkeit',device_class:'illuminance',unit_of_measurement:'lx'}},'sensor.temp':{state:'22',attributes:{friendly_name:'Temperatur',device_class:'temperature',unit_of_measurement:'°C'}}},callWS:async msg=>{
    calls.push(structuredClone(msg));
@@ -39,6 +39,9 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  const card=page.locator('rollladenplaner-card'),dialog=card.getByRole('dialog');
  const range=async (selector,value)=>{await dialog.locator(selector).evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event('input',{bubbles:true,composed:true}));el.dispatchEvent(new Event('change',{bubbles:true,composed:true}));},value);};
  await card.getByRole('button',{name:'Wohnbereich · Wochentage',exact:true}).waitFor();
+ assert.equal(await card.locator('.program-group-head').count(),1,'time programs are grouped');
+ assert.equal(await card.locator('.program-group-head').first().getAttribute('aria-expanded'),'true','groups start expanded');
+ assert.equal(await card.locator('[data-action="fold-program"]').first().getAttribute('aria-expanded'),'false','programs start collapsed');
  await page.evaluate(async()=>{model.sun_times={date:'2026-10-30',sunrise:'2026-10-30T06:30:00Z',sunset:'2026-10-30T17:00:00Z'};model.time_zone='Europe/Berlin';await document.querySelector('rollladenplaner-card').refresh();});
  const overview=card.getByRole('region',{name:'Sonnenzeiten und Sensorwerte'});
  assert.equal(await overview.locator('.overview-item').count(),3,'three distinct assigned sensors, separate from solar row');
@@ -468,6 +471,18 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await dialog.getByRole('button',{name:'Speichern',exact:true}).click();await dialog.waitFor({state:'detached'});
  assert.equal(await page.evaluate(()=>model.config.programs.at(-1).sensor_mode),'opening');
  assert.equal(await page.evaluate(()=>model.config.programs.at(-1).rides[0].tilt),35);
+ await page.evaluate(async()=>{
+   model.config.programs.splice(1,0,{id:'p2',name:'Zweites Zeitprogramm',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[]});
+   model.revision++;
+   await document.querySelector('rollladenplaner-card').refresh();
+ });
+ assert.equal(await card.locator('.program-group-head').count(),2,'time and sensor programs have separate groups');
+ assert.equal(await card.locator('[data-action="fold-program-group"][data-group="sensor"]').getAttribute('aria-expanded'),'true');
+ await card.locator('[data-action="fold-program-group"][data-group="sensor"]').click();
+ assert.equal(await card.locator('[data-action="edit-program"][data-program="'+await page.evaluate(()=>model.config.programs.find(p=>p.sensor_mode==='opening').id)+'"]').count(),0,'sensor group can be collapsed independently');
+ await card.locator('[data-action="fold-program-group"][data-group="sensor"]').click();
+ await card.locator('[data-action="move-program"][data-program="p"][data-direction="down"]').click();
+ assert.deepEqual(await page.evaluate(()=>model.config.programs.filter(p=>p.kind==='time').map(p=>p.id)),['p2','p'],'program order is saved within its group');
  // XSS-safe names and fold persistence across full element recreation.
  await page.evaluate(async()=>{model.config.programs[0].name='<img src=x onerror="window.injected=true">';await document.querySelector('rollladenplaner-card').refresh();});
  assert.equal(await card.locator('img').count(),0);assert.equal(await page.evaluate(()=>window.injected),undefined);
@@ -505,9 +520,20 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByRole('heading',{name:'Language',exact:true}).count(),1,'language picker is translated and available without admin permission');
  await card.getByRole('button',{name:'Programs',exact:true}).click();
  assert.equal(await card.getByRole('button',{name:'Schedule',exact:true}).count(),1,'tab labels switch to English');
+ const englishProgramText=await card.locator('main').innerText();
+ assert.ok(englishProgramText.includes('Opening program'),'opening program label is translated');
+ assert.ok(englishProgramText.includes('Position 0%') && englishProgramText.includes('Tilt 50%'),'dynamic height and tilt summaries are translated');
+ assert.equal(englishProgramText.includes('Höhe'),false);
+ assert.equal(englishProgramText.includes('Lamellen'),false);
+ await page.evaluate(async()=>{model.sensor_programs=[{id:'program:opening',source:'program',name:'Lüften',sensor_mode:'opening',targets:['w'],season:{enabled:false},paused:false,triggered:false,blocked_reason:'Außerhalb des Zeitfensters',can_control:true}];await document.querySelector('rollladenplaner-card').refresh();});
+ await card.getByRole('button',{name:'Sensor programs',exact:true}).click();
+ const englishSensorText=await card.locator('main').innerText();
+ assert.ok(englishSensorText.includes('Opening program'));
+ assert.ok(englishSensorText.includes('Outside the time window'));
+ assert.equal(englishSensorText.includes('Außerhalb des Zeitfensters'),false);
  await card.getByRole('button',{name:'Guide',exact:true}).click();
  assert.equal(await card.getByRole('heading',{name:'Quick start',exact:true}).count(),1,'guide is fully available in English');
- assert.equal(await card.getByRole('heading',{name:'Shutter Manager 1.0.0',exact:true}).count(),1);
+ assert.equal(await card.getByRole('heading',{name:'Shutter Manager 1.1.0',exact:true}).count(),1);
  await card.getByRole('button',{name:'Settings',exact:true}).click();
  await card.locator('[data-action=set-language][data-language=de]').click();
  assert.equal(await card.getByRole('heading',{name:'Sprache',exact:true}).count(),1,'language selection switches back to German');

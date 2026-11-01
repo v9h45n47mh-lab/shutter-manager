@@ -620,7 +620,7 @@ class Engine:
             return None
         return False
 
-    def opening_restore_goal(self, window, hold, now, climates, solar):
+    def opening_restore_goal(self, window, hold, now, climates, missed_time=None):
         if climates.get(window['id']) is None:
             return {}, 'Sensorwerte nicht verfügbar'
         for program in self.config['programs']:
@@ -630,7 +630,13 @@ class Engine:
                 if (ride['enabled'] and ride['targets'] == [window['id']] and ride['edge'] == 'active'
                         and climates.get(window['id']+':'+ride['sensor_rule']) is True):
                     return {axis: ride[axis] for axis in ('position', 'tilt')}, ''
-        return self.current_schedule_goal(window, now, solar, hold['before']), ''
+        # Only a still-pending time action is a missed schedule. A previously
+        # completed schedule must not overwrite a manual position captured when
+        # the opening hold began.
+        if missed_time:
+            return {axis: missed_time.get(axis) if missed_time.get(axis) is not None
+                    else hold['before'].get(axis) for axis in ('position', 'tilt')}, ''
+        return deepcopy(hold['before']), ''
 
     def opening_intent(self, window, hold, now, goal, phase, reason=''):
         occurrence = hold['occurrence']+':'+phase
@@ -705,10 +711,25 @@ class Engine:
                 continue
             window = windows[wid]
             slots = self.rt['pending'].setdefault(wid, {})
+            missed_time = slots.get('time')
+            if missed_time and datetime.fromisoformat(missed_time.get('scheduled') or missed_time['created']) > now:
+                missed_time = None
+            if missed_time and datetime.fromisoformat(missed_time.get('scheduled') or missed_time['created']) < datetime.fromisoformat(hold['started']):
+                missed_time = None
+            if missed_time and any(contact.get('policy') == 'skip'
+                                   for contact in missed_time.get('blocked_contacts', [])):
+                missed_time = None
+            if missed_time:
+                # The time slot is consumed below. Keep its resolved goal on the
+                # opening latch so later ticks cannot fall back to the old
+                # pre-open position while the return movement is in progress.
+                hold['missed_time'] = deepcopy(missed_time)
+            elif hold.get('missed_time'):
+                missed_time = hold['missed_time']
             # A single freshly resolved return replaces lower-priority stale goals.
             for kind in ('sensor', 'time', 'shade'):
                 slots.pop(kind, None)
-            goal, reason = self.opening_restore_goal(window, hold, now, climates, solar)
+            goal, reason = self.opening_restore_goal(window, hold, now, climates, missed_time)
             if not reason and goal.get('position') is None and goal.get('tilt') is None:
                 slots.pop('opening', None); self.rt['opening_holds'].pop(wid)
                 self.log(now, 'error', window['name']+': keine vorherige oder geplante Rückkehrposition bekannt.', window=wid)

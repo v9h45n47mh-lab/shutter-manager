@@ -1,4 +1,4 @@
-# Shutter Manager Guide / Anleitung 1.0.0
+# Shutter Manager Guide / Anleitung 1.1.0
 
 ## Deutsch
 
@@ -17,13 +17,13 @@ Der Shutter Manager verbindet Zeitprogramme, Temperatur-/Helligkeitsbeschattung 
 
 | Bereich | Funktion |
 |---|---|
-| **Programme** | Zeit- und Sensorprogramme erstellen, bearbeiten, einzeln schalten und zuklappen. Einzelne Fahrten dauerhaft deaktivieren. |
+| **Programme** | Zeit- und Sensorprogramme erstellen, bearbeiten, einzeln schalten, sortieren und zuklappen. Die beiden Programmgruppen sind unabhängig klappbar. Programme starten zugeklappt; Gruppen starten aufgeklappt. Einzelne Fahrten dauerhaft deaktivieren. |
 | **Zeitprogramm** | Zukünftige Fahrten für heute und noch offene Aufträge anzeigen, ergänzt um wartende Sensorfahrten und ältere Nachholaufträge. Erledigte und verworfene Fahrten sind nicht enthalten. Eine konkrete Fahrt einmalig auslassen oder eine zukünftige Auslassung zurücknehmen. Ausgelöste Sensorfahrten erscheinen, solange sie offen sind. |
 | **Sensorprogramme** | Heute freigegebene Programme anzeigen und bis Mitternacht aussetzen oder wieder aktivieren. |
 | **Howto ?** | Diese Anleitung neben dem Zahnrad öffnen. |
 | **Einstellungen ⚙** | Geräte, Öffnungskontakte und benannte Sensorregeln pflegen; Urlaubsmodus und Sicherung bedienen. Keine Fahrziele oder Gültigkeitszeiträume an der Sensorregel. |
 
-Bearbeiten erfolgt über das Stift-Symbol mit Tooltip „Bearbeiten“. Es gibt keinen globalen Aktiv-Schalter. Programme und Fahrten werden einzeln geschaltet. Die sichtbaren Beschriftungen „Aktiv“ und „Fahrt aktiv“ neben den Schaltern entfallen; die Schalter bleiben über ihre Position und für Screenreader über ihre Namen zuordenbar.
+Bearbeiten erfolgt über das Stift-Symbol mit Tooltip „Bearbeiten“. Programme lassen sich innerhalb ihrer Gruppe mit den Pfeilen sortieren; die Reihenfolge bleibt gespeichert. Es gibt keinen globalen Aktiv-Schalter. Programme und Fahrten werden einzeln geschaltet. Die sichtbaren Beschriftungen „Aktiv“ und „Fahrt aktiv“ neben den Schaltern entfallen; die Schalter bleiben über ihre Position und für Screenreader über ihre Namen zuordenbar.
 
 ## Kopfbereich und Sensoranzeigenamen
 
@@ -38,7 +38,7 @@ Unter **Einstellungen → Sensoranzeigenamen → Bearbeiten** vergeben Administr
 1. In **Einstellungen → Gerät bearbeiten → Öffnungskontakte** den Kontakt und seinen Offen-Zustand zuweisen.
 2. Über das **Stift-Symbol** ein Programm bearbeiten oder ein neues Programm anlegen. Programmtyp **Sensorprogramm**, Sensorprogramm-Art **Öffnungskontakt** wählen.
 3. Wochentage sowie **Von/Bis** einstellen. Der vorhandene Gültigkeitszeitraum und die Urlaubsausnahme können zusätzlich genutzt werden.
-4. Eine Fahrt hinzufügen. Es werden nur Geräte mit Öffnungskontakt angeboten. Zielhöhe einstellen; bei Jalousien zusätzlich die Lamellen. Für ganz oben gilt **100 %**, für unten **0 %**. Die Höhe ist erforderlich, Lamellen können unverändert bleiben.
+4. Eine Fahrt hinzufügen. Es werden nur Geräte mit Öffnungskontakt angeboten. Zielhöhe einstellen; bei Jalousien zusätzlich die Lamellen. Die Höhe ist erforderlich, Lamellen können unverändert bleiben.
 5. Speichern und aktivieren. Standardmäßig startet die Fahrt bei einer neu erkannten Öffnung innerhalb der Gültigkeit. **Bei bereits geöffnetem Fenster starten** erlaubt zusätzlich den Start bei einem schon offenen Kontakt, etwa nach Neustart oder beim Beginn des Zeitfensters.
 
 Der Öffnungsvorrang bleibt bis zum bestätigten Schließen aller zugeordneten Kontakte bestehen, auch nach Ende des Zeitfensters, Tages-/Saisonwechsel und Neustart. Ein offener Kontakt genügt zum Halten; unbekannte oder nicht verfügbare Kontakte zählen nicht als geschlossen. Das Öffnungsprogramm darf trotz seines eigenen offenen Kontakts die eingestellte Position anfahren. Andere automatische Fahrten desselben Geräts im Shutter Manager warten.
@@ -46,10 +46,10 @@ Der Öffnungsvorrang bleibt bis zum bestätigten Schließen aller zugeordneten K
 Nach dem Schließen wird das Ziel neu bestimmt, in dieser Reihenfolge:
 
 1. Die aktuell geltende aktive Temperatur-/Helligkeitsbeschattung.
-2. Das aktuell gültige Ziel eines Zeitprogramms.
+2. Eine **während des offenen Kontakts fällige und noch wartende Zeitfahrt**.
 3. Die **Position unmittelbar vor dem automatischen Öffnen**, einschließlich der Lamellen bei Jalousien.
 
-Damit überschreibt kein während des Lüftens veraltetes Ziel die aktuelle Lage. Eine während des Öffnungsvorrangs neu aktive Beschattung merkt sich ebenfalls die darunterliegende Ausgangsposition, nicht die vorübergehende Lüftungsposition. Fehlende Messwerte können die Rückkehr verzögern. Ohne bekannte vorherige Position und ohne anderes Ziel wird keine Rückkehrposition erfunden; der Fehler erscheint im HA-Protokoll.
+Ein bereits vor dem Öffnen ausgeführtes Zeitplanziel gilt nicht als verpasst und wird nicht wiederholt. Dadurch bleibt eine zwischenzeitliche manuelle Position erhalten, sofern keine aktive Beschattung oder tatsächlich wartende Zeitfahrt Vorrang hat. Eine während des Öffnungsvorrangs neu aktive Beschattung merkt sich ebenfalls die darunterliegende Ausgangsposition, nicht die vorübergehende Lüftungsposition. Fehlende Messwerte können die Rückkehr verzögern. Ohne bekannte vorherige Position und ohne anderes Ziel wird keine Rückkehrposition erfunden; der Fehler erscheint im HA-Protokoll.
 
 Ein Zeitfenster über Mitternacht ist möglich; für den Teil nach Mitternacht gelten Wochentag und Saison des vorherigen Starttags. Überlappende aktive Öffnungsprogramme für dasselbe Gerät werden beim Speichern abgewiesen. Unterschiedliche, nicht überlappende Zeitfenster sind möglich.
 
@@ -69,7 +69,7 @@ Die Auswahl im Programm verweist auf die benannte Regel. Änderungen an deren Sc
 
 **Gültigkeitszeitraum** wird nur im Sensorprogramm gepflegt. Start und Ende als TT.MM. wiederholen sich jährlich und zählen mit. Winterzeiträume über den Jahreswechsel sind möglich. Ohne Begrenzung gilt das Programm ganzjährig; zusätzlich gelten seine Wochentage, Aktivierung und eine mögliche Urlaubspause.
 
-Jede Fahrt steuert genau einen Rollladen. **0 % Höhe = unten, 100 % = oben**. Lamellenregler gibt es nur für Jalousien; die tatsächliche Integration muss die Funktion unterstützen. „Unverändert“ lässt eine Achse unangetastet.
+Jede Fahrt steuert genau einen Rollladen. Lamellenregler gibt es nur für Jalousien; die tatsächliche Integration muss die Funktion unterstützen. „Unverändert“ lässt eine Achse unangetastet.
 
 Bei „Wieder freigegeben“ ist entweder ein eigenes Fahrziel oder die aktuelle Zeitplanposition möglich. Bei Rückkehr zum Zeitplan wird das inzwischen passende Ziel verwendet, beispielsweise die abends fällige Position. Ohne passenden Zeitplan gilt die vor der Sensorbeschattung gemeldete Position. Ohne Freigabefahrt gibt es keine automatische Rückfahrt.
 
@@ -87,6 +87,8 @@ Beim Kopieren bleibt die Quelle erhalten; die Kopie bekommt eine eigene Fahrt-ID
 
 ## Zeitprogramme
 
+Programme lassen sich in der Übersicht innerhalb ihrer Gruppe manuell sortieren. Die Reihenfolge bleibt beim Speichern erhalten. Zeitprogramme und Sensorprogramme haben getrennte, unabhängig klappbare Gruppen.
+
 Fahrten werden in der Anzeige nach ihrer wirksamen Uhrzeit für heute sortiert, einschließlich Sonnenversatz und frühestens/spätestens. Beim Öffnen und nach Speichern/Aktualisieren steht eine nachträglich angelegte Morgenfahrt vor einer Abendfahrt. Während der Eingabe wird nicht umsortiert. Gleiche Uhrzeiten behalten ihre Reihenfolge; fehlende Sonnenzeiten stehen am Ende. Sensorprogramme behalten ihre Reihenfolge.
 
 Der Reiter Zeitprogramm zeigt ausschließlich zukünftige Fahrten des aktuellen Tages und tatsächlich offene Aufträge mit Uhrzeit, Rollladen/Jalousie, Zielposition und Auslassen. Bereits erledigte, verworfene sowie nicht erfasste vergangene Fahrten stehen dort nicht. Wochentage und Aktivierung der Programme, Fahrten und Rollläden gelten weiterhin. Bereits fällige Warteaufträge bleiben sichtbar, auch vom Vortag. Durch die Anzeige werden keine vergangenen Zeiten neu ausgelöst.
@@ -103,7 +105,7 @@ Der Urlaubsmodus pausiert nur entsprechend markierte Programme. Standort und Zei
 
 **Ein aktiver Öffnungsvorrang steht über Temperatur/Helligkeit und Zeitprogrammen.** Außerhalb dieses Vorrangs gelten die Kontakt-Sperrregeln für Sensor- und Zeitfahrten. Pro Kontakt ist einstellbar: trotzdem fahren, diese Fahrt verwerfen oder nach dem Schließen nachholen. Nicht verfügbare Kontakte werden bei einer Sperrregel nicht als geschlossen behandelt. Mit „Fahrt nachholen“ wird ein wartendes Ziel nach Freigabe beim nächsten Auswertungszyklus (innerhalb von etwa fünf Sekunden) erneut geprüft; erst wird die Höhe und danach gegebenenfalls die Lamellenposition angefahren. „Nicht fahren“ verwirft die konkrete Ausführung dauerhaft. Verhindern danach noch ein anderer Kontakt, aktive Sensorbeschattung oder fehlende Gerätewerte die Fahrt, zeigt das Zeitprogramm den verbleibenden Wartegrund.
 
-Aktive Sensorbeschattung hat Vorrang vor Zeitfahrten. Zeitfahrten aktualisieren das Ziel für danach. Nachholen hat keine Zeitgrenze: Eine neuere fällige Zeitfahrt am selben Rollladen ersetzt eine ältere wartende Zeitfahrt. Bei Freigabe und Rückkehr zum Zeitplan zählt der aktuell gültige Stand.
+Aktive Sensorbeschattung hat Vorrang vor Zeitfahrten. Eine fällige Zeitfahrt, die wegen eines offenen Kontakts mit „Fahrt nachholen“ noch wartet, wird beim Schließen ausgeführt; eine bereits erledigte Zeitfahrt wird nicht erneut abgespielt. Eine neuere fällige Zeitfahrt am selben Rollladen ersetzt eine ältere wartende Fahrt.
 
 ## Manuelle Fahrten und Aussetzen
 

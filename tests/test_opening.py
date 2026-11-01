@@ -53,6 +53,26 @@ class OpeningTests(unittest.TestCase):
         result=self.close();self.assertEqual((result['w']['position'],result['w']['tilt']),(30,15))
         self.finish(result);self.assertNotIn('w',self.e.rt['opening_holds'])
         self.assertFalse(self.tick())
+    def test_completed_time_goal_does_not_override_manual_position_before_open(self):
+        self.add_time()
+        scheduled=self.c['programs'][1]['rides'][0]
+        scheduled.update(time='07:00',earliest='00:00',latest='23:59',position=0,tilt=20)
+        before=at('2026-10-30T06:59:55');self.e=Engine(self.c);self.e.tick(before,self.s,solar)
+        self.now=before+timedelta(seconds=5);self.finish(self.e.tick(self.now,self.s,solar))
+        self.s['cover.wohnen']['attributes'].update(current_position=55,current_tilt_position=30)
+        self.now=at('2026-10-30T09:00');self.e.tick(self.now,self.s,solar)
+        self.finish(self.open())
+        result=self.close()
+        self.assertEqual((result['w']['position'],result['w']['tilt']),(55,30))
+    def test_time_goal_due_before_open_is_not_a_missed_action(self):
+        self.add_time();self.c['programs'][1]['rides'][0].update(time='09:00',position=0,tilt=20)
+        self.now=at('2026-10-30T08:59:55');self.e=Engine(self.c);self.e.tick(self.now,self.s,solar)
+        self.now+=timedelta(seconds=5);self.assertIn('w',self.e.tick(self.now,self.s,solar))
+        self.s['binary_sensor.fenster']['state']='on';self.now+=timedelta(seconds=5)
+        self.e.tick(self.now,self.s,solar)
+        self.s['binary_sensor.fenster']['state']='off';self.now+=timedelta(seconds=5)
+        result=self.e.tick(self.now,self.s,solar)
+        self.assertEqual((result['w']['position'],result['w']['tilt']),(30,15))
     def test_time_firing_while_open_is_deferred_and_latest_time_wins_on_close(self):
         self.add_time();self.c['programs'][1]['rides'][0].update(time='09:01',position=60)
         self.reset();self.finish(self.open())
@@ -67,11 +87,11 @@ class OpeningTests(unittest.TestCase):
         self.s['sensor.temp']['state']='28';self.s['sensor.lux']['state']='40000'
         self.assertFalse(self.tick());self.assertEqual(self.e.rt['pending']['w']['sensor']['position'],0)
         result=self.close();self.assertEqual((result['w']['position'],result['w']['tilt']),(0,90))
-    def test_climate_released_while_open_falls_back_to_time_not_stale_climate(self):
+    def test_climate_released_while_open_falls_back_to_position_before_open(self):
         self.add_time();self.add_climate();self.reset();self.finish(self.open())
         self.s['sensor.temp']['state']='28';self.s['sensor.lux']['state']='40000';self.tick()
         self.s['sensor.temp']['state']='20';self.tick()
-        result=self.close();self.assertEqual((result['w']['position'],result['w']['tilt']),(20,25))
+        result=self.close();self.assertEqual((result['w']['position'],result['w']['tilt']),(30,15))
     def test_later_climate_release_restores_underlying_position_not_temporary_opening(self):
         self.add_climate()
         self.c['programs'][1]['rides'].append({'id':'heat_release','targets':['w'],'sensor_rule':'summer',
