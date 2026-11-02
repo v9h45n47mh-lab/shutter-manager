@@ -1,4 +1,4 @@
-# Shutter Manager Guide / Anleitung 1.1.0
+# Shutter Manager Guide / Anleitung 1.2.0
 
 ## Deutsch
 

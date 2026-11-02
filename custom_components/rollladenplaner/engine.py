@@ -711,29 +711,36 @@ class Engine:
                 continue
             window = windows[wid]
             slots = self.rt['pending'].setdefault(wid, {})
-            missed_time = slots.get('time')
-            if missed_time and datetime.fromisoformat(missed_time.get('scheduled') or missed_time['created']) > now:
-                missed_time = None
-            if missed_time and datetime.fromisoformat(missed_time.get('scheduled') or missed_time['created']) < datetime.fromisoformat(hold['started']):
-                missed_time = None
-            if missed_time and any(contact.get('policy') == 'skip'
-                                   for contact in missed_time.get('blocked_contacts', [])):
-                missed_time = None
-            if missed_time:
-                # The time slot is consumed below. Keep its resolved goal on the
-                # opening latch so later ticks cannot fall back to the old
-                # pre-open position while the return movement is in progress.
-                hold['missed_time'] = deepcopy(missed_time)
-            elif hold.get('missed_time'):
-                missed_time = hold['missed_time']
-            # A single freshly resolved return replaces lower-priority stale goals.
-            for kind in ('sensor', 'time', 'shade'):
-                slots.pop(kind, None)
-            goal, reason = self.opening_restore_goal(window, hold, now, climates, missed_time)
-            if not reason and goal.get('position') is None and goal.get('tilt') is None:
-                slots.pop('opening', None); self.rt['opening_holds'].pop(wid)
-                self.log(now, 'error', window['name']+': keine vorherige oder geplante Rückkehrposition bekannt.', window=wid)
-                continue
+            if 'return_goal' not in hold:
+                missed_time = slots.get('time')
+                if missed_time and datetime.fromisoformat(missed_time.get('scheduled') or missed_time['created']) > now:
+                    missed_time = None
+                if missed_time and datetime.fromisoformat(missed_time.get('scheduled') or missed_time['created']) < datetime.fromisoformat(hold['started']):
+                    missed_time = None
+                if missed_time and any(contact.get('policy') == 'skip'
+                                       for contact in missed_time.get('blocked_contacts', [])):
+                    missed_time = None
+                if missed_time:
+                    hold['missed_time'] = deepcopy(missed_time)
+                elif hold.get('missed_time'):
+                    missed_time = hold['missed_time']
+                goal, reason = self.opening_restore_goal(window, hold, now, climates, missed_time)
+                if not reason and goal.get('position') is None and goal.get('tilt') is None:
+                    slots.pop('opening', None); self.rt['opening_holds'].pop(wid)
+                    self.log(now, 'error', window['name']+': keine vorherige oder geplante Rückkehrposition bekannt.', window=wid)
+                    continue
+                # Freeze the selected return target. Consume only the waiting
+                # time action represented by that target; later due actions must
+                # remain queued until this return movement finishes.
+                hold['return_goal'] = deepcopy(goal)
+                hold['return_reason'] = reason
+                slots.pop('sensor', None)
+                slots.pop('shade', None)
+                if missed_time and slots.get('time', {}).get('id') == missed_time.get('id'):
+                    slots.pop('time', None)
+            else:
+                goal = hold['return_goal']
+                reason = hold.get('return_reason', '')
             slots['opening'] = self.opening_intent(window, hold, now, goal, 'release', reason)
 
     def guard(self, window, intent, states, climates):

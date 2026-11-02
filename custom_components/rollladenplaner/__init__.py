@@ -22,7 +22,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.1.0'
+INTEGRATION_VERSION = '1.2.0'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 4
 SIGNAL = DOMAIN + '_update'
@@ -41,8 +41,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.1.0')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.1.0')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.0')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -264,6 +264,7 @@ class Manager:
             if program['kind'] == 'time':
                 def due_key(ride):
                     due = self.engine.due(ride, day, self.solar)
+                    ride['today_due'] = due.isoformat() if due else None
                     return due.timestamp() if due is not None else float('inf')
                 program['rides'].sort(key=due_key)
         planned = []

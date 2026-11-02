@@ -1,5 +1,12 @@
 # Changelog / Änderungen
 
+## 1.2.0
+
+- Sensor-program entries use a compact, schedule-like layout.
+- One-time skip controls use the text “Auslassen” / “Skip” without an extra icon.
+- Time programs show today’s calculated time before the solar trigger and time window, including an inactive program preview.
+- A time action that becomes due during an opening return stays queued and runs after the return movement; the selected return target remains fixed during that movement.
+
 ## 1.1.0
 
 - Opening-program return priority is now active temperature/brightness shading, an actually pending time action that became due while the contact was open, then the position and tilt recorded immediately before opening. Previously completed schedule targets are not replayed over a later manual position.
