@@ -1,0 +1,14 @@
+{
+  "title": "Light Manager",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Light Manager",
+        "description": "Manage selected lights, zones, rooms and lighting programs. Add custom:light-manager-card to your dashboard after setup. Administration requires an administrator account."
+      }
+    },
+    "abort": {
+      "already_configured": "Light Manager is already configured."
+    }
+  }
+}

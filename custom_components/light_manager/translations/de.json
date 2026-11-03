@@ -1,0 +1,14 @@
+{
+  "title": "Light Manager",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Light Manager",
+        "description": "Verwaltet ausgewählte Lampen, Zonen, Zimmer und Lichtprogramme. Füge anschließend die Karte custom:light-manager-card zum Dashboard hinzu. Bedienung durch Administratoren."
+      }
+    },
+    "abort": {
+      "already_configured": "Light Manager ist bereits eingerichtet."
+    }
+  }
+}

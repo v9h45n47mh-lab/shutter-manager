@@ -1,0 +1,19 @@
+{
+  "domain": "light_manager",
+  "name": "Light Manager",
+  "version": "1.0.2",
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "websocket_api",
+    "sun"
+  ],
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "codeowners": [
+    "@v9h45n47mh-lab"
+  ],
+  "documentation": "https://github.com/v9h45n47mh-lab/light-manager",
+  "issue_tracker": "https://github.com/v9h45n47mh-lab/light-manager/issues"
+}

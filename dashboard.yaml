@@ -1,5 +1,4 @@
-type: custom:shutter-manager-card
-title: Shutter Manager
+type: custom:light-manager-card
 grid_options:
   columns: 12
   rows: auto

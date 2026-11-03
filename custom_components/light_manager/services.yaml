@@ -1,0 +1,9 @@
+set_vacation:
+  name: Urlaubsmodus setzen
+  description: Pausiert Programme, die im Urlaub aussetzen sollen.
+  fields:
+    enabled:
+      name: Urlaubsmodus
+      required: true
+      selector:
+        boolean:
