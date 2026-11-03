@@ -23,7 +23,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.2.3'
+INTEGRATION_VERSION = '1.2.5'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 4
 SIGNAL = DOMAIN + '_update'
@@ -42,8 +42,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.3')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.3')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.5')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.5')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -298,12 +298,22 @@ class Manager:
                 continue
             row['can_control'] = all(self.permitted(user, self.engine.windows()[t]['cover'], POLICY_CONTROL) for t in row['targets'])
             sensor_programs.append(row)
+        cover_states = []
+        for window in config['windows']:
+            state = self.hass.states.get(window['cover'])
+            attrs = dict(state.attributes) if state else {}
+            cover_states.append({'window': window['id'], 'state': state.state if state else 'unavailable',
+                'position': attrs.get('current_position'), 'tilt': attrs.get('current_tilt_position'),
+                'moving': window['id'] in self.moving})
+        history = [row for row in self.engine.rt.get('history', [])
+                   if row.get('kind') in ('done', 'error') and row.get('window') in visible][:20]
         return {'backend_version': INTEGRATION_VERSION, 'config_schema': CONFIG_SCHEMA_VERSION, 'config': config, 'sensor_programs': sensor_programs, 'revision': self.revision, 'admin': user.is_admin, 'controls': controls,
                 'sun_times': sun_times, 'time_zone': self.hass.config.time_zone, 'sensor_entities': sensor_entities,
                 'planned': planned, 'planned_date': str(now.astimezone(self.engine.zone).date()),
                 'upcoming': [r for r in self.engine.upcoming(now, self.solar) if r['program'] in allowed],
                 'pending': {w: slots for w, slots in self.engine.rt['pending'].items() if w in visible},
-                'moving': [w for w in self.moving if w in visible]}
+                'moving': [w for w in self.moving if w in visible], 'cover_states': cover_states,
+                'command_history': history}
 
     async def save(self, config, revision):
         checked = validate_config(self.individual_controls(config))

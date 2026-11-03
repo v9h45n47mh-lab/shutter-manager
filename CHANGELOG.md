@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.5
+
+- Added current cover state, position, and blind tilt readings to Settings.
+- Added a recent movement history with successful and detected failed commands, filtered by entity read permissions.
+- Updated the German and English in-card guides.
+
+
+## 1.2.4
+
+- Updated the in-card German and English guides to document one-time movements, including device support, tilt availability, expiry, and execution behavior.
+
+
 ## 1.2.3
 
 - Added the one-time movement fields to the WebSocket action schema so scheduled actions can be submitted successfully.

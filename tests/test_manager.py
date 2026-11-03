@@ -534,3 +534,19 @@ class AdapterTests(IsolatedAsyncioTestCase):
         await adapter.ws_save(self.hass,connection,{'id':42,'config':self.c,'revision':0,'config_schema':1})
         self.assertTrue(connection.send_error.called);self.assertFalse(connection.send_result.called)
         self.assertFalse(self.m.store.async_save.called)
+
+    async def test_settings_snapshot_includes_cover_status_and_recent_command_history(self):
+        self.states['cover.wohnen']=FakeState('opening',supported_features=140,current_position=42,current_tilt_position=18)
+        self.m.engine.log(self.now,'done','Wohnen: Höhe 42% ausgeführt',window='w')
+        self.m.engine.log(self.now+timedelta(seconds=1),'error','Wohnen: Befehl fehlgeschlagen',window='w')
+        view=self.m.snapshot(types.SimpleNamespace(is_admin=True))
+        self.assertEqual(view['cover_states'],[{'window':'w','state':'opening','position':42,'tilt':18,'moving':False}])
+        self.assertEqual([row['kind'] for row in view['command_history']],['error','done'])
+
+    async def test_settings_snapshot_hides_status_and_history_without_entity_read_permission(self):
+        self.states['cover.wohnen']=FakeState('open',supported_features=140,current_position=100,current_tilt_position=0)
+        self.m.engine.log(self.now,'error','Wohnen: Befehl fehlgeschlagen',window='w')
+        user=types.SimpleNamespace(is_admin=False,permissions=types.SimpleNamespace(check_entity=lambda entity,policy:False))
+        view=self.m.snapshot(user)
+        self.assertEqual(view['cover_states'],[])
+        self.assertEqual(view['command_history'],[])
