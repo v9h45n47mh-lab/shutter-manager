@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.3
+
+- Added the one-time movement fields to the WebSocket action schema so scheduled actions can be submitted successfully.
+
+
 ## 1.2.2
 
 - One-time movement form entries are preserved across card updates.

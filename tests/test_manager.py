@@ -273,6 +273,10 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.assertEqual(message['entity_id'],[])
         with self.assertRaises(schema.Invalid):
             adapter.ws_action.ws_schema({'id':1,'type':'rollladenplaner/action','action':'skip','value':'yes','revision':0})
+    async def test_websocket_schema_accepts_one_time_movement_fields(self):
+        message=adapter.ws_action.ws_schema({'id':1,'type':'rollladenplaner/action','action':'add_once',
+            'value':True,'revision':0,'target':'w','time':'08:58','position':85,'tilt':None,'entity_id':['cover.wohnen']})
+        self.assertEqual((message['time'],message['position'],message['tilt']),('08:58',85.0,None))
     async def test_stale_revision_is_rejected(self):
         with self.assertRaisesRegex(ValueError,'geändert'):
             await self.m.save(self.c,99)
