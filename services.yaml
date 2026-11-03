@@ -1,9 +1,0 @@
-set_vacation:
-  name: Urlaubsmodus setzen
-  description: Schaltet den Urlaubsmodus ein oder aus. Markierte Programme pausieren. Wartende Fahrten werden verworfen.
-  fields:
-    enabled:
-      name: Urlaubsmodus
-      required: true
-      selector:
-        boolean:
