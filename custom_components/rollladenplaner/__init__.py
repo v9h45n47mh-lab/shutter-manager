@@ -23,7 +23,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.2.1'
+INTEGRATION_VERSION = '1.2.2'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 4
 SIGNAL = DOMAIN + '_update'
@@ -42,8 +42,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.1')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.1')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.2')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.2')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -401,6 +401,9 @@ class Manager:
                 features = int(cover.attributes.get('supported_features', 0))
                 if not features & CoverEntityFeature.SET_POSITION:
                     raise ValueError('Der Rollladen unterstützt keine Positionsfahrt.')
+                if tilt is not None and (window.get('cover_type') == 'shutter' or
+                        (window.get('cover_type') == 'auto' and is_blind(window, dict(cover.attributes)) is False)):
+                    raise ValueError('Für Rollläden kann keine Lamellenposition festgelegt werden.')
                 if tilt is not None and not features & CoverEntityFeature.SET_TILT_POSITION:
                     raise ValueError('Diese Entität unterstützt keine Lamellenposition.')
                 if any(item['target'] == target and item.get('status') not in ('error',) for item in self.engine.rt['one_time']):

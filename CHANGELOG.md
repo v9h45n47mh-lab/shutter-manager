@@ -1,9 +1,15 @@
-# Changelog / Änderungen
+# Changelog
+
+## 1.2.2
+
+- One-time movement form entries are preserved across card updates.
+- Tilt controls are hidden for shutters and remain available only for blinds.
+
 
 ## 1.2.1
 
-- Im Zeitprogramm lassen sich einmalige Fahrten für einen Rollladen bzw. eine Jalousie am heutigen Tag einplanen. Sie werden nach erfolgreicher Ausführung aus der Liste entfernt und erzeugen kein gespeichertes Programm.
-- Einzelfahrten bleiben bei einer Blockierung oder einem Fehler sichtbar; abgelaufene Fahrten werden am Folgetag verworfen.
+- The Time Program tab supports one-time movements for an individual shutter or blind on the current day. Successful movements disappear from the list and do not create a saved program.
+- One-time movements remain visible while blocked or after an error; expired movements are discarded the following day.
 
 
 ## 1.2.0
@@ -33,14 +39,14 @@
 
 ## 0.10.1
 
-- Für die Installation als benutzerdefiniertes HACS-Repository vorbereitet.
-- HACS-Metadaten, Repository-Verweise, MIT-Lizenz und öffentliche Installationsanleitung ergänzt.
-- Reproduzierbare Integrations- und manuelle ZIP-Dateien sowie Validierungs- und Release-Workflows ergänzt.
-- Fahrlogik gegenüber 0.10.0 unverändert.
+- Prepared the integration for installation as a custom HACS repository.
+- Added HACS metadata, repository references, an MIT license, and public installation instructions.
+- Added reproducible integration and manual ZIP archives, along with validation and release workflows.
+- Movement logic is unchanged from version 0.10.0.
 
 ## 0.10.0
 
-- Stift-Symbole zum Bearbeiten von Programmen, Geräten und Sensoranzeigenamen.
-- Öffnungsprogramme mit Tagen, Zeitfenster, Zielhöhe und Lamellen.
-- Öffnungsvorrang bis zum Schließen aller Kontakte; anschließend Temperatur/Helligkeit, aktueller Zeitplan oder ursprüngliche Position.
-- Öffnungsvorrang und ursprüngliche Position bleiben über Neustarts erhalten.
+- Added pencil icons for editing programs, devices, and sensor display names.
+- Added opening programs with selected days, time windows, target positions, and blind tilt.
+- Opening priority remains active until all contacts close; afterward, active temperature/brightness shading takes priority, followed by the current schedule or the original position.
+- Opening priority and the original position are preserved across restarts.
