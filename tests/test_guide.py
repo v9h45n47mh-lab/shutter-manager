@@ -16,8 +16,12 @@ class GuideTests(unittest.TestCase):
         self.assertIn("Lamellen sind nur bei Jalousien verfügbar", SOURCE)
         self.assertIn("tilt is available only for blinds", SOURCE)
 
-    def test_current_status_is_collapsible_and_guide_describes_execution_order(self):
-        self.assertIn('data-action="toggle-cover-status"', SOURCE)
-        self.assertIn('current status section in Settings can be collapsed', SOURCE)
+    def test_all_settings_sections_are_collapsible_and_guide_describes_execution_order(self):
+        self.assertIn('data-action="toggle-settings-section"', SOURCE)
+        for section in ("covers", "status", "commands", "sensor-names"):
+            self.assertIn(f"'{section}'", SOURCE)
+        self.assertIn('sections in Settings can be collapsed independently', SOURCE)
+        self.assertIn("settingsSectionVisible(section)", SOURCE)
+        self.assertIn(":settings:'+section", SOURCE)
         self.assertIn('commands tilt first, waits three seconds', SOURCE)
         self.assertIn('waits three seconds', SOURCE)

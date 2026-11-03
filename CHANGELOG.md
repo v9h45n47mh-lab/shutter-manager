@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.8
+
+- Made all four Settings sections collapsible: shutters and blinds, current status, recent movement commands, and sensor display names. Each section remembers its expanded state in the browser.
+
+
 ## 1.2.7
 
 - Make program group headings larger and individual program names smaller on desktop and mobile.
