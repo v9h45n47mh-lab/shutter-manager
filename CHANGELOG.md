@@ -1,5 +1,11 @@
 # Changelog / Änderungen
 
+## 1.2.1
+
+- Im Zeitprogramm lassen sich einmalige Fahrten für einen Rollladen bzw. eine Jalousie am heutigen Tag einplanen. Sie werden nach erfolgreicher Ausführung aus der Liste entfernt und erzeugen kein gespeichertes Programm.
+- Einzelfahrten bleiben bei einer Blockierung oder einem Fehler sichtbar; abgelaufene Fahrten werden am Folgetag verworfen.
+
+
 ## 1.2.0
 
 - Sensor-program entries use a compact, schedule-like layout.

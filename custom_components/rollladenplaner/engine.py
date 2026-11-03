@@ -399,7 +399,7 @@ class Engine:
         source, sensor_migration = migrate_sensor_config(source)
         self.config = validate_config(source)
         self.rt = deepcopy(runtime or {})
-        for k, v in {'pending': {}, 'history': [], 'climate': {}, 'edges': {}, 'opening_edges': {}, 'opening_holds': {}, 'claimed': [], 'skipped_occurrences': {}, 'contact_skips': {}, 'time_results': {}, 'shading': {}, 'sensor_pauses': {}, 'rule_states': {}}.items():
+        for k, v in {'pending': {}, 'history': [], 'climate': {}, 'edges': {}, 'opening_edges': {}, 'opening_holds': {}, 'claimed': [], 'skipped_occurrences': {}, 'contact_skips': {}, 'time_results': {}, 'shading': {}, 'sensor_pauses': {}, 'rule_states': {}, 'one_time': []}.items():
             self.rt.setdefault(k, deepcopy(v))
         self.migrate_runtime(migration)
         for wid, item in sensor_migration.items():
@@ -711,7 +711,8 @@ class Engine:
                 continue
             window = windows[wid]
             slots = self.rt['pending'].setdefault(wid, {})
-            if 'return_goal' not in hold:
+            retry_return = hold.get('return_reason') == 'Sensorwerte nicht verfügbar' and climates.get(wid) is not None
+            if 'return_goal' not in hold or retry_return:
                 missed_time = slots.get('time')
                 if missed_time and datetime.fromisoformat(missed_time.get('scheduled') or missed_time['created']) > now:
                     missed_time = None
@@ -919,6 +920,33 @@ class Engine:
                 result[target] = deepcopy(intent)
             if not slots:
                 self.rt['pending'].pop(target, None)
+        for action in list(self.rt['one_time']):
+            if action.get('status') == 'error':
+                continue
+            scheduled = datetime.fromisoformat(action['scheduled'])
+            if scheduled.astimezone(self.zone).date() < local.date():
+                self.rt['one_time'].remove(action)
+                self.log(now, 'expired', f"{windows.get(action['target'], {}).get('name', action['target'])}: Einzelfahrt verfallen.", window=action['target'])
+                continue
+            if scheduled > now:
+                continue
+            target = action['target']
+            window = windows.get(target)
+            if not window or not window['enabled']:
+                action.update(status='pending', reason='Rollladen deaktiviert')
+                continue
+            intent = {'id': action['id'], 'occurrence': action['id'], 'program': '__one_time__',
+                      'ride': action['id'], 'window': target, 'name': 'Einzelfahrt', 'kind': 'time',
+                      'one_time': True, 'position': action['position'], 'tilt': action.get('tilt'),
+                      'created': action['created'], 'scheduled': action['scheduled'], 'reason': ''}
+            policy, reason = self.guard(window, intent, states, climates)
+            if policy == 'skip':
+                self.rt['one_time'].remove(action)
+                self.log(now, 'skipped', window['name']+': Einzelfahrt wegen Öffnungskontakt ausgelassen.', window=target)
+                continue
+            action.update(status='pending' if reason else 'moving', reason=reason)
+            if not reason:
+                result[target] = deepcopy(intent)
         return result
 
     def reconcile_pending_time(self, now, solar):
@@ -973,6 +1001,13 @@ class Engine:
             self.rt['time_results'][self.occurrence(intent)] = {
                 'date': str(scheduled.astimezone(self.zone).date()),
                 'status': 'error' if error else 'done', 'reason': str(error) if error else ''}
+        if intent.get('one_time'):
+            action = next((item for item in self.rt['one_time'] if item['id'] == intent['id']), None)
+            if action:
+                if error:
+                    action.update(status='error', reason=str(error))
+                else:
+                    self.rt['one_time'].remove(action)
         self.log(now, 'error' if error else 'done',
                  f"{self.windows().get(target, {}).get('name', target)}: {error or intent['name'] + ' ausgeführt'}", window=target)
 

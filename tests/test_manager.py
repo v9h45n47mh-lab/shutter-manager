@@ -455,7 +455,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
 
     async def test_snapshot_identifies_loaded_backend_and_sensor_rule_schema(self):
         snapshot=self.m.snapshot(types.SimpleNamespace(is_admin=True))
-        self.assertEqual(snapshot['backend_version'],'1.1.0')
+        self.assertEqual(snapshot['backend_version'],adapter.INTEGRATION_VERSION)
         self.assertEqual(snapshot['config_schema'],4)
 
     async def test_overview_uses_today_in_ha_timezone_even_after_sunset(self):

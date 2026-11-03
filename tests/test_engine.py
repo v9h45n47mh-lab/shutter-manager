@@ -440,6 +440,35 @@ class PlannedTodayTests(unittest.TestCase):
         ready=self.e.tick(at('2026-10-30T07:00'),self.s,solar)
         self.e.finish('w',ready['w'],at('2026-10-30T07:01'))
         self.now=at('2026-10-30T07:02');self.assertEqual(self.rows()[0]['targets'],['w2'])
+    def test_one_time_action_runs_once_and_disappears_after_success(self):
+        action={'id':'once_test','target':'w','created':at('2026-10-30T07:00').isoformat(),
+                'scheduled':at('2026-10-30T07:01').isoformat(),'position':35,'tilt':20,
+                'status':'planned','reason':''}
+        self.e.rt['one_time'].append(action)
+        self.assertFalse(self.e.tick(at('2026-10-30T07:00:55'),self.s,solar))
+        ready=self.e.tick(at('2026-10-30T07:01'),self.s,solar)
+        self.assertEqual((ready['w']['id'],ready['w']['position'],ready['w']['tilt']),('once_test',35,20))
+        self.e.finish('w',ready['w'],at('2026-10-30T07:02'))
+        self.assertEqual(self.e.rt['one_time'],[])
+
+    def test_one_time_error_stays_visible(self):
+        action={'id':'once_error','target':'w','created':at('2026-10-30T07:00').isoformat(),
+                'scheduled':at('2026-10-30T07:01').isoformat(),'position':35,'tilt':None,
+                'status':'planned','reason':''}
+        self.e.rt['one_time'].append(action)
+        ready=self.e.tick(at('2026-10-30T07:01'),self.s,solar)
+        self.e.finish('w',ready['w'],at('2026-10-30T07:02'),error='Fahrt fehlgeschlagen')
+        self.assertEqual(action['status'],'error')
+        self.assertEqual(action['reason'],'Fahrt fehlgeschlagen')
+
+    def test_one_time_action_expires_after_local_day(self):
+        action={'id':'once_expired','target':'w','created':at('2026-10-30T07:00').isoformat(),
+                'scheduled':at('2026-10-30T07:01').isoformat(),'position':35,'tilt':None,
+                'status':'planned','reason':''}
+        self.e.rt['one_time'].append(action)
+        self.assertFalse(self.e.tick(at('2026-10-31T00:01'),self.s,solar))
+        self.assertEqual(self.e.rt['one_time'],[])
+
     def test_local_day_not_utc_date(self):
         self.e.config['programs'][0]['days']=[4,5]
         self.e.config['programs'][0]['rides'][0].update(time='00:15',earliest='00:00')

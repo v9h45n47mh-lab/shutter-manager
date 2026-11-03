@@ -6,6 +6,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import logging
 from pathlib import Path
+from uuid import uuid4
 
 import probatio as vol
 from homeassistant.auth.permissions.const import POLICY_CONTROL, POLICY_READ
@@ -22,7 +23,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.2.0'
+INTEGRATION_VERSION = '1.2.1'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 4
 SIGNAL = DOMAIN + '_update'
@@ -41,8 +42,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.0')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.0')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.1')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.1')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -281,6 +282,16 @@ class Manager:
                 if moving:
                     row['status'] = 'moving'
             planned.append(row)
+        for item in self.engine.rt.get('one_time', []):
+            if item['target'] not in visible:
+                continue
+            scheduled = datetime.fromisoformat(item['scheduled'])
+            planned.append({'occurrence': item['id'], 'program': '__one_time__', 'ride': item['id'],
+                'name': 'Einzelfahrt', 'kind': 'time', 'one_time': True, 'time': item['scheduled'],
+                'targets': [item['target']], 'position': item['position'], 'tilt': item.get('tilt'),
+                'status': item.get('status', 'planned'), 'reason': item.get('reason', ''), 'skip': False,
+                'can_undo': scheduled > now, 'carried': False,
+                'can_control': self.permitted(user, self.engine.windows()[item['target']]['cover'], POLICY_CONTROL)})
         sensor_programs = []
         for row in self.engine.sensors_today(now):
             if any(t not in visible for t in row['targets']):
@@ -364,6 +375,58 @@ class Manager:
             if msg['revision'] != self.revision:
                 raise ValueError('Ansicht veraltet. Bitte neu laden und erneut versuchen.')
             action, value = msg['action'], msg['value']
+            if action == 'add_once':
+                now = utcnow()
+                target = msg.get('target')
+                window = self.engine.windows().get(target)
+                if not window or not window['enabled']:
+                    raise ValueError('Bitte einen aktiven Rollladen auswählen.')
+                if not self.permitted(user, window['cover'], POLICY_CONTROL):
+                    raise ValueError('Keine Steuerberechtigung für diesen Rollladen.')
+                cover = self.hass.states.get(window['cover'])
+                if not cover or cover.state in ('unknown', 'unavailable'):
+                    raise ValueError('Der Rollladen ist nicht verfügbar.')
+                try:
+                    clock = datetime.strptime(msg.get('time', ''), '%H:%M').time()
+                    scheduled = datetime.combine(now.astimezone(self.engine.zone).date(), clock, self.engine.zone)
+                    position = float(msg.get('position'))
+                    tilt = msg.get('tilt')
+                    tilt = None if tilt in (None, '') else float(tilt)
+                except (TypeError, ValueError):
+                    raise ValueError('Zeit und Position bitte gültig eingeben.')
+                if scheduled <= now.astimezone(self.engine.zone):
+                    raise ValueError('Die Einzelfahrt muss noch heute in der Zukunft liegen.')
+                if not 0 <= position <= 100 or (tilt is not None and not 0 <= tilt <= 100):
+                    raise ValueError('Positionen müssen zwischen 0 und 100 liegen.')
+                features = int(cover.attributes.get('supported_features', 0))
+                if not features & CoverEntityFeature.SET_POSITION:
+                    raise ValueError('Der Rollladen unterstützt keine Positionsfahrt.')
+                if tilt is not None and not features & CoverEntityFeature.SET_TILT_POSITION:
+                    raise ValueError('Diese Entität unterstützt keine Lamellenposition.')
+                if any(item['target'] == target and item.get('status') not in ('error',) for item in self.engine.rt['one_time']):
+                    raise ValueError('Für diesen Rollladen ist bereits eine Einzelfahrt vorgemerkt.')
+                self.engine.rt['one_time'].append({'id':'once_'+uuid4().hex, 'target':target,
+                    'created':now.isoformat(), 'scheduled':scheduled.astimezone(timezone.utc).isoformat(),
+                    'position':position, 'tilt':tilt, 'status':'planned', 'reason':''})
+                self.revision += 1
+                await self.persist()
+                await self._pulse_locked()
+                return
+            if action == 'cancel_once':
+                item = next((row for row in self.engine.rt['one_time'] if row['id'] == msg.get('target')), None)
+                if item is None:
+                    raise ValueError('Die Einzelfahrt ist nicht mehr vorhanden.')
+                window = self.engine.windows().get(item['target'])
+                if not window or not self.permitted(user, window['cover'], POLICY_CONTROL):
+                    raise ValueError('Keine Steuerberechtigung für diesen Rollladen.')
+                for wid, motion in list(self.moving.items()):
+                    if motion['intent'].get('id') == item['id']:
+                        await self.stop(wid)
+                self.engine.rt['one_time'].remove(item)
+                self.revision += 1
+                await self.persist()
+                await self._pulse_locked()
+                return
             if action == 'sensor_pause':
                 now = utcnow()
                 row = next((row for row in self.engine.sensors_today(now) if row['id'] == msg['target']), None)
