@@ -9,7 +9,7 @@ output = root.parent / f'Light-Manager-{version}.zip'
 temporary = output.with_suffix('.zip.tmp')
 with ZipFile(temporary, 'w', ZIP_DEFLATED) as z:
     for path in sorted(root.rglob('*')):
-        if path.is_file() and '__pycache__' not in path.parts and path.suffix != '.pyc':
+        if path.is_file() and '.git' not in path.parts and '__pycache__' not in path.parts and path.suffix != '.pyc':
             z.write(path, path.relative_to(root))
 with ZipFile(temporary) as z:
     assert z.testzip() is None
