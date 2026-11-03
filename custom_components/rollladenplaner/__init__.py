@@ -23,7 +23,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.2.5'
+INTEGRATION_VERSION = '1.2.6'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 4
 SIGNAL = DOMAIN + '_update'
@@ -42,8 +42,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.5')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.5')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.6')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.6')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -170,19 +170,31 @@ class Manager:
             return
         motion = self.moving.get(wid)
         if motion is None:
-            motion = {'intent': deepcopy(intent), 'phase': 'height', 'sent': False, 'window': deepcopy(w)}
+            motion = {'intent': deepcopy(intent), 'phase': 'tilt' if intent['tilt'] is not None else 'height', 'sent': False, 'window': deepcopy(w)}
             self.moving[wid] = motion
-        # At most one service call per pulse: reassess all guards before the tilt.
+        # Recheck device state between phases; blinds tilt before changing height.
         phase = motion['phase']
+        if phase == 'height_wait':
+            if now < motion['wait_until']:
+                return
+            motion.update(phase='height', sent=False)
+            phase = 'height'
         attr = 'current_position' if phase == 'height' else 'current_tilt_position'
         value = intent['position'] if phase == 'height' else intent['tilt']
         if value is None or self.reached(state, value, attr):
-            if phase == 'height':
-                motion.update(phase='tilt', sent=False)
+            if phase == 'tilt' and intent['position'] is not None:
+                motion.update(phase='height', sent=False)
+                phase = 'height'
+                attr = 'current_position'
+                value = intent['position']
+                if value is None or self.reached(state, value, attr):
+                    self.moving.pop(wid, None)
+                    self.engine.finish(wid, intent, now)
+                    return
             else:
                 self.moving.pop(wid, None)
                 self.engine.finish(wid, intent, now)
-            return
+                return
         if motion['sent']:
             if now >= motion['deadline']:
                 await self.stop(wid)
@@ -192,9 +204,12 @@ class Manager:
         # The occurrence and goal were persisted by the pulse before I/O.
         # After restart a still-current goal may be reissued idempotently.
         motion['sent'] = True
-        motion['deadline'] = now + timedelta(seconds=TRAVEL_TIMEOUT_SECONDS)
+        if phase == 'height':
+            motion['deadline'] = now + timedelta(seconds=TRAVEL_TIMEOUT_SECONDS)
         try:
             await self.command(w, service, **({'position': value} if phase == 'height' else {'tilt_position': value}))
+            if phase == 'tilt' and intent['position'] is not None:
+                motion.update(phase='height_wait', sent=False, wait_until=now + timedelta(seconds=3))
         except Exception as err:  # Integration failures must not stall the other windows.
             _LOGGER.exception('Fahrt für %s fehlgeschlagen', w['cover'])
             await self.stop(wid)

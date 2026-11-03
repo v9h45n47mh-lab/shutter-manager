@@ -15,3 +15,9 @@ class GuideTests(unittest.TestCase):
         self.assertIn("stays visible", SOURCE)
         self.assertIn("Lamellen sind nur bei Jalousien verfügbar", SOURCE)
         self.assertIn("tilt is available only for blinds", SOURCE)
+
+    def test_current_status_is_collapsible_and_guide_describes_execution_order(self):
+        self.assertIn('data-action="toggle-cover-status"', SOURCE)
+        self.assertIn('current status section in Settings can be collapsed', SOURCE)
+        self.assertIn('commands tilt first, waits three seconds', SOURCE)
+        self.assertIn('waits three seconds', SOURCE)

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.6
+
+- Make the current cover status in Settings collapsible.
+- For blinds with a tilt target, send tilt first, wait three seconds after the service call succeeds, then set the cover position.
+- Updated the German and English in-card guides.
+
+
 ## 1.2.5
 
 - Added current cover state, position, and blind tilt readings to Settings.
