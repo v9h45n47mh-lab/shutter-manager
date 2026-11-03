@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.7
+
+- Make program group headings larger and individual program names smaller on desktop and mobile.
+
 ## 1.2.6
 
 - Make the current cover status in Settings collapsible.
