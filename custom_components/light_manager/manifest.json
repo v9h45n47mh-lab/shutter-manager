@@ -1,7 +1,7 @@
 {
   "domain": "light_manager",
   "name": "Light Manager",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "config_flow": true,
   "dependencies": [
     "frontend",

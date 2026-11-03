@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Remove the left button padding from program group headings so their arrows and titles align with individual programs.
+- Correct the manual update instructions for the GitHub archive.
+
 ## 1.0.2
 
 - Align time and sensor program group headings with individual program names.

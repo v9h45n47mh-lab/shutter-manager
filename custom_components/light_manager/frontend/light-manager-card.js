@@ -1,5 +1,5 @@
-/* Light Manager 0.3.1 — no external assets, dependencies or network services. */
-const LM_VERSION = '1.0.2';
+/* Light Manager 1.0.3 — no external assets, dependencies or network services. */
+const LM_VERSION = '1.0.3';
 const lmClone = x => JSON.parse(JSON.stringify(x));
 const lmEsc = x => String(x ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const lmId = () => globalThis.crypto?.randomUUID?.() || 'lm_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -16,7 +16,7 @@ const LM_STYLE = `
 .settings-sensor-value{margin-inline-start:8px}
 .tags>div{display:flex;flex-wrap:wrap;gap:2px 10px}
 .time-heading{justify-content:space-between}
-.program-group+.program-group{margin-top:16px}.program-group-head{display:flex;align-items:center;gap:8px;width:100%;padding-inline-start:0;text-align:left;color:inherit}.program-group-head strong{font-size:16px}.program-group-head small{margin-left:auto}
+.program-group+.program-group{margin-top:16px}.program-group-head{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px 9px 0;text-align:left;color:inherit}.program-group-head strong{font-size:16px}.program-group-head small{margin-left:auto}
 :host{display:block;color:var(--primary-text-color,#212121);font-family:var(--ha-font-family-body,Roboto,Arial,sans-serif);font-size:14px;--lm-accent:var(--primary-color,#03a9f4);--lm-muted:var(--secondary-text-color,#727272);--lm-line:var(--divider-color,#e0e0e0);--lm-bg:var(--ha-card-background,var(--card-background-color,#fff))}
 *{box-sizing:border-box}ha-card{display:block;background:var(--lm-bg);border:var(--ha-card-border-width,1px) solid var(--ha-card-border-color,var(--lm-line));border-radius:var(--ha-card-border-radius,12px);box-shadow:var(--ha-card-box-shadow,none);overflow:hidden}
 h2,h3,h4,p{margin:0}h2,h3{font-size:16px;font-weight:500}small,.muted{font-size:12px;color:var(--lm-muted);line-height:1.5}

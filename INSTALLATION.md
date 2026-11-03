@@ -1,4 +1,4 @@
-# Light Manager 1.0.2 – Installation
+# Light Manager 1.0.3 – Installation
 
 ## HACS
 
@@ -11,13 +11,13 @@ Bei einem Wechsel von der manuellen Installation die bestehende Integration eing
 
 ## Update einer vorhandenen Installation
 
-ZIP nach `/config/Light-Manager-1.0.2.zip` hochladen, danach im Terminal:
+ZIP nach `/config/Light-Manager-1.0.3-GitHub.zip` hochladen, danach im Terminal:
 
 ```bash
-unzip -o /config/Light-Manager-1.0.2.zip 'custom_components/light_manager/*' -d /config && ha core restart
+unzip -o /config/Light-Manager-1.0.3-GitHub.zip 'custom_components/light_manager/*' -d /config && ha core restart
 ```
 
-Die Integration nicht löschen und nicht erneut hinzufügen. Browser oder HA-App vollständig neu laden. Unter Einstellungen bzw. Hilfe müssen Oberfläche und Integration beide **1.0.2** melden. Eine eventuell manuell angelegte Dashboard-Ressource auf `/light-manager/light-manager-card.js?v=1.0.2` ändern.
+Die Integration nicht löschen und nicht erneut hinzufügen. Browser oder HA-App vollständig neu laden. Unter Einstellungen bzw. Hilfe müssen Oberfläche und Integration beide **1.0.3** melden. Entferne einen eventuell manuell angelegten Light-Manager-Eintrag aus den Dashboard-Ressourcen. Die Integration registriert die Karte automatisch.
 
 Lampen, Anzeigenamen, Zuordnungen und weiterhin unterstützte Programme werden übernommen. Frühere eigene Gruppen werden in ihre ausgewählten Lampen aufgelöst. Entfernte Aktionsarten entfallen; Programme ohne verbleibende Aktionen bleiben deaktiviert erhalten. Bei der Umstellung von Schema 1/2/3 auf Schema 4 wird die bisherige Konfiguration automatisch unter `/config/.storage/light_manager_pre_030` gesichert. Die bisherige Konfiguration wird nicht durch eine leere Standardkonfiguration ersetzt. Eine Rückkehr zu einer älteren Version benötigt die ursprüngliche Konfiguration. Bereits verwendete Sensoren werden in die zentrale Auswahl übernommen. Bestehende Sensoraktionen behalten zunächst das bisherige Abschlussverhalten über die Lampeneinstellung. Alte Reihenfolgenzahlen entfallen; bei gleicher Zeit bzw. Sensorpriorität gilt die gespeicherte Listenposition.
 

@@ -1,4 +1,4 @@
-# Validierung – Light Manager 1.0.2
+# Validierung – Light Manager 1.0.3
 
 0.5.1: Gemeinsame Bereichssortierung für Einstellungen und Programme, alphabetische Lampen innerhalb der Bereiche sowie Zeitfeld-Layout geprüft.
 Die Testsuite umfasst Python- und Browserprüfungen. Die bisherigen Tests zur manuellen Szenenfreigabe wurden an die ausdrücklich geänderte automatische Verfügbarkeit angepasst. Geprüft: gemeinsame Namensregel für alle Zielentitäten, Szenenausführung ohne manuelle Zuordnung, Zeit-/Sensorvorrang, Gruppenziele, Rückkehr und Neustarts, Datenmigration samt Sicherung, feste Einmaldaten, keine vorzeitige Ausführung, kein erneuter Auftrag nach Neustart, keine Wiederholung am nächsten Tag und Ablehnung neuer vergangener/fremder Tageszeiten.

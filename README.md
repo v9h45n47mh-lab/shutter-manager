@@ -25,6 +25,6 @@ type: custom:light-manager-card
 
 ## GitHub-Release
 
-Dieses Paket ist für `v9h45n47mh-lab/light-manager` vorbereitet. Bei einem anderen Repository die Felder `documentation`, `issue_tracker` und `codeowners` in `custom_components/light_manager/manifest.json` anpassen. Die entpackten Dateien ins Repository-Stammverzeichnis übernehmen und aus diesem Stand das Release mit Tag `v1.0.2` erstellen. HACS verwendet die Integrationsdateien aus dem getaggten Repository.
+Dieses Paket ist für `v9h45n47mh-lab/light-manager` vorbereitet. Bei einem anderen Repository die Felder `documentation`, `issue_tracker` und `codeowners` in `custom_components/light_manager/manifest.json` anpassen. Die entpackten Dateien ins Repository-Stammverzeichnis übernehmen und aus diesem Stand das Release mit Tag `v1.0.3` erstellen. HACS verwendet die Integrationsdateien aus dem getaggten Repository.
 
 [Changelog](CHANGELOG.md) · [MIT-Lizenz](LICENSE)
