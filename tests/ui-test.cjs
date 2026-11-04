@@ -17,7 +17,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    connectedCallback(){queueMicrotask(()=>{this.shadowRoot.innerHTML='<slot></slot>';});}
  }));
  await page.evaluate(()=>{
-  window.model={backend_version:'1.1.0',config_schema:5,admin:true,controls:{p:true},revision:1,config:{enabled:true,vacation:false,windows:[{id:'w',name:'Jalousie Wohnen',cover:'cover.wohnen',enabled:true,contacts:[{entity:'binary_sensor.fenster',open_state:'on',policy:'defer'}],sensor_rules:[{id:'main',name:'Sommer',lux_entity:'sensor.lux',temp_entity:'sensor.temp',lux_on:30000,lux_off:20000,temp_on:25,temp_off:23,release_delay_seconds:300}]}],programs:[{id:'p',name:'Wohnbereich · Wochentage',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[{id:'r',name:'Morgens',enabled:true,skip_next:false,targets:['w'],event:'sunrise',time:'07:00',offset:0,earliest:'06:00',latest:'08:00',position:0,tilt:50,defer_minutes:120}]}]},upcoming:[{time:'2026-11-02T06:30:00Z',name:'Wohnbereich / Morgens',program:'p',ride:'r',skip:false}],planned_date:'2026-10-30',planned:[],pending:{},moving:[]};
+  window.model={backend_version:'1.1.0',config_schema:6,admin:true,controls:{p:true},revision:1,config:{enabled:true,vacation:false,windows:[{id:'w',name:'Jalousie Wohnen',cover:'cover.wohnen',enabled:true,contacts:[{entity:'binary_sensor.fenster',open_state:'on',policy:'defer'}],sensor_rules:[{id:'main',name:'Sommer',lux_entity:'sensor.lux',temp_entity:'sensor.temp',lux_on:30000,lux_off:20000,temp_on:25,temp_off:23,release_delay_seconds:300}]}],programs:[{id:'p',name:'Wohnbereich · Wochentage',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[{id:'r',name:'Morgens',enabled:true,skip_next:false,targets:['w'],event:'sunrise',time:'07:00',offset:0,earliest:'06:00',latest:'08:00',position:0,tilt:50,defer_minutes:120}]}]},upcoming:[{time:'2026-11-02T06:30:00Z',name:'Wohnbereich / Morgens',program:'p',ride:'r',skip:false}],planned_date:'2026-10-30',planned:[],pending:{},moving:[]};
   window.calls=[];
   window.host={user:{id:'test_admin'},states:{'cover.wohnen':{state:'open',attributes:{friendly_name:'Jalousie Wohnen',device_class:'blind',supported_features:140}},'cover.essen':{state:'closed',attributes:{friendly_name:'Jalousie Essen',device_class:'blind',supported_features:140}},'cover.kueche':{state:'open',attributes:{friendly_name:'Küche Fenster',device_class:'shutter',supported_features:12}},'cover.garage':{state:'closed',attributes:{friendly_name:'Garagentor',device_class:'garage',supported_features:12}},'cover.ohne_position':{state:'open',attributes:{friendly_name:'Ohne Position',device_class:'shutter',supported_features:3}},'binary_sensor.fenster':{state:'off',attributes:{friendly_name:'Fenster Wohnen'}},'sensor.power':{state:'500',attributes:{friendly_name:'Leistung',device_class:'power',unit_of_measurement:'W'}},'sensor.lux':{state:'10000',attributes:{friendly_name:'Helligkeit',device_class:'illuminance',unit_of_measurement:'lx'}},'sensor.temp':{state:'22',attributes:{friendly_name:'Temperatur',device_class:'temperature',unit_of_measurement:'°C'}}},callWS:async msg=>{
    calls.push(structuredClone(msg));
@@ -241,7 +241,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await dialog.getByText('Gültigkeitszeitraum',{exact:true}).count(),0,'validity belongs only to programs');
  assert.equal(await dialog.locator('[data-key="climate.auto_shade"]').count(),0);
  assert.equal(await dialog.locator('select[data-key$="combination"]').count(),0,'paired sensors always use AND');
- assert.equal(await dialog.getByText('Temperatur und Helligkeit',{exact:true}).count(),1);
+ assert.equal(await dialog.locator('[data-key$="temp_on"]').count(),0,'thresholds belong to programs only');
  await dialog.locator('select[data-key="contacts.0.policy"]').selectOption('skip');
  const temp=dialog.locator('[data-key="sensor_rules.0.temp_entity"]'),lux=dialog.locator('[data-key="sensor_rules.0.lux_entity"]');
  assert.equal(await temp.locator('option[value="sensor.lux"]').count(),0);
@@ -249,20 +249,16 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await temp.locator('option[value="sensor.power"]').count(),0);
  assert.equal(await lux.locator('option[value="sensor.power"]').count(),0);
  await dialog.locator('[data-key="sensor_rules.0.name"]').fill('Sommer');
- await dialog.locator('[data-key="sensor_rules.0.temp_on"]').fill('27');
- await dialog.locator('[data-key="sensor_rules.0.release_delay_seconds"]').fill('45');
- await dialog.getByRole('button',{name:'+ Sensorregel',exact:true}).click();
- assert.equal(await dialog.locator('[data-key="sensor_rules.1.release_delay_seconds"]').inputValue(),'300');
+ await dialog.getByRole('button',{name:'+ Sensorzuordnung',exact:true}).click();
+ assert.equal(await dialog.locator('[data-key$="release_delay_seconds"]').count(),0);
  await dialog.locator('[data-key="sensor_rules.1.name"]').fill('Winter');
  await dialog.locator('[data-key="sensor_rules.1.temp_entity"]').selectOption('sensor.temp');
- await dialog.locator('[data-key="sensor_rules.1.temp_on"]').fill('20');
- await dialog.locator('[data-key="sensor_rules.1.temp_off"]').fill('18');
  await dialog.locator('.sensor-rule-editor').first().scrollIntoViewIfNeeded();
  await page.screenshot({path:path.join(__dirname,'../../planner-rule-parameters.png'),fullPage:true});
  await dialog.getByRole('button',{name:'Speichern',exact:true}).click();
  assert.deepEqual(await page.evaluate(()=>model.config.windows[0].sensor_rules.map(g=>g.name)),['Sommer','Winter']);
- assert.equal(await page.evaluate(()=>model.config.windows[0].sensor_rules[0].release_delay_seconds),45);
- assert.equal(await page.evaluate(()=>model.config.windows[0].sensor_rules[1].release_delay_seconds),300);
+ assert.equal(await page.evaluate(()=>model.config.windows[0].sensor_rules[0].temp_entity),'sensor.temp');
+ assert.equal(await page.evaluate(()=>model.config.windows[0].sensor_rules[1].lux_entity),'');
  await page.screenshot({path:path.join(__dirname,'../../planner-settings-desktop.png'),fullPage:true});
  await page.setViewportSize({width:390,height:844});
  await page.screenshot({path:path.join(__dirname,'../../planner-settings-mobile.png'),fullPage:true});
@@ -384,7 +380,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await dialog.locator('[data-ride-target="1"]').selectOption('w');
  assert.equal(await dialog.locator('[data-key="rides.1.sensor_rule"]').inputValue(),winterRule);
  await dialog.locator('[data-key="rides.1.edge"]').selectOption('inactive');
- await dialog.locator('[data-key="rides.1.restore_schedule"]').check();
+ await dialog.locator('[data-key="end_action"]').selectOption('schedule');
  assert.equal(await dialog.locator('[data-key="rides.1.position"]').count(),0);
  await dialog.locator('[data-key="rides.0.sensor_rule"]').selectOption('main');
  assert.equal(await dialog.locator('[data-key="rides.1.sensor_rule"]').inputValue(),'main','one named rule per cover in this program');
@@ -553,6 +549,6 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByRole('heading',{name:'Sprache',exact:true}).count(),1,'language selection switches back to German');
  assert.equal(await page.evaluate(()=>localStorage.getItem('shutter-manager:language:test_admin')),'de','language choice persists per user');
  assert.deepEqual(errors,[]);
- console.log('PASS: pencil edit actions and contact-opening program editor with filtered devices, time window and tilt settings; asynchronous HA shadow-slot host, collapsed existing/new programs, deferred layout frames; long desktop/mobile editors preserve scroll offset and focus after cover/trigger edits, and added rides scroll into view with cover-selector focus; Programme-only, foldable grouped overview with alphabetic ordering, solar symbols, lock states, one-decimal temperatures and compact lx/klx formatting; current-day solar header, unique assigned sensor values, live zero/unavailable updates without losing editor input, local aliases without HA renaming; browser checks for embedded howto beside settings on desktop/mobile and for non-admin users, actual sensor assignment filtering with safe type conversion and named-rule selection, validity label without explanatory text; HA-themed card and accessible switches, keyboard program controls, settings gear with vacation and backup, renamed time tab, removed global control and ride hints, plus annual validity on programs only, winter ranges, today sensor tab, pause/resume with correct cover permissions, responsive sensor rows and empty list; bulk cover import, local renaming, single-cover dropdowns, unchanged height percentages, four compact time fields, no catch-up timeout, headerless layout, live percent sliders, manual blind types, single or paired AND sensors, typed sensor lists and 300-second new-rule defaults, collapsed programs and individual/all editor rides with stable IDs, retained unsaved input, keyboard/mobile controls and folded saves for time/sensor programs, today-only skip/undo, waiting sensor cancellation, permissions and XSS.');
+ console.log('PASS: pencil edit actions and contact-opening program editor with filtered devices, time window and tilt settings; asynchronous HA shadow-slot host, collapsed existing/new programs, deferred layout frames; long desktop/mobile editors preserve scroll offset and focus after cover/trigger edits, and added rides scroll into view with cover-selector focus; Programme-only, foldable grouped overview with alphabetic ordering, solar symbols, lock states, one-decimal temperatures and compact lx/klx formatting; current-day solar header, unique assigned sensor values, live zero/unavailable updates without losing editor input, local aliases without HA renaming; browser checks for embedded howto beside settings on desktop/mobile and for non-admin users, actual sensor assignment filtering with safe type conversion and named-rule selection, validity label without explanatory text; HA-themed card and accessible switches, keyboard program controls, settings gear with vacation and backup, renamed time tab, removed global control and ride hints, plus annual validity on programs only, winter ranges, today sensor tab, pause/resume with correct cover permissions, responsive sensor rows and empty list; bulk cover import, local renaming, single-cover dropdowns, unchanged height percentages, four compact time fields, no catch-up timeout, headerless layout, live percent sliders, manual blind types, sensor-only cover assignments, typed sensor lists and shared program conditions, collapsed programs and individual/all editor rides with stable IDs, retained unsaved input, keyboard/mobile controls and folded saves for time/sensor programs, today-only skip/undo, waiting sensor cancellation, permissions and XSS.');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1);});

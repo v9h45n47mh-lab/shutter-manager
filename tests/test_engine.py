@@ -545,7 +545,7 @@ class AutomaticShadingTests(unittest.TestCase):
         self.e=Engine(self.e.config,self.e.rt)
         self.assertFalse(self.tick(34));self.assertEqual(self.tick(35)['w']['ride'],AUTO+'_release')
     def test_zero_seconds_release(self):
-        self.e.config['windows'][0]['sensor_rules'][0]['release_delay_seconds']=0
+        next(p for p in self.e.config['programs'] if p['id']==AUTO)['conditions']['release_delay_seconds']=0
         self.high();self.finish(self.tick());self.low()
         self.assertEqual(self.tick(5)['w']['ride'],AUTO+'_release')
     def test_no_future_shade_action_after_global_off(self):
@@ -967,7 +967,7 @@ class NamedRuleTests(unittest.TestCase):
         e=self.engine();rules=e.windows()['w']['sensor_rules']
         self.assertEqual([g['name'] for g in rules],['Sommer','Winter']);self.assertNotIn('season',rules[0]);self.assertNotIn('climate',e.windows()['w'])
     def test_default_release_delay_is_300(self):
-        self.assertEqual(self.engine().windows()['w']['sensor_rules'][0]['release_delay_seconds'],300)
+        self.assertEqual(next(p for p in self.engine().config['programs'] if p['id']=='summer_program')['conditions']['release_delay_seconds'],300)
     def test_selected_rule_controls_activation(self):
         self.s['sensor.temp']['state']='20';e=self.engine();self.assertFalse(e.tick(self.now,self.s,solar))
     def test_different_rules_can_apply_in_disjoint_seasons(self):
@@ -1022,7 +1022,7 @@ class NamedRuleTests(unittest.TestCase):
     def test_old_direct_gate_becomes_program_with_validity_and_restore(self):
         c,_=fixture();climate(c);c['windows'][0]['climate'].update(auto_shade=True,season={'enabled':True,'start':'04-01','end':'10-31'},release_delay_seconds=900)
         e=Engine(c);p=next(p for p in e.config['programs'] if p['id']==AUTO)
-        self.assertEqual(p['season']['start'],'04-01');self.assertTrue(p['rides'][1]['restore_schedule']);self.assertEqual(e.windows()['w']['sensor_rules'][0]['release_delay_seconds'],900)
+        self.assertEqual(p['season']['start'],'04-01');self.assertTrue(p['rides'][1]['restore_schedule']);self.assertEqual(p['conditions']['release_delay_seconds'],900)
         self.assertEqual(Engine(e.config).config,e.config)
     def test_expired_release_delay_after_restart_still_restores(self):
         c,_=fixture();climate(c);c['windows'][0]['climate'].update(auto_shade=True,release_delay_seconds=10)
@@ -1055,7 +1055,7 @@ class NamedRuleTests(unittest.TestCase):
         c=deepcopy(e.config);c['windows'][0]['cover']='cover.new'
         self.s['cover.new']={'state':'open','attributes':{'current_position':60}}
         e.replace_config(c,self.now+timedelta(seconds=5));e.tick(self.now+timedelta(seconds=5),self.s,solar)
-        self.assertEqual(e.rt['rule_states']['w:summer']['before']['position'],60)
+        self.assertEqual(e.rt['rule_states']['w:summer_program']['before']['position'],60)
 
 class SensorDisplayNameTests(unittest.TestCase):
     def test_legacy_config_and_alias_backup_round_trip(self):

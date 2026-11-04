@@ -23,9 +23,9 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.2.12'
+INTEGRATION_VERSION = '1.3.0'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
-CONFIG_SCHEMA_VERSION = 5
+CONFIG_SCHEMA_VERSION = 6
 SIGNAL = DOMAIN + '_update'
 PLATFORMS = [Platform.SENSOR]
 _LOGGER = logging.getLogger(__name__)
@@ -42,8 +42,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.12')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.12')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.3.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.3.0')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -93,6 +93,7 @@ class Manager:
         self.moving = {}
         self.unsub = lambda: None
         self._saved = None
+        self.migration_backup = None
         self._reported_errors = set()
 
     @staticmethod
@@ -115,6 +116,11 @@ class Manager:
         if data:
             config = self.individual_controls(data['config'])
             self.engine = Engine(config, data.get('runtime'), self.hass.config.time_zone)
+            self.migration_backup = deepcopy(data.get('migration_backup'))
+            if self.migration_backup is None and data['config'].get('model_version', 1) < 2:
+                # Retain the original configuration and runtime before the 1.3 migration.
+                self.migration_backup = {'version': 'before_1.3.0', 'config': deepcopy(data['config']),
+                                         'runtime': deepcopy(data.get('runtime', {}))}
             self.engine.rearm_future_time_occurrences(utcnow(), self.solar)
             # Sensor transitions are initialized against current readings after restart.
             self.engine.rt['edges'] = {}
@@ -129,6 +135,8 @@ class Manager:
 
     async def persist(self):
         data = {'config': self.engine.config, 'runtime': self.engine.rt, 'revision': self.revision}
+        if self.migration_backup is not None:
+            data['migration_backup'] = self.migration_backup
         if data != self._saved:
             await self.store.async_save(data)
             self._saved = deepcopy(data)
@@ -365,7 +373,7 @@ class Manager:
                             if r['targets'] == [wid]:r['tilt'] = None
             checked = validate_config(checked)
             def movement(ride):
-                return (tuple(ride['targets']), ride.get('position'), ride.get('tilt'), bool(ride.get('restore_schedule')))
+                return (tuple(ride['targets']), ride.get('position'), ride.get('tilt'), bool(ride.get('restore_schedule')), bool(ride.get('restore_before')))
             # A parameter/name edit must not require all unrelated actors online.
             # New motor goals and a changed physical cover still need capabilities.
             for p in checked['programs']:
@@ -568,13 +576,13 @@ async def ws_get(hass, connection, msg):
 
 
 @websocket_api.websocket_command({vol.Required('type'): DOMAIN + '/save', vol.Required('config'): dict,
-                                  vol.Required('revision'): int, vol.Optional('config_schema', default=CONFIG_SCHEMA_VERSION): int})
+                                  vol.Required('revision'): int, vol.Required('config_schema'): int})
 @websocket_api.require_admin
 @websocket_api.async_response
 async def ws_save(hass, connection, msg):
     try:
         m = manager(hass)
-        if msg.get('config_schema', CONFIG_SCHEMA_VERSION) != CONFIG_SCHEMA_VERSION:
+        if msg.get('config_schema') != CONFIG_SCHEMA_VERSION:
             raise ValueError('Kartenoberfläche und Integration sind nicht kompatibel. Bitte Browser/App neu laden.')
         await m.save(msg['config'], msg['revision'])
         connection.send_result(msg['id'], m.snapshot(connection.user))

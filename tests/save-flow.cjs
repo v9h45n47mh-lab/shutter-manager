@@ -39,10 +39,10 @@ const {execFileSync}=require('node:child_process');
   const card=page.locator('rollladenplaner-card'),dialog=card.getByRole('dialog');
   async function edit(){await card.getByRole('button',{name:'Einstellungen',exact:true}).click();await card.locator('.window').filter({hasText:'cover.wohnen'}).getByRole('button',{name:'Bearbeiten',exact:true}).click();await dialog.waitFor();}
   await open();await edit();
-  await dialog.getByRole('button',{name:'+ Sensorregel',exact:true}).click();
+  await dialog.getByRole('button',{name:'+ Sensorzuordnung',exact:true}).click();
   await dialog.locator('[data-key="sensor_rules.1.name"]').fill('Sommer West');
   await dialog.locator('[data-key="sensor_rules.1.temp_entity"]').selectOption('sensor.temp');
-  assert.equal(await dialog.locator('[data-key="sensor_rules.1.release_delay_seconds"]').inputValue(),'300');
+  assert.equal(await dialog.locator('[data-key$="release_delay_seconds"]').count(),0,'cover settings contain no thresholds or delays');
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();await dialog.waitFor({state:'detached'});
   let data=JSON.parse(fs.readFileSync(store,'utf8'));
   const id=data.config.windows[0].sensor_rules[1].id;
@@ -51,27 +51,25 @@ const {execFileSync}=require('node:child_process');
   assert.equal(data.config.programs.find(p=>p.start_on_high).rides[1].restore_schedule,true,'migrated release survives parameter save');
   await open();await edit();
   assert.equal(await dialog.locator('[data-key="sensor_rules.1.name"]').inputValue(),'Sommer West','saved rule survives a new host instance and page reload');
-  // Invalid thresholds must be visible at the footer, without discarding edits.
-  await dialog.locator('[data-key="sensor_rules.1.temp_on"]').fill('23');
+  // Invalid sensor assignments must remain visible without discarding edits.
+  await dialog.locator('[data-key="sensor_rules.1.temp_entity"]').selectOption('');
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();
   assert.equal(await dialog.locator('footer').getByRole('alert').isVisible(),true);
-  assert.match(await dialog.locator('footer').getByRole('alert').innerText(),/Sommer West.*Freigabe/);
-  assert.equal(await dialog.locator('[data-key="sensor_rules.1.temp_on"]').inputValue(),'23');
-  await dialog.locator('[data-key="sensor_rules.1.temp_off"]').fill('21');
+  assert.match(await dialog.locator('footer').getByRole('alert').innerText(),/Sommer West.*sensor/);
+  assert.equal(await dialog.locator('[data-key="sensor_rules.1.name"]').inputValue(),'Sommer West');
+  await dialog.locator('[data-key="sensor_rules.1.temp_entity"]').selectOption('sensor.temp');
   await page.evaluate(()=>window.failNextSave=true);
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();
   assert.match(await dialog.locator('footer').getByRole('alert').innerText(),/Speicher vorübergehend/);
   await page.screenshot({path:path.join(__dirname,'../../planner-save-error.png'),fullPage:true});
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();await dialog.waitFor({state:'detached'});
   data=JSON.parse(fs.readFileSync(store,'utf8'));
-  assert.equal(data.config.windows[0].sensor_rules[1].id,id);assert.equal(data.config.windows[0].sensor_rules[1].temp_off,21);
+  assert.equal(data.config.windows[0].sensor_rules[1].id,id);assert.equal(data.config.windows[0].sensor_rules[1].temp_entity,'sensor.temp');
   // A legacy backend snapshot must never receive a save with unsupported rule data.
   await page.evaluate(async()=>{window.oldServer=true;await document.querySelector('rollladenplaner-card').refresh();});
   await page.waitForFunction(()=>!document.querySelector('rollladenplaner-card').data?.config_schema);
   await edit();
   await dialog.locator('[data-key="sensor_rules.1.name"]').fill('Büro West 1');
-  await dialog.locator('[data-key="sensor_rules.1.temp_on"]').fill('25');
-  await dialog.locator('[data-key="sensor_rules.1.temp_off"]').fill('23');
   await dialog.locator('[data-key="sensor_rules.1.lux_entity"]').selectOption('sensor.lux');
   const attempts=await page.evaluate(()=>window.saveAttempts);
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();

@@ -33,6 +33,7 @@ jobs:
           node tests/ui-test.cjs
           node tests/save-flow.cjs
           node tests/settings-flow.cjs
+          node tests/shading-flow.cjs
   hacs:
     runs-on: ubuntu-latest
     steps:

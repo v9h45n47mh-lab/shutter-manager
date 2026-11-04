@@ -159,13 +159,121 @@ def migrate_sensor_config(raw):
     return result, mapping
 
 
+def migrate_program_conditions(raw):
+    """Move legacy cover thresholds to programs without merging unlike settings."""
+    result = deepcopy(raw)
+    mappings = []
+    if not isinstance(result, dict) or not isinstance(result.get('windows', []), list) or not isinstance(result.get('programs', []), list):
+        return result, mappings
+    windows = {w.get('id'): w for w in result.get('windows', []) if isinstance(w, dict)}
+    used_ids = {p.get('id') for p in result.get('programs', []) if isinstance(p, dict)}
+    referenced = set()
+    programs = []
+
+    def conditions(gate):
+        return {'mode': 'both' if gate.get('lux_entity') and gate.get('temp_entity') else 'temp' if gate.get('temp_entity') else 'lux',
+                'lux_on': gate.get('lux_on', 30000), 'lux_off': gate.get('lux_off', 20000),
+                'temp_on': gate.get('temp_on', 25), 'temp_off': gate.get('temp_off', 23),
+                'on_delay_seconds': 0, 'release_delay_seconds': gate.get('release_delay_seconds', 300)}
+
+    for program in result.get('programs', []):
+        if not isinstance(program, dict) or program.get('kind') != 'sensor' or program.get('sensor_mode', 'climate') == 'opening' or 'conditions' in program or not isinstance(program.get('rides', []), list):
+            programs.append(program)
+            if isinstance(program, dict):
+                for r in program.get('rides', []) if isinstance(program.get('rides', []), list) else []:
+                    if isinstance(r, dict):
+                        for t in r.get('targets', []) if isinstance(r.get('targets', []), list) else []:
+                            referenced.add((t, r.get('sensor_rule')))
+            continue
+        groups = {}
+        for ride in program.get('rides', []):
+            if not isinstance(ride, dict):
+                programs.append(program); groups = None; break
+            targets = ride.get('targets', [])
+            window = windows.get(targets[0]) if isinstance(targets, list) and targets else None
+            gates = window.get('sensor_rules', []) if window else []
+            if not isinstance(gates, list): gates = []
+            gate = next((g for g in gates if isinstance(g, dict) and g.get('id') == ride.get('sensor_rule')), None)
+            if gate is None and len(gates) == 1 and not ride.get('sensor_rule'):
+                gate = gates[0]; ride['sensor_rule'] = gate.get('id')
+            gate = gate or {}
+            wid = window.get('id') if window else None
+            referenced.add((wid, gate.get('id')))
+            releases = [r for r in program['rides'] if isinstance(r, dict) and r.get('targets') == targets and r.get('edge', 'active') == 'inactive']
+            end = 'schedule' if releases and releases[0].get('restore_schedule') else 'fixed' if releases else 'keep'
+            cond = conditions(gate)
+            key = repr((cond, end))
+            group = groups.setdefault(key, {'conditions': cond, 'end_action': end, 'rides': []})
+            group['rides'].append(ride)
+        if groups is None: continue
+        if not groups:
+            groups = {'empty': {'conditions': conditions({}), 'end_action': 'keep', 'rides': []}}
+        for index, (key, group) in enumerate(groups.items()):
+            item = deepcopy(program); old_id = program.get('id', '')
+            pid = old_id
+            if index:
+                base = str(old_id)[:35]+'_m'+hashlib.sha256(key.encode()).hexdigest()[:16]
+                pid = base; suffix = 1
+                while pid in used_ids:
+                    suffix += 1; pid = base+'_'+str(suffix)
+                item['name'] = (str(program.get('name', ''))+f' ({index+1})')[:120]
+            used_ids.add(pid)
+            item.update(id=pid, **group)
+            item.setdefault('start', '00:00'); item.setdefault('end', '00:00')
+            programs.append(item)
+            for ride in group['rides']:
+                mappings.append({'old_program': old_id, 'program': pid, 'ride': ride.get('id'),
+                                 'window': (ride.get('targets') or [None])[0], 'rule': ride.get('sensor_rule')})
+    # Unused legacy rules become disabled programs so their thresholds are not lost.
+    for wid, window in windows.items():
+        gates = window.get('sensor_rules', [])
+        for gate in gates if isinstance(gates, list) else []:
+            if not isinstance(gate, dict) or (wid, gate.get('id')) in referenced or not any(k in gate for k in ('lux_on', 'temp_on', 'release_delay_seconds')):
+                continue
+            pid = 'import_'+hashlib.sha256((str(wid)+':'+str(gate.get('id'))).encode()).hexdigest()[:20]
+            if pid in used_ids: continue
+            used_ids.add(pid)
+            programs.append({'id': pid, 'name': ('Übernommen – '+str(window.get('name', wid))+' / '+str(gate.get('name', 'Sensoren')))[:120],
+                'kind': 'sensor', 'sensor_mode': 'climate', 'enabled': False, 'days': list(range(7)),
+                'conditions': conditions(gate), 'start': '00:00', 'end': '00:00', 'end_action': 'keep',
+                'rides': [{'id': pid+'_active', 'targets': [wid], 'sensor_rule': gate.get('id'), 'edge': 'active', 'position': 0, 'tilt': None}]})
+    result['programs'] = programs
+    result['model_version'] = 2
+    return result, mappings
+
+
+def calendars_overlap(first, second):
+    """Compare half-open daily windows, including overnight weekday/season anchors."""
+    def segments(program):
+        low = int(program['start'][:2])*60+int(program['start'][3:])
+        high = int(program['end'][:2])*60+int(program['end'][3:])
+        if low == high:
+            low, high = 0, 1440
+        elif high < low:
+            high += 1440
+        result = []
+        for day in program['days']:
+            a, b = day*1440+low, day*1440+high
+            result.append((a, min(b, 10080), day))
+            if b > 10080: result.append((0, b-10080, day))
+        return result
+    shifts = {(x-y+3)%7-3 for a,b,x in segments(first) for c,d,y in segments(second) if max(a,c) < min(b,d)}
+    # Check leap and regular years so February and annual boundary shifts agree.
+    start = datetime(2000, 1, 1).date()
+    return any(in_season(first['season'], start+timedelta(days=n)) and
+               in_season(second['season'], start+timedelta(days=n-shift))
+               for shift in shifts for n in range(731))
+
+
 def validate_config(raw):
     """Normalize a bounded, JSON-only configuration; reject ambiguous schedules."""
     if not isinstance(raw, dict):
         raise ValueError('Konfiguration muss ein Objekt sein.')
     raw, _ = split_legacy_rides(raw)
     raw, _ = migrate_sensor_config(raw)
+    raw, _ = migrate_program_conditions(raw)
     c = empty_config()
+    c['model_version'] = 2
     def boolean(value, default=False):
         if value is None:
             return default
@@ -247,14 +355,7 @@ def validate_config(raw):
             temp = entity(gate['temp_entity'], 'sensor') if gate.get('temp_entity') else None
             if not lux and not temp:
                 raise ValueError('Mindestens einen Temperatur- oder Helligkeitssensor je Regel auswählen.')
-            rule = {'id': rule_id, 'name': label(gate['name']), 'lux_entity': lux, 'temp_entity': temp,
-                    'lux_on': number(gate.get('lux_on', 30000), 0, 1000000),
-                    'lux_off': number(gate.get('lux_off', 20000), 0, 1000000),
-                    'temp_on': number(gate.get('temp_on', 25), -50, 80),
-                    'temp_off': number(gate.get('temp_off', 23), -50, 80),
-                    'release_delay_seconds': number(gate.get('release_delay_seconds', 300), 0, 86400)}
-            if (lux and rule['lux_off'] >= rule['lux_on']) or (temp and rule['temp_off'] >= rule['temp_on']):
-                raise ValueError('Freigabeschwellen müssen kleiner als Aktivierungsschwellen sein.')
+            rule = {'id': rule_id, 'name': label(gate['name']), 'lux_entity': lux, 'temp_entity': temp}
             nw['sensor_rules'].append(rule)
         c['windows'].append(nw)
     program_ids, ride_ids = set(), set()
@@ -281,6 +382,22 @@ def validate_config(raw):
             if np['sensor_mode'] == 'opening':
                 np['opening_start'] = clock(p.get('opening_start', '00:00'))
                 np['opening_end'] = clock(p.get('opening_end', '23:59'))
+            else:
+                cond = p.get('conditions', {})
+                if not isinstance(cond, dict) or cond.get('mode', 'lux') not in ('lux', 'temp', 'both'):
+                    raise ValueError('Beschattungsbedingungen ungültig.')
+                np['conditions'] = {'mode': cond.get('mode', 'lux'),
+                    'lux_on': number(cond.get('lux_on', 30000), 0, 1000000), 'lux_off': number(cond.get('lux_off', 20000), 0, 1000000),
+                    'temp_on': number(cond.get('temp_on', 25), -50, 80), 'temp_off': number(cond.get('temp_off', 23), -50, 80),
+                    'on_delay_seconds': number(cond.get('on_delay_seconds', 0), 0, 86400),
+                    'release_delay_seconds': number(cond.get('release_delay_seconds', 300), 0, 86400)}
+                if ((np['conditions']['mode'] in ('lux', 'both') and np['conditions']['lux_off'] >= np['conditions']['lux_on']) or
+                    (np['conditions']['mode'] in ('temp', 'both') and np['conditions']['temp_off'] >= np['conditions']['temp_on'])):
+                    raise ValueError('Freigabeschwellen müssen kleiner als Aktivierungsschwellen sein.')
+                np['start'] = clock(p.get('start', '00:00')); np['end'] = clock(p.get('end', '00:00'))
+                np['end_action'] = p.get('end_action', 'schedule')
+                if np['end_action'] not in ('fixed', 'schedule', 'restore', 'keep'):
+                    raise ValueError('Ungültige Abschlussaktion.')
         rides = p.get('rides', [])
         if not isinstance(rides, list) or len(rides) > 100:
             raise ValueError('Maximal 100 Fahrten je Programm.')
@@ -300,7 +417,8 @@ def validate_config(raw):
                 nr[attr] = None if r.get(attr) is None else number(r[attr], 0, 100)
             if window['cover_type'] == 'shutter':
                 nr['tilt'] = None
-            restore = kind == 'sensor' and r.get('edge', 'active') == 'inactive' and boolean(r.get('restore_schedule'))
+            release = kind == 'sensor' and np.get('sensor_mode') == 'climate' and r.get('edge', 'active') == 'inactive'
+            restore = release and np['end_action'] in ('schedule', 'restore')
             if nr['position'] is None and nr['tilt'] is None and not restore:
                 raise ValueError('Fahrt benötigt Höhe oder Lamellenposition. Bei Rollläden ist eine Höhe erforderlich.')
             if kind == 'time':
@@ -330,11 +448,17 @@ def validate_config(raw):
                 if rule_id not in {rule['id'] for rule in window['sensor_rules']}:
                     raise ValueError('Eine vorhandene Sensorregel für das Zielfenster auswählen.')
                 nr['sensor_rule'] = rule_id
-                nr['restore_schedule'] = restore
+                binding = next(g for g in window['sensor_rules'] if g['id'] == rule_id)
+                needed = ('lux', 'temp') if np['conditions']['mode'] == 'both' else (np['conditions']['mode'],)
+                if any(not binding.get(axis+'_entity') for axis in needed):
+                    raise ValueError('Dem Rollladen fehlen Sensoren für die gewählten Programmbedingungen.')
+                nr['restore_schedule'] = release and np['end_action'] == 'schedule'
+                nr['restore_before'] = release and np['end_action'] == 'restore'
                 if restore:
                     nr['position'] = None; nr['tilt'] = None
             np['rides'].append(nr)
         if kind == 'sensor' and np['sensor_mode'] == 'climate':
+            np['targets'] = list(dict.fromkeys(t for ride in np['rides'] for t in ride['targets']))
             selected = {}
             for ride in np['rides']:
                 target = ride['targets'][0]
@@ -357,18 +481,16 @@ def validate_config(raw):
                            (r['event'], r['time'] if r['event'] == 'fixed' else r['offset'], r['earliest'], r['latest']))
                     if p['enabled'] and r['enabled']:
                         for previous in slots.get(key, []):
-                            if p['kind'] != 'sensor' or seasons_overlap(p.get('season'), previous.get('season')):
+                            if p['kind'] != 'sensor' or p['id'] == previous['id']:
                                 raise ValueError('Mehrere gleichzeitige Fahrten für dasselbe Fenster. Bitte zusammenfassen.')
                         slots.setdefault(key, []).append(p)
     sensor_programs = [p for p in c['programs'] if p['kind'] == 'sensor' and p.get('sensor_mode') == 'climate' and p['enabled']]
     for index, first in enumerate(sensor_programs):
         for second in sensor_programs[index+1:]:
-            if not set(first['days']).intersection(second['days']) or not seasons_overlap(first['season'], second['season']):
-                continue
             left = {r['targets'][0]: r['sensor_rule'] for r in first['rides'] if r['enabled']}
             right = {r['targets'][0]: r['sensor_rule'] for r in second['rides'] if r['enabled']}
-            if any(left[w] != right[w] for w in left.keys() & right.keys()):
-                raise ValueError('Verschiedene Sensorregeln am selben Fenster dürfen nicht gleichzeitig gelten. Tage oder Gültigkeitszeitraum trennen.')
+            if left.keys() & right.keys() and calendars_overlap(first, second):
+                raise ValueError('Mehrere gleichzeitige Fahrten in Beschattungsprogrammen für denselben Rollladen. Tage, Zeitfenster oder Saison trennen.')
     opening_programs = [p for p in c['programs'] if p.get('sensor_mode') == 'opening' and p['enabled']]
     def segments(p):
         start = int(p['opening_start'][:2])*60+int(p['opening_start'][3:])
@@ -401,6 +523,7 @@ class Engine:
     def __init__(self, config=None, runtime=None, tz='Europe/Berlin'):
         source, migration = split_legacy_rides(config or empty_config())
         source, sensor_migration = migrate_sensor_config(source)
+        source, program_migration = migrate_program_conditions(source)
         self.config = validate_config(source)
         self.rt = deepcopy(runtime or {})
         for k, v in {'pending': {}, 'history': [], 'climate': {}, 'edges': {}, 'opening_edges': {}, 'opening_holds': {}, 'claimed': [], 'skipped_occurrences': {}, 'contact_skips': {}, 'time_results': {}, 'shading': {}, 'sensor_pauses': {}, 'rule_states': {}, 'one_time': []}.items():
@@ -431,6 +554,25 @@ class Engine:
         for slots in self.rt['pending'].values():
             for intent in slots.values():
                 intent.pop('expires', None)  # Legacy deadlines no longer expire goals.
+        # Map persisted legacy sensor state and pending work to the program owner.
+        old_states = deepcopy(self.rt['rule_states'])
+        for program in self.config['programs']:
+            if program.get('sensor_mode') != 'climate': continue
+            for ride in program['rides']:
+                for wid in ride['targets']:
+                    key = wid+':'+program['id']
+                    old_key = wid+':'+ride['sensor_rule']
+                    if key not in self.rt['rule_states'] and old_key in old_states:
+                        self.rt['rule_states'][key] = deepcopy(old_states[old_key])
+                    for intent in self.rt['pending'].get(wid, {}).values():
+                        if intent.get('kind') == 'sensor' and intent.get('ride') == ride['id']:
+                            intent['program'] = program['id']
+        for item in program_migration:
+            old_pause = 'program:'+str(item['old_program'])
+            if old_pause in self.rt['sensor_pauses']:
+                self.rt['sensor_pauses']['program:'+item['program']] = self.rt['sensor_pauses'][old_pause]
+        valid_keys = {t+':'+p['id'] for p in self.config['programs'] if p.get('sensor_mode') == 'climate' for r in p['rides'] for t in r['targets']}
+        self.rt['rule_states'] = {k:v for k,v in self.rt['rule_states'].items() if k in valid_keys}
         self.zone = ZoneInfo(tz)
         self.last = None
 
@@ -498,8 +640,8 @@ class Engine:
                         p['days'] != old_p['days'] or ride_rule(r) != ride_rule(old_r)):
                     slots.pop(kind); continue
                 if kind == 'sensor':
-                    new_rule = self.rule(wid, r['sensor_rule'])
-                    old_rule = next((g for g in old_windows.get(wid, {}).get('sensor_rules', []) if g['id'] == old_r.get('sensor_rule')), None)
+                    new_rule = self.rule(wid, r['sensor_rule'], p['id'])
+                    old_rule = self.combined_rule(next((g for g in old_windows.get(wid, {}).get('sensor_rules', []) if g['id'] == old_r.get('sensor_rule')), None), old_p)
                     if {k:v for k,v in (new_rule or {}).items() if k != 'name'} != {k:v for k,v in (old_rule or {}).items() if k != 'name'}:
                         slots.pop(kind); continue
                 intent['name'] = p['name']+' / '+windows[wid]['name']
@@ -510,23 +652,29 @@ class Engine:
             if not old_program or program['kind'] != 'sensor' or program.get('sensor_mode') == 'opening':continue
             for ride in program['rides']:
                 old_ride = next((r for r in old_program['rides'] if r['id'] == ride['id']), None)
-                if old_ride and ride_rule(ride) == ride_rule(old_ride):
+                if old_ride and ride_rule(ride) == ride_rule(old_ride) and all(program.get(k) == old_program.get(k) for k in ('conditions', 'start', 'end', 'end_action', 'days', 'season')):
                     for wid in ride['targets']:
-                        gate = self.rule(wid, ride['sensor_rule'])
-                        old_gate = next((g for g in old_windows.get(wid, {}).get('sensor_rules', []) if g['id'] == ride['sensor_rule']), None)
+                        gate = self.rule(wid, ride['sensor_rule'], program['id'])
+                        old_gate = self.combined_rule(next((g for g in old_windows.get(wid, {}).get('sensor_rules', []) if g['id'] == ride['sensor_rule']), None), old_program)
                         if windows[wid]['cover'] == old_windows.get(wid, {}).get('cover') and {k:v for k,v in (gate or {}).items() if k != 'name'} == {k:v for k,v in (old_gate or {}).items() if k != 'name'}:
                             key = ride['id']+':'+wid
                             if key in previous_edges:self.rt['edges'][key] = previous_edges[key]
         self.rt['climate'].clear()
         self.rt['opening_holds'] = {wid: hold for wid, hold in self.rt['opening_holds'].items()
                                    if wid in windows and windows[wid]['enabled'] and windows[wid]['cover'] == hold['cover']}
-        keys = {wid+':'+g['id'] for wid,w in windows.items() for g in w['sensor_rules']}
+        keys = {wid+':'+p['id'] for p in self.config['programs'] if p.get('sensor_mode') == 'climate' for r in p['rides'] for wid in r['targets']}
         self.rt['rule_states'] = {key:state for key,state in self.rt['rule_states'].items() if key in keys}
-        for wid, window in windows.items():
-            for gate in window['sensor_rules']:
-                old_gate = next((g for g in old_windows.get(wid, {}).get('sensor_rules', []) if g['id'] == gate['id']), None)
-                if window['cover'] != old_windows.get(wid, {}).get('cover') or {k:v for k,v in gate.items() if k != 'name'} != {k:v for k,v in (old_gate or {}).items() if k != 'name'}:
-                    self.rt['rule_states'].pop(wid+':'+gate['id'], None)
+        for program in self.config['programs']:
+            if program.get('sensor_mode') != 'climate': continue
+            old_program = old_programs.get(program['id'])
+            for ride in program['rides']:
+                wid = ride['targets'][0]; key = wid+':'+program['id']
+                gate = next((g for g in windows[wid]['sensor_rules'] if g['id'] == ride['sensor_rule']), None)
+                old_gate = next((g for g in old_windows.get(wid, {}).get('sensor_rules', []) if g['id'] == ride['sensor_rule']), None)
+                if windows[wid]['cover'] != old_windows.get(wid, {}).get('cover') or any((gate or {}).get(k) != (old_gate or {}).get(k) for k in ('lux_entity','temp_entity')):
+                    self.rt['rule_states'].pop(key, None)
+                elif old_program and any(program.get(k) != old_program.get(k) for k in ('conditions','start','end','days','season')) and key in self.rt['rule_states']:
+                    self.rt['rule_states'][key].update(high_since=None, low_since=None)
         self.rearm_future_time_occurrences(now, solar or getattr(self, '_solar', lambda *_: None))
         self.last = now
         self.log(now, 'config', 'Konfiguration gespeichert; unveränderte wartende Fahrten bleiben erhalten.')
@@ -582,12 +730,29 @@ class Engine:
     def execution_enabled(self, program, now=None):
         available = self.config['enabled'] and program['enabled'] and not (self.config['vacation'] and program['pause_in_vacation'])
         if available and program['kind'] == 'sensor' and program.get('sensor_mode') != 'opening' and now is not None:
-            date = now.astimezone(self.zone).date()
-            available = (date.weekday() in program['days'] and in_season(program.get('season'), date)
-                         and not self.sensor_paused('program:'+program['id'], now))
+            available = self.eligible(program, now)
         return bool(available)
 
+    def climate_day(self, program, now):
+        local = now.astimezone(self.zone); clock = local.strftime('%H:%M'); day = local.date()
+        start, end = program.get('start', '00:00'), program.get('end', '00:00')
+        if start == end: return day
+        if start < end: return day if start <= clock < end else None
+        if clock >= start: return day
+        return day-timedelta(days=1) if clock < end else None
+
+    def climate_calendar(self, program, now):
+        day = self.climate_day(program, now)
+        return day is not None and day.weekday() in program['days'] and in_season(program.get('season'), day)
+
+    def climate_enabled(self, program, now):
+        return bool(self.config['enabled'] and program['enabled'] and
+                    not (self.config['vacation'] and program['pause_in_vacation']) and
+                    not self.sensor_paused('program:'+program['id'], now))
+
     def eligible(self, program, now):
+        if program.get('sensor_mode') == 'climate':
+            return self.climate_enabled(program, now) and self.climate_calendar(program, now)
         if program.get('sensor_mode') == 'opening':
             return self.opening_eligible(program, now)
         return self.execution_enabled(program, now) and now.astimezone(self.zone).weekday() in program['days']
@@ -606,8 +771,20 @@ class Engine:
                     and in_season(program['season'], day)
                     and (not check_pause or not self.sensor_paused('program:'+program['id'], now)))
 
-    def rule(self, window_id, rule_id):
-        return next((g for g in self.windows()[window_id]['sensor_rules'] if g['id'] == rule_id), None)
+    @staticmethod
+    def combined_rule(binding, program):
+        if not binding: return None
+        if not program: return deepcopy(binding)
+        gate = {**binding, **program.get('conditions', {})}
+        if gate.get('mode') == 'lux': gate['temp_entity'] = None
+        if gate.get('mode') == 'temp': gate['lux_entity'] = None
+        return gate
+
+    def rule(self, window_id, rule_id, program_id=None):
+        binding = next((g for g in self.windows()[window_id]['sensor_rules'] if g['id'] == rule_id), None)
+        program = next((p for p in self.config['programs'] if p.get('sensor_mode') == 'climate' and
+                        (p['id'] == program_id if program_id is not None else any(r['targets'] == [window_id] and r['sensor_rule'] == rule_id for r in p['rides']))), None)
+        return self.combined_rule(binding, program)
 
     @staticmethod
     def blocking_contacts(window, states):
@@ -632,7 +809,7 @@ class Engine:
                 continue
             for ride in program['rides']:
                 if (ride['enabled'] and ride['targets'] == [window['id']] and ride['edge'] == 'active'
-                        and climates.get(window['id']+':'+ride['sensor_rule']) is True):
+                        and climates.get(window['id']+':'+program['id']) is True):
                     return {axis: ride[axis] for axis in ('position', 'tilt')}, ''
         # Only a still-pending time action is a missed schedule. A previously
         # completed schedule must not overwrite a manual position captured when
@@ -772,7 +949,7 @@ class Engine:
                     decisions.append((c['policy'], f"Fensterkontakt: {c['entity']} ({value})"))
         if decisions:
             return next((x for x in decisions if x[0] == 'skip'), decisions[0])
-        if intent['kind'] == 'sensor' and climates.get(window['id']+':'+intent['sensor_rule']) is None:
+        if intent['kind'] == 'sensor' and climates.get(window['id']+':'+intent['program']) is None:
             return 'defer', 'Sensorwerte nicht verfügbar'
         if intent['kind'] == 'time' and climates.get(window['id']) is None:
             return 'defer', 'Sensorwerte nicht verfügbar'
@@ -812,13 +989,17 @@ class Engine:
                       'scheduled': stamp(scheduled or now), 'reason': ''}
             if p['kind'] == 'sensor':
                 intent['sensor_rule'] = r['sensor_rule']
-                if r.get('restore_schedule'):
-                    before = self.rt['rule_states'].get(target+':'+r['sensor_rule'], {}).get('before', {})
-                    goal = self.current_schedule_goal(window, now, self._solar, before)
+                if r.get('restore_schedule') or r.get('restore_before'):
+                    before = self.rt['rule_states'].get(target+':'+p['id'], {}).get('before', {})
+                    goal = self.current_schedule_goal(window, now, self._solar, before) if r.get('restore_schedule') else before
                     intent.update(position=goal.get('position'), tilt=goal.get('tilt'))
+                    if window['cover_type'] == 'shutter':
+                        intent['tilt'] = None
                     if intent['position'] is None and intent['tilt'] is None:
                         self.log(now, 'error', window['name']+': keine Position für Freigabe bekannt.', window=target)
                         continue
+            if p['kind'] == 'sensor' and r.get('edge') == 'inactive' and not self.eligible(p, now):
+                intent['end_of_program'] = True
             slot = self.rt['pending'].setdefault(target, {})
             slot[p['kind']] = intent
 
@@ -829,6 +1010,8 @@ class Engine:
         windows = self.windows()
         self._solar = solar
         prior_active = {key: bool(state.get('active')) for key,state in self.rt['rule_states'].items()}
+        prior_applied = {key: state.get('applied', True) for key,state in self.rt['rule_states'].items()}
+        prior_timing = {key: state.get('high_since') is not None for key,state in self.rt['rule_states'].items()}
         climates = self.update_shading(now, states, {}, solar)
         previous = self.last
         self.last = now
@@ -865,16 +1048,18 @@ class Engine:
                     edge_targets = []
                     for target in r['targets']:
                         edgekey = f"{r['id']}:{target}"
-                        rule_key = target+':'+r['sensor_rule']
-                        active = climates[rule_key]
+                        rule_key = target+':'+p['id']
+                        active = climates.get(rule_key, False)
                         wanted = active is (r['edge'] == 'active')
                         # First observation is a baseline, never an unexpected motor command.
                         old = self.rt['edges'].get(edgekey)
-                        flag = bool(eligible and r['enabled'] and wanted)
+                        ended = bool(r['edge'] == 'inactive' and prior_active.get(rule_key, False) and prior_applied.get(rule_key, False) and self.climate_enabled(p, now) and not self.climate_calendar(p, now))
+                        flag = bool((eligible or ended) and r['enabled'] and wanted and not (r['edge'] == 'inactive' and p.get('end_action') == 'keep'))
                         if active is None:
                             # A missing measurement must not manufacture a release edge.
                             continue
-                        if flag and not old and (old is not None or p['start_on_high']) and (r['edge'] == 'active' or prior_active.get(rule_key, False)):
+                        resumed = prior_timing.get(rule_key, False) if r['edge'] == 'active' else prior_active.get(rule_key, False)
+                        if flag and not old and (old is not None or p['start_on_high'] or ended or resumed) and (r['edge'] == 'active' or prior_active.get(rule_key, False)):
                             edge_targets.append(target)
                         self.rt['edges'][edgekey] = flag
                         pending = self.rt['pending'].get(target, {}).get('sensor')
@@ -882,6 +1067,9 @@ class Engine:
                             self.rt['pending'][target].pop('sensor', None)
                     if edge_targets:
                         events.append((now, p, r, edge_targets, f"{stamp(now)}:{r['id']}"))
+        # A new shading window takes over directly instead of briefly returning.
+        starts = {(stamp(due), target) for due,p,r,targets,key in events if p['kind'] == 'sensor' and r.get('edge') == 'active' for target in targets}
+        events = [(due,p,r,[t for t in targets if not (p['kind'] == 'sensor' and r.get('edge') == 'inactive' and not self.eligible(p, now) and (stamp(due),t) in starts)],key) for due,p,r,targets,key in events]
         # Chronological order, then sensor precedence. Deterministic tie handling.
         conflicts = {}
         for due, p, r, targets, key in events:
@@ -907,7 +1095,9 @@ class Engine:
         for target, slots in list(self.rt['pending'].items()):
             for kind, intent in list(slots.items()):
                 synthetic = (intent['kind'] == 'shade' or (intent['kind'] == 'opening' and target in self.rt['opening_holds'])) and self.config['enabled']
-                if target not in windows or (not synthetic and intent['program'] not in enabled_ids):
+                p = next((p for p in self.config['programs'] if p['id'] == intent['program']), None)
+                end_release = bool(intent.get('end_of_program') and p and self.climate_enabled(p, now))
+                if target not in windows or (not synthetic and not end_release and intent['program'] not in enabled_ids):
                     slots.pop(kind); continue
                 policy, reason = self.guard(windows[target], intent, states, climates)
                 intent['blocked_contacts'] = self.blocking_contacts(windows[target], states)
@@ -1000,6 +1190,12 @@ class Engine:
             slots.pop(intent['kind'])
         if intent['kind'] == 'opening' and intent.get('phase') == 'release':
             self.rt['opening_holds'].pop(target, None)
+        if intent['kind'] == 'sensor' and not error:
+            program = next((p for p in self.config['programs'] if p['id'] == intent['program']), None)
+            ride = next((r for r in program['rides'] if r['id'] == intent['ride']), None) if program else None
+            state = self.rt['rule_states'].get(target+':'+intent['program'])
+            if ride and state is not None:
+                state['applied'] = ride.get('edge') == 'active'
         if intent['kind'] == 'time':
             scheduled = datetime.fromisoformat(intent.get('scheduled') or intent['created'])
             self.rt['time_results'][self.occurrence(intent)] = {
@@ -1214,31 +1410,43 @@ class Engine:
         effective = {}
         for wid, window in self.windows().items():
             any_active = False; blocks = False; unknown = False
-            for gate in window['sensor_rules']:
-                key = wid+':'+gate['id']
-                state = self.rt['rule_states'].setdefault(key, {'active': False, 'low_since': None, 'before': {}})
-                rides = [r for p in self.config['programs'] if p['kind'] == 'sensor' and p.get('sensor_mode') != 'opening' and self.eligible(p, now)
-                         for r in p['rides'] if r['enabled'] and wid in r['targets'] and r['sensor_rule'] == gate['id']]
-                if not window['enabled'] or not rides:
-                    state.update(active=False, low_since=None);effective[key] = False;continue
+            for program in self.config['programs']:
+                if program.get('sensor_mode') != 'climate': continue
+                targeted = [r for r in program['rides'] if wid in r['targets']]
+                if not targeted: continue
+                rides = [r for r in targeted if r['enabled']]
+                key = wid+':'+program['id']
+                state = self.rt['rule_states'].setdefault(key, {'active': False, 'high_since': None, 'low_since': None, 'before': {}, 'applied': False})
+                if not rides or not window['enabled'] or not self.eligible(program, now):
+                    state.update(active=False, high_since=None, low_since=None); effective[key] = False; continue
+                gate = self.rule(wid, rides[0]['sensor_rule'], program['id'])
                 blocks_rule = any(r['edge'] == 'active' for r in rides)
                 values = self.measured_sensors(gate, states)
                 if values is None:
-                    state['low_since'] = None;effective[key] = None
+                    state.update(low_since=None, high_since=None); effective[key] = None
                     unknown = unknown or blocks_rule
                 else:
                     high, low = self.thresholds(gate, values)
-                    if not state['active'] and high:
-                        attrs = states.get(window['cover'], {}).get('attributes', {})
-                        hold = self.rt['opening_holds'].get(wid)
-                        before = deepcopy(hold['before']) if hold else {'position': attrs.get('current_position'), 'tilt': attrs.get('current_tilt_position')}
-                        state.update(active=True, low_since=None, before=before)
-                    elif state['active']:
-                        if low:
-                            if state['low_since'] is None:state['low_since'] = stamp(now)
-                            if now >= datetime.fromisoformat(state['low_since'])+timedelta(seconds=gate['release_delay_seconds']):
-                                state.update(active=False, low_since=None)
-                        else:state['low_since'] = None
+                    if not state['active']:
+                        if high:
+                            if state.get('high_since') is None: state['high_since'] = stamp(now)
+                            if now >= datetime.fromisoformat(state['high_since'])+timedelta(seconds=gate['on_delay_seconds']):
+                                attrs = states.get(window['cover'], {}).get('attributes', {})
+                                hold = self.rt['opening_holds'].get(wid)
+                                before = deepcopy(hold['before']) if hold else {}
+                                if not hold:
+                                    for axis, attr in [('position','current_position'),('tilt','current_tilt_position')]:
+                                        value = attrs.get(attr)
+                                        if isinstance(value,(int,float)) and not isinstance(value,bool) and math.isfinite(value) and 0 <= value <= 100:
+                                            before[axis] = value
+                                    if window['cover_type'] == 'shutter': before.pop('tilt', None)
+                                state.update(active=True, high_since=None, low_since=None, before=before, applied=False)
+                        else: state['high_since'] = None
+                    elif low:
+                        if state.get('low_since') is None: state['low_since'] = stamp(now)
+                        if now >= datetime.fromisoformat(state['low_since'])+timedelta(seconds=gate['release_delay_seconds']):
+                            state.update(active=False, low_since=None, high_since=None)
+                    else: state['low_since'] = None
                     effective[key] = bool(state['active'])
                 any_active = any_active or state['active']
                 blocks = blocks or (blocks_rule and state['active'])
@@ -1299,8 +1507,11 @@ class Engine:
                              'pause_until':stamp(tomorrow), 'triggered':bool(holds), 'blocked_reason':reason,
                              'opening_start':program['opening_start'], 'opening_end':program['opening_end']})
                 continue
-            if (program['kind'] != 'sensor' or not program['enabled'] or date.weekday() not in program['days']
-                    or not in_season(program.get('season'), date)
+            calendar_day = date.weekday() in program['days'] and in_season(program.get('season'), date)
+            if program.get('start', '00:00') > program.get('end', '00:00'):
+                yesterday = date-timedelta(days=1)
+                calendar_day = calendar_day or (yesterday.weekday() in program['days'] and in_season(program.get('season'), yesterday))
+            if (program['kind'] != 'sensor' or not program['enabled'] or not calendar_day
                     or not any(r['enabled'] and any(windows[t]['enabled'] for t in r['targets']) for r in program['rides'])):
                 continue
             targets = list(dict.fromkeys(t for r in program['rides'] for t in r['targets']))
@@ -1309,9 +1520,11 @@ class Engine:
                 reason = 'Steuerung ausgeschaltet'
             elif self.config['vacation'] and program['pause_in_vacation']:
                 reason = 'Urlaubspause'
-            rows.append({'id': 'program:'+program['id'], 'source': 'program', 'name': program['name'], 'targets': targets,
+            elif not self.climate_calendar(program, now):
+                reason = 'Außerhalb des Zeitfensters'
+            rows.append({'id': 'program:'+program['id'], 'source': 'program', 'sensor_mode': 'climate', 'name': program['name'], 'targets': targets,
                          'season': deepcopy(program['season']), 'paused': self.sensor_paused('program:'+program['id'], now),
-                         'pause_until': stamp(tomorrow), 'triggered': any(self.rt['rule_states'].get(t+':'+r['sensor_rule'], {}).get('active') for r in program['rides'] for t in r['targets']),
+                         'pause_until': stamp(tomorrow), 'triggered': any(self.rt['rule_states'].get(t+':'+program['id'], {}).get('active') for r in program['rides'] for t in r['targets']),
                          'blocked_reason': reason})
         return sorted(rows, key=lambda row: (row['name'].casefold(), row['id']))
 

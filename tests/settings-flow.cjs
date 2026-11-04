@@ -61,7 +61,7 @@ const {execFileSync}=require('node:child_process');
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();await dialog.waitFor({state:'detached'});
   await card.locator('.settings-fold[data-section="covers"]').click();
   await card.locator('.window').filter({hasText:'cover.wohnen'}).getByRole('button',{name:'Bearbeiten',exact:true}).click();
-  await dialog.getByRole('button',{name:'+ Sensorregel',exact:true}).click();
+  await dialog.getByRole('button',{name:'+ Sensorzuordnung',exact:true}).click();
   await dialog.locator('[data-key="sensor_rules.1.name"]').fill('Neue Temperaturregel');
   await dialog.locator('[data-key="sensor_rules.1.temp_entity"]').selectOption('sensor.new_temperature');
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();await dialog.waitFor({state:'detached'});

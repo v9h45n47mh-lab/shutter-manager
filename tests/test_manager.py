@@ -465,7 +465,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
     async def test_snapshot_identifies_loaded_backend_and_sensor_rule_schema(self):
         snapshot=self.m.snapshot(types.SimpleNamespace(is_admin=True))
         self.assertEqual(snapshot['backend_version'],adapter.INTEGRATION_VERSION)
-        self.assertEqual(snapshot['config_schema'],5)
+        self.assertEqual(snapshot['config_schema'],6)
 
     async def test_overview_uses_today_in_ha_timezone_even_after_sunset(self):
         self.now=at('2026-10-30T23:50')
@@ -577,3 +577,49 @@ class AdapterTests(IsolatedAsyncioTestCase):
         view=self.m.snapshot(user)
         self.assertEqual(view['cover_states'],[])
         self.assertEqual(view['command_history'],[])
+
+class ShadingMigrationAdapterTests(IsolatedAsyncioTestCase):
+    async def test_original_model_backup_is_retained_once_across_restart_and_save(self):
+        from test_shading_programs import MigrationTests
+        legacy,_=MigrationTests().legacy()
+        hass=types.SimpleNamespace(config=types.SimpleNamespace(time_zone='Europe/Berlin'))
+        manager=adapter.Manager(hass);original={'config':deepcopy(legacy),'runtime':{},'revision':4}
+        manager.store.async_load=AsyncMock(return_value=original)
+        with patch.object(adapter,'utcnow',lambda:at('2026-10-30T12:00')):
+            await manager.load();await manager.persist()
+            saved=deepcopy(manager.store.async_save.call_args.args[0])
+            self.assertEqual(saved['migration_backup']['config'],legacy)
+            self.assertEqual(saved['config']['model_version'],2)
+            self.assertEqual(len(saved['config']['programs']),2)
+            manager.store.async_load=AsyncMock(return_value=saved)
+            await manager.load();manager.engine.config['programs'][0]['name']='Updated'
+            await manager.persist()
+            self.assertEqual(manager.store.async_save.call_args.args[0]['migration_backup'],saved['migration_backup'])
+
+    async def test_schema_five_or_missing_cannot_overwrite_program_conditions(self):
+        from test_shading_programs import shading_fixture
+        from unittest.mock import Mock
+        config,_=shading_fixture();hass=types.SimpleNamespace(config=types.SimpleNamespace(time_zone='Europe/Berlin'))
+        manager=adapter.Manager(hass);manager.engine=adapter.Engine(config);hass.data={'rollladenplaner':manager}
+        for version in [5,None]:
+            connection=types.SimpleNamespace(user=types.SimpleNamespace(is_admin=True),send_error=Mock(),send_result=Mock())
+            message={'id':1,'config':config,'revision':0}
+            if version is not None:message['config_schema']=version
+            await adapter.ws_save(hass,connection,message)
+            connection.send_error.assert_called_once();connection.send_result.assert_not_called()
+        manager.store.async_save.assert_not_called()
+
+    async def test_shared_program_requires_control_permission_for_every_target(self):
+        from test_shading_programs import shading_fixture
+        config,states=shading_fixture()
+        hass=types.SimpleNamespace(config=types.SimpleNamespace(time_zone='Europe/Berlin'),
+            states=types.SimpleNamespace(get=lambda entity:FakeState(states[entity]['state'],**states[entity].get('attributes',{})) if entity in states else None))
+        manager=adapter.Manager(hass);manager.engine=adapter.Engine(config);manager.states=lambda:states;manager.solar=solar
+        user=types.SimpleNamespace(is_admin=False,permissions=types.SimpleNamespace(check_entity=lambda entity,policy:policy=='read' or entity=='cover.wohnen'))
+        with patch.object(adapter,'utcnow',lambda:at('2026-10-30T12:00')):
+            snapshot=manager.snapshot(user)
+            self.assertFalse(snapshot['controls']['shade'])
+            with self.assertRaisesRegex(ValueError,'Steuerberechtigung'):
+                await manager.action(user,{'action':'sensor_pause','target':'program:shade','value':True,
+                    'entity_id':['cover.wohnen','cover.east'],'revision':0})
+        manager.store.async_save.assert_not_called()

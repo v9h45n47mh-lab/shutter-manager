@@ -29,7 +29,7 @@ vm.runInContext(source + '\nglobalThis.Card = ShutterManagerCard;', context);
   card.request = async (action, payload) => {saved = structuredClone(payload.config); return true;};
   await card.saveEditor(false);
   assert.equal(saved.windows[0].sensor_rules[0].temp_entity, 'sensor.new_unclassified');
-  assert.equal(saved.windows[0].sensor_rules[0].temp_on, 25);
+  assert.equal(saved.windows[0].sensor_rules[0].temp_on, undefined, 'cover stores assignments only');
   assert.equal(card.editor, null, 'successful save closes the editor');
   console.log('PASS: new unclassified sensor can be selected, retained and saved; typed suggestions and unit normalization work.');
 })().catch(error => {console.error(error); process.exit(1);});

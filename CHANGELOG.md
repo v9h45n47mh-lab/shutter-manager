@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0
+
+- Moved shading thresholds and delays from cover sensor rules into overarching shading programs. Cover settings now contain sensor assignments and contacts only.
+- Added shared cover selection, independent sensor evaluation per cover, activation/release delays, daily windows including overnight periods, and explicit end actions: fixed return position, current schedule, pre-shading position, or keep position.
+- Preserved activation AND and release OR semantics when brightness and temperature are combined. Missing readings reset timers without inventing a release.
+- Migrated legacy parameters, actions, calendar restrictions, pending work, and runtime state. Programs using different condition sets or end actions are split; unused parameter rules become disabled programs. The original configuration and runtime are retained as a migration backup.
+- Prevented overlapping shading programs from controlling the same device, while allowing disjoint daily windows. Preserved contact protection, opening priority, daily pauses, one-time movements, sensor selection, and the Light Manager-style settings layout.
+- Updated the German/English program editor and in-card guide, installation instructions, and save protocol checks. Older or missing protocols cannot overwrite program conditions.
+- Added migration, program-condition, timer/restart, return-action, overnight-window, permission, and desktop/mobile browser tests. Release packaging now also runs browser checks and retains source file timestamps.
+
 ## 1.2.12
 
 - Added the missing central “Select sensors” button and searchable sensor selection dialog in Settings. Selection persists across restarts and backups.
