@@ -1,5 +1,10 @@
 __pycache__/
 *.py[cod]
 .venv/
+.deps/
+.ci/
 node_modules/
+dist/
+playwright-report/
 test-results/
+.DS_Store

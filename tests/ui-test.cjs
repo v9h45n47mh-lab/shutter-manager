@@ -269,7 +269,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  await page.setViewportSize({width:1100,height:1000});
  // Import two covers in one transaction, show imported ones, filter known other types.
- await card.getByRole('button',{name:'Rollläden hinzufügen',exact:true}).click();
+ await card.getByRole('button',{name:'Rollläden auswählen',exact:true}).click();
  assert.equal(await dialog.locator('[data-import-cover="cover.wohnen"]').isDisabled(),true);
  assert.equal(await dialog.locator('[data-import-cover="cover.wohnen"]').isChecked(),true);
  assert.equal(await dialog.locator('[data-import-cover="cover.garage"]').isVisible(),false);
@@ -522,7 +522,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
  assert.equal(await card.getByRole('switch',{name:'Urlaubsmodus',exact:true}).isDisabled(),true);
  assert.equal(await card.getByRole('button',{name:'Sicherung erstellen',exact:true}).count(),0);
- assert.equal(await card.getByRole('button',{name:'Rollläden hinzufügen',exact:true}).count(),0);
+ assert.equal(await card.getByRole('button',{name:'Rollläden auswählen',exact:true}).count(),0);
  await card.getByRole('button',{name:'Howto',exact:true}).click();
  assert.equal(await card.getByRole('heading',{name:'Schnellstart',exact:true}).count(),1,'howto is available without admin permission');
  await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
