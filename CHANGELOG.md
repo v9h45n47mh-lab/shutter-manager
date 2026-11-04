@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.11
+
+- Reissued the complete standalone Shutter Manager repository package, including GitHub workflows, documentation, and tests.
+- The package contains only the `rollladenplaner` integration and retains actual source modification timestamps.
+- Synchronized all current version identifiers and resource URLs to 1.2.11.
+- Documented removal of unrelated integration folders from an existing repository before publishing a new release.
+
 ## 1.2.10
 
 - Preserve actual source-file modification times in release ZIP archives.
