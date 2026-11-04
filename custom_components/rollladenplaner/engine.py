@@ -15,7 +15,7 @@ UTC = timezone.utc
 
 
 def empty_config():
-    return {'enabled': False, 'vacation': False, 'windows': [], 'programs': [], 'sensor_names': {}}
+    return {'enabled': False, 'vacation': False, 'windows': [], 'programs': [], 'sensors': [], 'sensor_names': {}}
 
 
 def split_legacy_rides(raw):
@@ -198,6 +198,10 @@ def validate_config(raw):
         return value
     c['enabled'] = boolean(raw.get('enabled'))
     c['vacation'] = boolean(raw.get('vacation'))
+    sensors = raw.get('sensors', [])
+    if not isinstance(sensors, list) or len(sensors) > 5000:
+        raise ValueError('Sensorliste muss eine Liste mit maximal 5000 Einträgen sein.')
+    c['sensors'] = sorted({entity(value, '(?:sensor|binary_sensor|input_boolean)') for value in sensors})
     names = raw.get('sensor_names', {})
     if not isinstance(names, dict) or len(names) > 5000:
         raise ValueError('Sensoranzeigenamen müssen ein Objekt mit maximal 5000 Einträgen sein.')

@@ -17,7 +17,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    connectedCallback(){queueMicrotask(()=>{this.shadowRoot.innerHTML='<slot></slot>';});}
  }));
  await page.evaluate(()=>{
-  window.model={backend_version:'1.1.0',config_schema:4,admin:true,controls:{p:true},revision:1,config:{enabled:true,vacation:false,windows:[{id:'w',name:'Jalousie Wohnen',cover:'cover.wohnen',enabled:true,contacts:[{entity:'binary_sensor.fenster',open_state:'on',policy:'defer'}],sensor_rules:[{id:'main',name:'Sommer',lux_entity:'sensor.lux',temp_entity:'sensor.temp',lux_on:30000,lux_off:20000,temp_on:25,temp_off:23,release_delay_seconds:300}]}],programs:[{id:'p',name:'Wohnbereich · Wochentage',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[{id:'r',name:'Morgens',enabled:true,skip_next:false,targets:['w'],event:'sunrise',time:'07:00',offset:0,earliest:'06:00',latest:'08:00',position:0,tilt:50,defer_minutes:120}]}]},upcoming:[{time:'2026-11-02T06:30:00Z',name:'Wohnbereich / Morgens',program:'p',ride:'r',skip:false}],planned_date:'2026-10-30',planned:[],pending:{},moving:[]};
+  window.model={backend_version:'1.1.0',config_schema:5,admin:true,controls:{p:true},revision:1,config:{enabled:true,vacation:false,windows:[{id:'w',name:'Jalousie Wohnen',cover:'cover.wohnen',enabled:true,contacts:[{entity:'binary_sensor.fenster',open_state:'on',policy:'defer'}],sensor_rules:[{id:'main',name:'Sommer',lux_entity:'sensor.lux',temp_entity:'sensor.temp',lux_on:30000,lux_off:20000,temp_on:25,temp_off:23,release_delay_seconds:300}]}],programs:[{id:'p',name:'Wohnbereich · Wochentage',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[{id:'r',name:'Morgens',enabled:true,skip_next:false,targets:['w'],event:'sunrise',time:'07:00',offset:0,earliest:'06:00',latest:'08:00',position:0,tilt:50,defer_minutes:120}]}]},upcoming:[{time:'2026-11-02T06:30:00Z',name:'Wohnbereich / Morgens',program:'p',ride:'r',skip:false}],planned_date:'2026-10-30',planned:[],pending:{},moving:[]};
   window.calls=[];
   window.host={user:{id:'test_admin'},states:{'cover.wohnen':{state:'open',attributes:{friendly_name:'Jalousie Wohnen',device_class:'blind',supported_features:140}},'cover.essen':{state:'closed',attributes:{friendly_name:'Jalousie Essen',device_class:'blind',supported_features:140}},'cover.kueche':{state:'open',attributes:{friendly_name:'Küche Fenster',device_class:'shutter',supported_features:12}},'cover.garage':{state:'closed',attributes:{friendly_name:'Garagentor',device_class:'garage',supported_features:12}},'cover.ohne_position':{state:'open',attributes:{friendly_name:'Ohne Position',device_class:'shutter',supported_features:3}},'binary_sensor.fenster':{state:'off',attributes:{friendly_name:'Fenster Wohnen'}},'sensor.power':{state:'500',attributes:{friendly_name:'Leistung',device_class:'power',unit_of_measurement:'W'}},'sensor.lux':{state:'10000',attributes:{friendly_name:'Helligkeit',device_class:'illuminance',unit_of_measurement:'lx'}},'sensor.temp':{state:'22',attributes:{friendly_name:'Temperatur',device_class:'temperature',unit_of_measurement:'°C'}}},callWS:async msg=>{
    calls.push(structuredClone(msg));
@@ -34,7 +34,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    }
    return structuredClone(model);
   }};
-  const card=document.querySelector('rollladenplaner-card');card.setConfig({type:'custom:rollladenplaner-card'});card.hass=host;
+  const card=document.querySelector('rollladenplaner-card');card.setConfig({type:'custom:rollladenplaner-card'});card.settingsSections={covers:true,sensors:false,status:false,commands:true,'sensor-names':true};card.hass=host;
  });
  const card=page.locator('rollladenplaner-card'),dialog=card.getByRole('dialog');
  const range=async (selector,value)=>{await dialog.locator(selector).evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event('input',{bubbles:true,composed:true}));el.dispatchEvent(new Event('change',{bubbles:true,composed:true}));},value);};
@@ -118,14 +118,14 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByRole('button',{name:'Fenster',exact:true}).count(),0);
  await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
  for (const [section,initial] of [['covers','true'],['status','false'],['commands','true'],['sensor-names','true']]) {
-  const fold=card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`);
+  const fold=card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).first();
   assert.equal(await fold.getAttribute('aria-expanded'),initial,`${section} section starts in its documented state`);
   await fold.click();
   const changed=initial==='true'?'false':'true';
   assert.equal(await card.locator(`#settings-${section}-content`).isVisible(),changed==='true');
   await page.evaluate(()=>document.querySelector('rollladenplaner-card').refresh());
-  assert.equal(await card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).getAttribute('aria-expanded'),changed,`${section} fold state survives refresh`);
-  await card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).click();
+  assert.equal(await card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).first().getAttribute('aria-expanded'),changed,`${section} fold state survives refresh`);
+  await card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).first().click();
  }
  await card.getByRole('button',{name:'Sensoranzeigenamen bearbeiten',exact:true}).click();
  await dialog.locator('label').filter({hasText:'sensor.temp'}).locator('input').fill('Außen Süd');
@@ -414,12 +414,12 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await page.evaluate(async()=>{model.config.enabled=true;model.config.vacation=false;model.sensor_programs=[{id:'program:'+model.config.programs[1].id,source:'program',name:'Zusätzliche Sensorfahrt',targets:['w'],season:{enabled:true,start:'04-01',end:'10-31'},paused:false,triggered:true,blocked_reason:'',can_control:true},{id:'program:essen',source:'program',name:'Essen',targets:[model.config.windows[1].id],season:{enabled:false},paused:false,triggered:false,blocked_reason:'',can_control:true}];await document.querySelector('rollladenplaner-card').refresh();});
  await card.getByRole('button',{name:'Sensorprogramme',exact:true}).click();
  const sensorRow=card.locator('.sensor-row').filter({hasText:'Zusätzliche Sensorfahrt'});
- assert.equal(await sensorRow.getByText('Sensorprogramm · 01.04. – 31.10.',{exact:true}).count(),1);
+ assert.equal(await sensorRow.getByText('Zusätzliche Sensorfahrt · Sensorprogramm · 01.04. – 31.10.',{exact:true}).count(),1);
  await sensorRow.getByRole('button',{name:'Bis morgen aussetzen',exact:true}).click();
  assert.equal(await page.evaluate(()=>calls.at(-1).action),'sensor_pause');
  assert.equal(await page.evaluate(()=>calls.at(-1).target),'program:'+await page.evaluate(()=>model.config.programs[1].id));
  assert.deepEqual(await page.evaluate(()=>calls.at(-1).entity_id),['cover.wohnen']);
- assert.equal(await sensorRow.getByText('Für heute ausgesetzt',{exact:true}).count(),1);
+ assert.equal(await sensorRow.getByText(/^Für heute ausgesetzt/).count(),1);
  assert.equal(await page.evaluate(()=>model.config.programs[1].enabled),true,'daily pause does not disable definition');
  await sensorRow.getByRole('button',{name:'Heute wieder aktivieren',exact:true}).click();
  assert.equal(await page.evaluate(()=>model.sensor_programs[0].paused),false);
@@ -437,7 +437,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  // A concrete planned occurrence, not an edit of skip_next.
  await page.evaluate(async()=>{model.planned=[{occurrence:'2026-10-30:r',program:'p',ride:'r',name:'Wohnbereich / Morgens',kind:'time',time:'2026-10-30T18:00:00Z',targets:['w'],position:0,tilt:100,status:'planned',reason:'',skip:false,can_undo:true,can_control:true,expires:null}];await document.querySelector('rollladenplaner-card').refresh();});
  await card.getByRole('button',{name:'Zeitprogramm',exact:true}).click();
- await card.getByRole('button',{name:'Einmal auslassen',exact:true}).click();
+ await card.getByRole('button',{name:'Auslassen',exact:true}).click();
  assert.equal(await page.evaluate(()=>calls.at(-1).action),'skip_today');
  assert.equal(await page.evaluate(()=>calls.at(-1).occurrence),'2026-10-30:r');
  await card.getByRole('button',{name:'Wieder einplanen',exact:true}).click();
@@ -453,7 +453,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await page.screenshot({path:path.join(__dirname,'../../planner-contact-status-mobile.png'),fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  await page.evaluate(async()=>{model.planned=[{occurrence:'sensor-concrete',program:'@shade_w',ride:'active',name:'Wohnen / Beschattung',kind:'shade',time:'2026-10-30T08:00:00Z',targets:['w'],position:0,tilt:100,status:'pending',reason:'Fenster offen',skip:false,can_undo:false,can_control:true,expires:'2026-10-30T20:00:00Z'}];await document.querySelector('rollladenplaner-card').refresh();});
- await card.getByRole('button',{name:'Einmal auslassen',exact:true}).click();
+ await card.getByRole('button',{name:'Auslassen',exact:true}).click();
  assert.equal(await page.evaluate(()=>model.planned.length),0);
  assert.deepEqual(await page.evaluate(()=>calls.at(-1).entity_id),['cover.wohnen']);
  await card.getByRole('button',{name:'Programme',exact:true}).click();
@@ -494,11 +494,12 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await card.locator('[data-action="move-program"][data-program="p"][data-direction="down"]').click();
  assert.deepEqual(await page.evaluate(()=>model.config.programs.filter(p=>p.kind==='time').map(p=>p.id)),['p2','p'],'program order is saved within its group');
  // XSS-safe names and fold persistence across full element recreation.
+ const expandedBeforeRecreate=await card.locator('[data-action="fold-program"][data-program="p"]').getAttribute('aria-expanded');
  await page.evaluate(async()=>{model.config.programs[0].name='<img src=x onerror="window.injected=true">';await document.querySelector('rollladenplaner-card').refresh();});
  assert.equal(await card.locator('img').count(),0);assert.equal(await page.evaluate(()=>window.injected),undefined);
  await page.evaluate(async()=>{model.config.programs[0].name='Wohnbereich · Wochentage';const old=document.querySelector('rollladenplaner-card');old.remove();const c=document.createElement('rollladenplaner-card');c.setConfig({type:'custom:rollladenplaner-card'});document.body.append(c);c.hass=host;});
  await card.locator('[data-action="fold-program"]').first().waitFor();
- assert.equal(await card.locator('[data-action="fold-program"]').first().getAttribute('aria-expanded'),'true');
+ assert.equal(await card.locator('[data-action="fold-program"][data-program="p"]').getAttribute('aria-expanded'),expandedBeforeRecreate);
  await card.locator('[data-action="fold-program"]').first().click();
  await page.screenshot({path:path.join(__dirname,'../../planner-mobile.png'),fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
@@ -530,9 +531,12 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByRole('heading',{name:'Language',exact:true}).count(),1,'language picker is translated and available without admin permission');
  await card.getByRole('button',{name:'Programs',exact:true}).click();
  assert.equal(await card.getByRole('button',{name:'Schedule',exact:true}).count(),1,'tab labels switch to English');
+ const englishFold=card.locator('[data-action="fold-program"][data-program="p"]');
+ if(await englishFold.getAttribute('aria-expanded')==='false')await englishFold.click();
  const englishProgramText=await card.locator('main').innerText();
  assert.ok(englishProgramText.includes('Opening program'),'opening program label is translated');
- assert.ok(englishProgramText.includes('Position 0%') && englishProgramText.includes('Tilt 50%'),'dynamic height and tilt summaries are translated');
+ const target=await page.evaluate(()=>model.config.programs.find(p=>p.id==='p').rides[0]);
+ assert.ok(englishProgramText.includes('Position '+target.position+'%') && englishProgramText.includes('Tilt '+target.tilt+'%'),'dynamic height and tilt summaries are translated');
  assert.equal(englishProgramText.includes('Höhe'),false);
  assert.equal(englishProgramText.includes('Lamellen'),false);
  await page.evaluate(async()=>{model.sensor_programs=[{id:'program:opening',source:'program',name:'Lüften',sensor_mode:'opening',targets:['w'],season:{enabled:false},paused:false,triggered:false,blocked_reason:'Außerhalb des Zeitfensters',can_control:true}];await document.querySelector('rollladenplaner-card').refresh();});
@@ -543,7 +547,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(englishSensorText.includes('Außerhalb des Zeitfensters'),false);
  await card.getByRole('button',{name:'Guide',exact:true}).click();
  assert.equal(await card.getByRole('heading',{name:'Quick start',exact:true}).count(),1,'guide is fully available in English');
- assert.equal(await card.getByRole('heading',{name:'Shutter Manager 1.1.0',exact:true}).count(),1);
+ assert.equal(await card.getByRole('heading',{name:'Shutter Manager '+JSON.parse(fs.readFileSync(path.join(__dirname,'../custom_components/rollladenplaner/manifest.json'),'utf8')).version,exact:true}).count(),1);
  await card.getByRole('button',{name:'Settings',exact:true}).click();
  await card.locator('[data-action=set-language][data-language=de]').click();
  assert.equal(await card.getByRole('heading',{name:'Sprache',exact:true}).count(),1,'language selection switches back to German');

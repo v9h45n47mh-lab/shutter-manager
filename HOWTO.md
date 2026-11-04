@@ -1,4 +1,4 @@
-# Shutter Manager Guide / Anleitung 1.2.11
+# Shutter Manager Guide / Anleitung 1.2.12
 
 ## Deutsch
 
@@ -135,3 +135,9 @@ Im Howto und in den Einstellungen stehen Oberfläche und tatsächlich geladene I
 ## English
 
 Choose the 🇬🇧 flag in **Settings** to switch the dashboard card and in-card guide to English. The 🇩🇪 flag returns the card to German. The selection is stored per Home Assistant user in this browser. The guide covers schedules, opening priority, sensor rules, validity periods, pending actions, and backup.
+
+## Zentrale Sensor-Auswahl / Central sensor selection
+
+Unter Einstellungen → Sensoren → Sensoren auswählen vorhandene HA-Sensoren suchen, auswählen und speichern. Die Auswahl bleibt nach Neustart erhalten und ist Teil der Sicherung. In Regeln oder als Kontakt verwendete Sensoren bleiben ausgewählt. Zur Verwendung in der Automatik Sensorregeln oder Kontakte am jeweiligen Rollladen konfigurieren. Das reine Hinzufügen eines Sensors löst keine Fahrt aus.
+
+In Settings → Sensors → Select sensors, search for existing HA sensors, select them, and save. Selection survives restarts and is included in backups. Sensors used in a rule or contact remain selected. Configure cover rules and contacts separately to define movements; adding a sensor alone never moves a cover.

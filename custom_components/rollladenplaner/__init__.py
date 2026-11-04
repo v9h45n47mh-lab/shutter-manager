@@ -23,9 +23,9 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.2.11'
+INTEGRATION_VERSION = '1.2.12'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
-CONFIG_SCHEMA_VERSION = 4
+CONFIG_SCHEMA_VERSION = 5
 SIGNAL = DOMAIN + '_update'
 PLATFORMS = [Platform.SENSOR]
 _LOGGER = logging.getLogger(__name__)
@@ -42,8 +42,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.11')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.11')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.2.12')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.2.12')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -253,7 +253,9 @@ class Manager:
             state = self.hass.states.get(w['cover'])
             w['resolved_type'] = 'blind' if is_blind(w, dict(state.attributes) if state else {}) else 'shutter'
         config['programs'] = [p for p in config['programs'] if all(t in visible for r in p['rides'] for t in r['targets'])]
-        sensor_entities = set()
+        config['sensors'] = [entity for entity in config.get('sensors', [])
+                             if self.permitted(user, entity, POLICY_READ)]
+        sensor_entities = set(config['sensors'])
         for w in config['windows']:
             sensor_entities.update(contact['entity'] for contact in w.get('contacts', []))
             sensor_entities.update(g[key] for g in w.get('sensor_rules', [])
@@ -338,13 +340,14 @@ class Manager:
             if revision != self.revision:
                 raise ValueError('Zwischenzeitlich geändert. Bitte neu laden und erneut bearbeiten.')
             def controls_only(value):
-                normalized = deepcopy({k: v for k, v in value.items() if k != 'sensor_names'})
+                normalized = deepcopy({k: v for k, v in value.items() if k not in ('sensor_names', 'sensors')})
                 for program in normalized['programs']:
                     if program['kind'] == 'time':program['rides'].sort(key=lambda ride: ride['id'])
                 return normalized
             if controls_only(checked) == controls_only(self.engine.config):
                 # Display-only edits must not stop motors, reset edges or trigger rides.
                 self.engine.config['sensor_names'] = checked['sensor_names']
+                self.engine.config['sensors'] = checked['sensors']
                 self.revision += 1
                 await self.persist()
                 async_dispatcher_send(self.hass, SIGNAL)

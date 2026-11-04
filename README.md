@@ -2,7 +2,7 @@
 
 A local Home Assistant integration and dashboard card for cover schedules, sensor shading, and window-contact opening programs.
 
-**Version 1.2.11 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
+**Version 1.2.12 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
 
 Shutter Manager controls existing `cover` entities. Manage covers, sensor rules, and programs in one dashboard card. Choose German 🇩🇪 or English 🇬🇧 in Settings.
 
@@ -45,15 +45,15 @@ The Home Assistant integration domain and folder stay `rollladenplaner` to prese
 
 ## Existing installations
 
-Update the custom HACS repository, download the release, restart Home Assistant Core, and reload the browser or app. Check the card's Guide or Settings to confirm that the card and integration both report version 1.2.11.
+Update the custom HACS repository, download the release, restart Home Assistant Core, and reload the browser or app. Check the card's Guide or Settings to confirm that the card and integration both report version 1.2.12.
 
-If you have manually added the old resource URL, it remains supported. New manual resources can use `/shutter-manager/shutter-manager-card.js?v=1.2.11`. Do not load both URLs on the same dashboard.
+If you have manually added the old resource URL, it remains supported. New manual resources can use `/shutter-manager/shutter-manager-card.js?v=1.2.12`. Do not load both URLs on the same dashboard.
 
 ## Release files
 
 GitHub Releases provide:
 
-- `Shutter-Manager-1.2.11.zip`: complete package with the integration folder, documentation, and tests.
+- `Shutter-Manager-1.2.12.zip`: complete package with the integration folder, documentation, and tests.
 - `shutter-manager.zip`: integration folder only, for manual installation under `/config/custom_components/rollladenplaner/`.
 
 The release workflow builds and attaches both archives when a release is published. The version in the release tag must match `manifest.json`.
@@ -72,8 +72,8 @@ Administrators configure the integration. Other users need Home Assistant read a
 python3 -m pip install -r tests/requirements.txt
 python3 -m unittest discover -s tests -q
 node --check custom_components/rollladenplaner/frontend/shutter-manager-card.js
-python3 scripts/build_release.py --check-only --tag v1.2.11
-python3 scripts/build_release.py --tag v1.2.11
+python3 scripts/build_release.py --check-only --tag v1.2.12
+python3 scripts/build_release.py --tag v1.2.12
 ```
 
 Browser tests use Playwright and Chromium. GitHub Actions runs behavior tests plus HACS and Hassfest validation.
@@ -86,4 +86,8 @@ Browser tests use Playwright and Chromium. GitHub Actions runs behavior tests pl
 
 Copy this package into the `shutter-manager` checkout. Under `custom_components`, keep only `rollladenplaner`. Remove unrelated integration folders such as `custom_components/light_manager` from this repository checkout before committing; copying a ZIP over an existing folder does not remove extra files. Preserve the checkout's `.git` directory and include this package's `.github` directory. This cleanup applies to the Shutter Manager GitHub checkout, not the separate Light Manager repository or the Home Assistant configuration directory.
 
-Commit and push the complete cleaned tree, then create the new tag `v1.2.11` from that commit. Verify that the tag contains only `custom_components/rollladenplaner` before downloading through HACS. HACS must show `/config/custom_components/rollladenplaner` as the Shutter Manager installation destination.
+Commit and push the complete cleaned tree, then create the new tag `v1.2.12` from that commit. Verify that the tag contains only `custom_components/rollladenplaner` before downloading through HACS. HACS must show `/config/custom_components/rollladenplaner` as the Shutter Manager installation destination.
+
+## Sensor selection in Settings
+
+Use the central **Sensors → Select sensors** button to search and register temperature, illuminance, and contact sensors. The selection is stored with the configuration and included in backups. Selected sensors are available in the cover-rule editor. Referenced sensors cannot be removed from the central selection until their cover rules or contact assignments have been removed. Registration and display-name changes do not issue motor commands.

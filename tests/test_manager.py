@@ -465,7 +465,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
     async def test_snapshot_identifies_loaded_backend_and_sensor_rule_schema(self):
         snapshot=self.m.snapshot(types.SimpleNamespace(is_admin=True))
         self.assertEqual(snapshot['backend_version'],adapter.INTEGRATION_VERSION)
-        self.assertEqual(snapshot['config_schema'],4)
+        self.assertEqual(snapshot['config_schema'],5)
 
     async def test_overview_uses_today_in_ha_timezone_even_after_sunset(self):
         self.now=at('2026-10-30T23:50')
@@ -531,6 +531,28 @@ class AdapterTests(IsolatedAsyncioTestCase):
         await loaded.load()
         self.assertEqual(loaded.engine.config['sensor_names'],{'sensor.temp':'Außentemperatur'})
         self.hass.services.async_call.assert_not_called()
+
+    async def test_selected_sensors_survive_save_reload_without_motor_commands(self):
+        changed=deepcopy(self.m.engine.config)
+        changed['sensors']=['sensor.new_temperature','binary_sensor.new_contact']
+        await self.m.save(changed,0)
+        saved=deepcopy(self.m.store.async_save.call_args.args[0])
+        loaded=adapter.Manager(self.hass);loaded.store.async_load.return_value=saved
+        await loaded.load()
+        self.assertEqual(loaded.engine.config['sensors'],['binary_sensor.new_contact','sensor.new_temperature'])
+        loaded.states=self.m.states;loaded.solar=self.m.solar
+        self.assertIn('sensor.new_temperature',loaded.snapshot(types.SimpleNamespace(is_admin=True))['sensor_entities'])
+        self.hass.services.async_call.assert_not_called()
+
+    async def test_selected_sensor_metadata_respects_read_permissions(self):
+        config=deepcopy(self.c);config['sensors']=['sensor.allowed','sensor.private']
+        config['sensor_names']={'sensor.allowed':'Allowed','sensor.private':'Private'}
+        self.m.engine=adapter.Engine(config)
+        user=types.SimpleNamespace(is_admin=False,permissions=types.SimpleNamespace(check_entity=lambda entity,policy:entity=='sensor.allowed'))
+        snapshot=self.m.snapshot(user)
+        self.assertEqual(snapshot['config']['sensors'],['sensor.allowed'])
+        self.assertEqual(snapshot['sensor_entities'],['sensor.allowed'])
+        self.assertEqual(snapshot['config']['sensor_names'],{'sensor.allowed':'Allowed'})
 
     async def test_websocket_rejects_incompatible_save_schema(self):
         self.hass.data={'rollladenplaner':self.m}

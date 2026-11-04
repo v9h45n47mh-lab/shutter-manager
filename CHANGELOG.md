@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.12
+
+- Added the missing central “Select sensors” button and searchable sensor selection dialog in Settings. Selection persists across restarts and backups.
+- Matched the Light Manager Settings layout: inline language picker, compact vacation row, collapsible cover and sensor rows with selection buttons on the right, and Show/Hide actions for status and recent commands.
+- Centrally selected sensors are available in cover-rule editors, including sensors without recognized metadata. Sensors used by rules or contacts are protected from removal.
+- Sensor registration and display-name changes preserve automation runtime and do not issue motor commands. Sensor visibility respects entity read permissions.
+- Updated both in-card guides and advanced the configuration protocol to reject saves from incompatible older cards or backends.
+
 ## 1.2.11
 
 - Reissued the complete standalone Shutter Manager repository package, including GitHub workflows, documentation, and tests.
