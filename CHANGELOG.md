@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.10
+
+- Preserve actual source-file modification times in release ZIP archives.
+- Prepared a complete repository package for a fresh upload, including GitHub workflows, documentation, and tests.
+- Synchronized the integration manifest, backend version, card version, guide headings, and resource URLs to 1.2.10.
+- Included the Settings layout improvements and expanded sensor selection from 1.2.9.
+
 ## 1.2.9
 
 - Aligned Settings with Light Manager: inline language picker, compact vacation row, cover selection in the section heading, and tighter spacing.

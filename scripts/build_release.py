@@ -1,4 +1,4 @@
-"""Validate the distribution layout and build reproducible release archives."""
+"""Validate the distribution layout and preserve source timestamps in release archives."""
 from __future__ import annotations
 
 import argparse
@@ -56,7 +56,7 @@ def source_files(root):
 def write_zip(path, files, base):
     with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
         for file in sorted(files):
-            info = zipfile.ZipInfo(file.relative_to(base).as_posix(), date_time=(2026, 1, 1, 0, 0, 0))
+            info = zipfile.ZipInfo.from_file(file, arcname=file.relative_to(base).as_posix())
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
             archive.writestr(info, file.read_bytes())
