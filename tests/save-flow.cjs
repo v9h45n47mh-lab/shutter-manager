@@ -32,7 +32,7 @@ const {execFileSync}=require('node:child_process');
      if(window.dropRulesNextSave && message.type.endsWith('/save')){window.dropRulesNextSave=false;result.snapshot.config.windows[0].sensor_rules=[];}
      return result.snapshot;
     }};
-    const c=document.querySelector('rollladenplaner-card');c.setConfig({type:'custom:rollladenplaner-card'});c.settingsSections={covers:true,sensors:false,status:false,commands:true,'sensor-names':true};c.hass=host;
+    const c=document.querySelector('rollladenplaner-card');c.setConfig({type:'custom:rollladenplaner-card'});c.settingsSections={covers:true,sensors:false,status:false,'daily-history':true,'sensor-names':true};c.hass=host;
    });
    await page.locator('rollladenplaner-card').getByRole('button',{name:'Einstellungen',exact:true}).waitFor();
   }

@@ -528,6 +528,10 @@ class Engine:
         self.rt = deepcopy(runtime or {})
         for k, v in {'pending': {}, 'history': [], 'climate': {}, 'edges': {}, 'opening_edges': {}, 'opening_holds': {}, 'claimed': [], 'skipped_occurrences': {}, 'contact_skips': {}, 'time_results': {}, 'shading': {}, 'sensor_pauses': {}, 'rule_states': {}, 'one_time': []}.items():
             self.rt.setdefault(k, deepcopy(v))
+        if 'command_results' not in self.rt:
+            # Retain available results from older versions without inventing targets.
+            self.rt['command_results'] = [deepcopy(row) for row in reversed(self.rt['history'])
+                if row.get('window') and row.get('kind') in ('done', 'error')]
         self.migrate_runtime(migration)
         for wid, item in sensor_migration.items():
             old = self.rt['shading'].get(wid)
@@ -608,6 +612,22 @@ class Engine:
     def log(self, now, kind, message, **extra):
         self.rt['history'].insert(0, {'time': stamp(now), 'kind': kind, 'message': message, **extra})
         del self.rt['history'][100:]
+
+    def command_results_today(self, now):
+        """Return completed attempts for the HA local date in execution order."""
+        today = now.astimezone(self.zone).date()
+        def current(row):
+            try:
+                return datetime.fromisoformat(row['time']).astimezone(self.zone).date() == today
+            except (KeyError, TypeError, ValueError):
+                return False
+        return sorted((deepcopy(row) for row in self.rt['command_results'] if current(row)), key=lambda row: row['time'])
+
+    def expire_command_results(self, now):
+        day = self.zone.key+':'+str(now.astimezone(self.zone).date())
+        if self.rt.get('command_results_day') != day:
+            self.rt['command_results'] = self.command_results_today(now)
+            self.rt['command_results_day'] = day
 
     def windows(self):
         return {w['id']: w for w in self.config['windows']}
@@ -1006,6 +1026,7 @@ class Engine:
     def tick(self, now, states, solar):
         """Claim due events, update sensor transitions, and return permitted intents."""
         now = now.astimezone(UTC)
+        self.expire_command_results(now)
         self.expire_sensor_pauses(now)
         windows = self.windows()
         self._solar = solar
@@ -1208,8 +1229,18 @@ class Engine:
                     action.update(status='error', reason=str(error))
                 else:
                     self.rt['one_time'].remove(action)
-        self.log(now, 'error' if error else 'done',
-                 f"{self.windows().get(target, {}).get('name', target)}: {error or intent['name'] + ' ausgeführt'}", window=target)
+        self.expire_command_results(now)
+        program = next((p for p in self.config['programs'] if p['id'] == intent['program']), None)
+        command = ('Einzelfahrt' if intent.get('one_time') else
+                   'Öffnen' if intent.get('phase') == 'active' else
+                   'Rückkehr' if intent.get('phase') == 'release' else
+                   program['name'] if program else intent['name'])
+        message = f"{self.windows().get(target, {}).get('name', target)}: {error or intent['name'] + ' ausgeführt'}"
+        fields = {'window': target, 'command': command, 'position': intent.get('position'),
+                  'tilt': intent.get('tilt'), 'program': intent['program'], 'source': intent['kind']}
+        self.rt['command_results'].append({'id': intent['id'], 'time': stamp(now),
+            'kind': 'error' if error else 'done', 'message': str(error) if error else '', **fields})
+        self.log(now, 'error' if error else 'done', message, **fields)
 
     def upcoming(self, now, solar, limit=20):
         rows = []

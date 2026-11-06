@@ -23,9 +23,9 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.3.0'
+INTEGRATION_VERSION = '1.3.1'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
-CONFIG_SCHEMA_VERSION = 6
+CONFIG_SCHEMA_VERSION = 7
 SIGNAL = DOMAIN + '_update'
 PLATFORMS = [Platform.SENSOR]
 _LOGGER = logging.getLogger(__name__)
@@ -42,8 +42,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.3.0')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.3.0')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.3.1')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.3.1')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -338,7 +338,8 @@ class Manager:
                 'upcoming': [r for r in self.engine.upcoming(now, self.solar) if r['program'] in allowed],
                 'pending': {w: slots for w, slots in self.engine.rt['pending'].items() if w in visible},
                 'moving': [w for w in self.moving if w in visible], 'cover_states': cover_states,
-                'command_history': history}
+                'command_history': history,
+                'daily_history': [row for row in self.engine.command_results_today(now) if row.get('window') in visible]}
 
     async def save(self, config, revision):
         checked = validate_config(self.individual_controls(config))

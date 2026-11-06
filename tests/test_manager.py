@@ -465,7 +465,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
     async def test_snapshot_identifies_loaded_backend_and_sensor_rule_schema(self):
         snapshot=self.m.snapshot(types.SimpleNamespace(is_admin=True))
         self.assertEqual(snapshot['backend_version'],adapter.INTEGRATION_VERSION)
-        self.assertEqual(snapshot['config_schema'],6)
+        self.assertEqual(snapshot['config_schema'],7)
 
     async def test_overview_uses_today_in_ha_timezone_even_after_sunset(self):
         self.now=at('2026-10-30T23:50')
@@ -601,7 +601,7 @@ class ShadingMigrationAdapterTests(IsolatedAsyncioTestCase):
         from unittest.mock import Mock
         config,_=shading_fixture();hass=types.SimpleNamespace(config=types.SimpleNamespace(time_zone='Europe/Berlin'))
         manager=adapter.Manager(hass);manager.engine=adapter.Engine(config);hass.data={'rollladenplaner':manager}
-        for version in [5,None]:
+        for version in [5,6,None]:
             connection=types.SimpleNamespace(user=types.SimpleNamespace(is_admin=True),send_error=Mock(),send_result=Mock())
             message={'id':1,'config':config,'revision':0}
             if version is not None:message['config_schema']=version

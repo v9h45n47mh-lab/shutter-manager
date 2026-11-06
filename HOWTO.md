@@ -1,4 +1,4 @@
-# Howto – Shutter Manager 1.3.0
+# Howto – Shutter Manager 1.3.1
 
 Der Shutter Manager verbindet Zeitprogramme, übergeordnete Beschattungsprogramme und Öffnungsprogramme. Ab 1.3.0 enthalten die Geräteeinstellungen nur Sensorzuordnungen und Kontakte. Gemeinsame Schwellenwerte, Verzögerungen, Gültigkeit und Fahrziele werden im Programm gepflegt. Das reine Zuordnen eines Sensors löst keine Fahrt aus.
 
@@ -31,13 +31,25 @@ Aussetzen, Urlaubspause oder Deaktivieren löst keine pauschale Rückfahrt aus. 
 
 Beim Update werden bisherige Schwellenwerte und Freigabeverzögerungen aus den Sensorregeln in die zugehörigen Programme übernommen. Sensoren, Fahrziele, Wochentage, Saison und Aktivierung bleiben erhalten. Verwendet ein altes Programm unterschiedliche Bedingungen oder Abschlussaktionen, entstehen getrennte Programme mit Namenszusatz. Unbenutzte alte Regeln mit Parametern werden als deaktivierte Programme übernommen. Mehrere Sensorzuordnungen bleiben erhalten.
 
-Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.3.0 anzeigen.
+Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.3.1 anzeigen.
 
 ## Einstellungen und Sensor-Auswahl
 
-Der Aufbau folgt Light Manager: Sprache mit Sprachwahl rechts, kompakter Urlaubsmodus, Geräte- und Sensorzeilen mit Auswahlknöpfen rechts, Status und letzte Fahrbefehle über Anzeigen/Ausblenden, danach Sensoranzeigenamen und Sicherung. Alle Bereiche lassen sich unabhängig einklappen. Sensor-Auswahl, eigene Anzeigenamen und Konfiguration bleiben nach Neustart erhalten und sind Teil der Sicherung. Leer gelassene Anzeigenamen verwenden den HA-Namen.
+Der Aufbau folgt Light Manager: Sprache mit Sprachwahl rechts, kompakter Urlaubsmodus, Geräte- und Sensorzeilen mit Auswahlknöpfen rechts, Aktueller Status und Heutige Historie über Anzeigen/Ausblenden, danach Sensoranzeigenamen und Sicherung. Letzte Fahrbefehle stehen innerhalb des Bereichs Aktueller Status. Alle Bereiche lassen sich unabhängig einklappen. Sensor-Auswahl, eigene Anzeigenamen und Konfiguration bleiben nach Neustart erhalten und sind Teil der Sicherung. Leer gelassene Anzeigenamen verwenden den HA-Namen.
 
-Sensorvorschläge werden nach Geräteklasse oder Einheit gefiltert. Alle Sensoren anzeigen erlaubt die Zuordnung von Sensoren mit unvollständigen Metadaten. Vor dem Speichern Sensorart und Einheit prüfen. Unter Einstellungen stehen der aktuelle HA-Zustand, gemeldete Höhe/Lamellen und die letzten erfolgreichen oder erkannten fehlgeschlagenen Fahrbefehle mit Zeit und Meldung.
+Sensorvorschläge werden nach Geräteklasse oder Einheit gefiltert. Alle Sensoren anzeigen erlaubt die Zuordnung von Sensoren mit unvollständigen Metadaten. Vor dem Speichern Sensorart und Einheit prüfen. Aktueller Status zeigt den Gerätenamen links und Höhe/Lamellen rechts; Offen/Geschlossen und die doppelte Positionszeile entfallen. Rollläden zeigen nur die Höhe. Darunter stehen die letzten erfolgreichen oder erkannten fehlgeschlagenen Fahrbefehle. Der gesamte Bereich ist zuklappbar.
+
+## Navigation und Messwerte
+
+Programme bleibt links als Text. Direkt daneben öffnen ein Uhr-Icon das Zeitprogramm und ein Sensor-Icon die Sensorprogramme. Tooltips und Beschriftungen für Screenreader benennen beide Reiter. Hilfe (?) und Einstellungen bleiben rechts.
+
+Helligkeit wird vollständig in lx angezeigt, mit Tausenderpunkten und ohne Nachkommastellen, beispielsweise 20.300 lx statt 20k lx. Bruchteile werden auf ganze lx gerundet. klx-Messwerte werden zuvor in lx umgerechnet. Das Format mit Punkten gilt auch bei englischer Oberfläche; Rohwerte und Programmschwellen werden nicht verändert.
+
+## Heutige Historie
+
+Ein eigener, unabhängig zuklappbarer Punkt in den Einstellungen zeigt die heute abgeschlossenen oder fehlgeschlagenen Fahrbefehle chronologisch mit Uhrzeit, Gerätename, Befehl/Ziel und Ergebnis. Wartende oder geplante Fahrten bleiben im Zeitprogramm. Erfolgreich bedeutet, dass die Integration den Zielzustand bestätigt hat; ein akzeptierter Serviceaufruf allein genügt nicht. Erkannte Fehler werden als Fehlgeschlagen mit Grund angezeigt.
+
+Die Historie bleibt nach Neuladen und Neustart erhalten und wechselt mit dem lokalen Home-Assistant-Tag. Sie ist nicht auf die letzten 20 Meldungen begrenzt. Beim ersten Update werden verfügbare ältere Protokolleinträge übernommen; deren fehlende Zielwerte werden nicht ergänzt. Nur berechtigte Geräte sind sichtbar. Die Sicherung exportiert weiterhin die Konfiguration; die Tageshistorie gehört zu den lokalen Laufzeitdaten.
 
 ## Zeitprogramme und Einzelfahrten
 
@@ -75,7 +87,7 @@ Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten
 
 ---
 
-# Shutter Manager 1.3.0
+# Shutter Manager 1.3.1
 
 Shutter Manager combines time schedules, overarching shading programs, and contact-based opening programs. Cover settings contain sensor assignments and contacts only. Shared thresholds, delays, validity, target positions, and end actions belong to programs. Assigning a sensor alone does not move a cover.
 
@@ -108,13 +120,25 @@ Pausing, disabling, or a vacation pause does not automatically return all covers
 
 Existing thresholds and release delays move from named cover rules to their programs. Sensor assignments, targets, weekdays, seasons, enabled flags, and pending work are preserved. A legacy program using different condition sets or end actions is split into separately named programs. Unused parameter rules become disabled programs. Multiple sensor associations are retained.
 
-The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.3.0. Older cards cannot overwrite the new protocol.
+The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.3.1. Older cards cannot overwrite the new protocol.
 
 ## Settings and sensor selection
 
-The layout follows Light Manager: language controls on the right, compact vacation control, cover and sensor rows with selection buttons, Show/Hide links for current status and recent commands, then sensor display names and backup. The sections in Settings can be collapsed independently. Sensor selection, names, and configuration survive restarts and backups. A blank custom name restores the HA name.
+The layout follows Light Manager: language controls on the right, compact vacation control, cover and sensor rows with selection buttons, Show/Hide links for Current status and Today's history, then sensor display names and backup. Recent movement commands are inside Current status. The sections in Settings can be collapsed independently. Sensor selection, names, and configuration survive restarts and backups. A blank custom name restores the HA name.
 
-Sensor suggestions use device class or unit. Show all sensors allows assigning sensors with incomplete metadata; check the sensor type and unit. Status shows the current HA state and reported position/tilt. Recent movement commands show successful and detected failed actions with time and message.
+Sensor suggestions use device class or unit. Show all sensors allows assigning sensors with incomplete metadata; check the sensor type and unit. Current status shows the device name on the left and position/tilt on the right; Open/Closed and the duplicate position line are removed. Shutters show position only. Recent successful and detected failed movement commands appear below, inside the same collapsible section.
+
+## Navigation and readings
+
+Programs remains a text tab on the left. A clock icon for Schedule and a sensor icon for Sensor programs sit directly beside it, with descriptive tooltips and screen-reader labels. Help (?) and Settings stay on the right.
+
+Brightness is displayed as a full lx value with dots as thousands separators and no decimal places, for example 20.300 lx instead of 20k lx. Fractional readings are rounded to whole lx. klx readings are converted to lx first. This dotted format also applies in English; raw readings and program thresholds are unchanged.
+
+## Today's history
+
+A separate, independently collapsible Settings section shows today's completed and failed movement commands chronologically, with time, device, command/target, and result. Pending and planned movements remain in Schedule. Completed means the integration confirmed the target state; an accepted service call alone is insufficient. Detected failures show a reason.
+
+History survives reloads and restarts and rolls over with the Home Assistant local date. It is not limited to the last 20 messages. On the first update, available older log entries are retained without inventing missing target details. Only permitted devices are visible. Configuration backup still exports configuration; daily history belongs to local runtime data.
 
 ## Schedules and one-time movements
 

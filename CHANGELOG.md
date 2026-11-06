@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1
+
+- Display full illuminance readings in lx with dotted thousands separators and no decimal places; convert klx before formatting without changing sensor values or program thresholds.
+- Replace Schedule and Sensor programs tab text with clock and sensor icons directly beside Programs. Keep Help and Settings on the right, with German/English tooltips, accessible labels and active-tab feedback.
+- Move recent movement commands inside Current status. Show device names with position/tilt on the right and remove Open/Closed and the duplicate position line.
+- Add a separate, independently collapsible Today's history section with chronological command targets, completion results and detected failures. Persist all results for the HA local day across reloads and restarts instead of relying on the bounded diagnostic log.
+- Preserve available legacy results, enforce entity read permissions, and update both in-card guides, documentation, release checks and protocol compatibility.
+
 ## 1.3.0
 
 - Moved shading thresholds and delays from cover sensor rules into overarching shading programs. Cover settings now contain sensor assignments and contacts only.

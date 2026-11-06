@@ -40,6 +40,7 @@ jobs:
           node tests/save-flow.cjs
           node tests/settings-flow.cjs
           node tests/shading-flow.cjs
+          node tests/release-131.cjs
       - name: Build verified archives
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
