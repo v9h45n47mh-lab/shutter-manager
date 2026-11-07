@@ -1,12 +1,11 @@
 # Shutter Manager release requests
 
-Implemented in 1.3.1 on 2026-11-06:
+Implemented in 1.3.2 on 2026-11-07:
 
-- Full illuminance values in lx with dotted thousands separators and no decimal places; no k abbreviation. Convert klx before formatting and preserve raw readings/thresholds.
-- Keep Programs as text at the left; place clock and sensor icon tabs directly beside it. Keep Help and Settings on the right with translated tooltips and accessible labels.
-- Keep Current status collapsible, with device names on the left and height/tilt on the right. Remove Open/Closed and duplicate position lines. Include recent movement commands within Current status.
-- Add separate, independently collapsible Today's history with chronological times, devices, command targets and completion/failure results.
-- Persist daily results across reloads/restarts, use the HA local day, and respect device read permissions. Keep planned and waiting actions in Schedule.
-- Update both guides and the English changelog and run release checks.
+- Remove the Recent movement commands block entirely from Current status.
+- Keep Current status limited to device names and position/tilt.
+- Preserve the separate, independently collapsible Today's history, including chronological targets and success/failure results.
+- Update both guides and the English changelog and verify desktop/mobile layouts.
+- Remove unrelated Light Manager development files from this repository and gate explicit release publication on CI validation.
 
-Validation is recorded in RELEASE_TESTS.md. No further release requests are currently pending.
+No additional release requests are pending. Verification is recorded in RELEASE_TESTS.md.

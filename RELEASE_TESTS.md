@@ -1,39 +1,27 @@
-# Release verification: Shutter Manager 1.3.1
+# Release verification: Shutter Manager 1.3.2
 
-Verified on 2026-11-06 against the source packaged in this release.
+Local verification completed on 2026-11-07 against this release source.
 
 | Check | Result |
 | --- | --- |
-| Python behavior tests (`python3 -m unittest discover -s tests -q`) | PASS: 295 tests |
-| JavaScript sensor selection (`node tests/sensor-selection.cjs`) | PASS |
-| JavaScript syntax (`node --check custom_components/rollladenplaner/frontend/shutter-manager-card.js`) | PASS |
-| Python compilation (`python3 -m compileall -q custom_components/rollladenplaner scripts tests`) | PASS |
-| General card/browser regressions (`node tests/ui-test.cjs`) | PASS |
-| Production Manager save/restore flow (`node tests/save-flow.cjs`) | PASS |
-| Desktop/mobile settings and sensor selection (`node tests/settings-flow.cjs`) | PASS |
-| Shared shading program editor (`node tests/shading-flow.cjs`) | PASS |
-| Navigation, values, status and daily history (`node tests/release-131.cjs`) | PASS |
-| Release metadata/layout (`python3 scripts/build_release.py --check-only --tag v1.3.1`) | PASS |
-| Archive CRC and source-byte comparison | PASS; performed by the build script |
+| Python behavior tests | PASS: 295 tests |
+| JavaScript sensor-selection checks | PASS |
+| Card JavaScript syntax and Python compilation | PASS |
+| General card/browser regressions: tests/ui-test.cjs | PASS |
+| Production Manager save/restore flow: tests/save-flow.cjs | PASS |
+| Desktop/mobile sensor selection: tests/settings-flow.cjs | PASS |
+| Shared shading editor: tests/shading-flow.cjs | PASS |
+| Layout/history regressions: tests/release-131.cjs | PASS |
+| Release workflow YAML and embedded Python syntax | PASS |
+| Release metadata/layout for tag v1.3.2 | PASS |
+| Archive CRC and source-byte comparison | Performed by scripts/build_release.py |
 
-Python tests used the pinned dependency from tests/requirements.txt. Browser tests used Playwright with headless Chromium 153. GitHub Actions installs Playwright and Chromium, and both Validate and Release workflows run all five browser scripts.
+The five browser flows use real card code, the production Python Manager and simulated Home Assistant I/O. The dedicated layout test verifies that Recent movement commands is absent in German and English, while Current status and Today's history remain independently collapsible. Position-only status rows, history targets/results, persistence, permissions, HA-local midnight, full lux values, icon navigation and 320/390/1100px layouts remain covered. The mobile layout was visually inspected.
 
-## Release-specific coverage
+The GitHub repository contained 17 unrelated legacy Light Manager development files that were absent from the clean Shutter Manager package. Its previous Validate run failed with 11 test-discovery errors. These foreign tests/scripts are removed in this release; the build checks also reject direct references to the Light Manager integration in test/development source. No Light Manager repository or installation is changed.
 
-- Exact integer lux formatting at 0/999/1,000/20,300/123,456, fractional readings, klx conversion and unit whitespace/case. Dotted thousands are retained in German and English; sensor values are not modified.
-- Only Programs keeps its text label. Clock and sensor tabs sit directly beside it; Help and Settings align at the right edge. Tooltips, accessible names, keyboard operation and active-page state work in both languages.
-- Current status contains recent commands, shows device names with position/tilt on the right, omits Open/Closed and duplicate position lines, and omits tilt for shutters.
-- A separate collapsible daily history displays chronological times, device names, targets, completed results and failures. It folds independently from Current status and keeps fold state over page reloads.
-- Daily results survive Manager and browser reloads and are not truncated by the diagnostic log's 100-message limit; 145 results remain after unrelated logs replace all diagnostics.
-- No completed result is recorded merely because the service accepted a command. Feedback confirms success; service failure creates a failed result. Planned/waiting goals and generic diagnostics do not create new execution results.
-- Available legacy logs migrate without invented targets. Date filtering and expiry use the Home Assistant timezone, including local midnight and both DST changes. Entity read permissions filter the response.
-- Actual layouts inspected at 320/390/1100px with no horizontal overflow. German/English help and release versions were checked.
-- Existing shading, scheduling, one-time movements, contact/opening priority, persistence, sensor selection, copy/move and save-failure regression tests remain successful.
+Publication is opt-in: a main-branch commit marked [publish-release] runs the complete Validate workflow and may publish only after the tests, HACS and Hassfest jobs succeed. It builds the archives from that checked commit and creates the GitHub release/tag targeting the same commit. Ordinary commits do not publish releases. GitHub Actions records the remote check and publication results.
 
-## Packaging and scope
+The full archive contains exactly one integration, custom_components/rollladenplaner, plus documentation, tests, scripts and GitHub workflows. Backend, manifest, card, guides and automatic resource URLs use 1.3.2. The configuration protocol remains 7. File timestamps are preserved from source rather than replaced by a fixed January date. Dependencies, browsers, caches, old releases and unrelated integration files are excluded.
 
-The complete archive is Shutter-Manager-1.3.1.zip; the integration-only archive is shutter-manager.zip. The full archive contains documentation, tests, scripts, GitHub workflows, and exactly one integration under custom_components/rollladenplaner. Frontend, backend, manifest, automatic resource URLs, guides and release tag use 1.3.1. The WebSocket protocol is 7.
-
-Archives preserve source modification times and are checked for CRC integrity and byte-for-byte agreement with source. Dependencies, browser binaries, caches, older releases and unrelated integration folders are excluded.
-
-Home Assistant APIs, services, devices and position feedback are simulated. No real actuator was operated. HACS and Hassfest jobs are configured but were not run locally. After installing, restart Home Assistant Core and reload the browser/app; both displayed versions should read 1.3.1.
+No physical actuator was operated. After installing, restart Home Assistant Core and reload the browser/app. Both displayed versions should report 1.3.2.

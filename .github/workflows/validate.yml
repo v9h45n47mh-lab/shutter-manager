@@ -46,3 +46,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: home-assistant/actions/hassfest@master
+  publish:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[publish-release]') }}
+    needs: [tests, hacs, hassfest]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Read release metadata and notes
+        id: metadata
+        run: |
+          python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          version = json.loads(Path('custom_components/rollladenplaner/manifest.json').read_text())['version']
+          changelog = Path('CHANGELOG.md').read_text()
+          match = re.search(r'^## '+re.escape(version)+r'\n(.*?)(?=^## |\Z)', changelog, re.M | re.S)
+          if not match:
+              raise SystemExit('Release changelog is missing')
+          Path('release-notes.md').write_text(match[1].strip()+'\n\nValidation: Python/browser tests, HACS and Hassfest passed for this commit.\n')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'tag=v{version}\nversion={version}\n')
+          PY
+      - name: Build verified release archives
+        env:
+          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
+        run: python scripts/build_release.py --tag "$RELEASE_TAG"
+      - name: Publish checked commit and archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.metadata.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            --target "$RELEASE_COMMIT" \
+            --title "Shutter Manager $RELEASE_VERSION" \
+            --notes-file release-notes.md \
+            dist/*.zip

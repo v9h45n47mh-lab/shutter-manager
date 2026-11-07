@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.2
+
+- Removed the Recent movement commands block from Current status. Current status now contains only device names and position/tilt.
+- Kept the separate, independently collapsible Today's history with chronological commands, targets, and completion/failure results.
+- Updated the German/English guides and desktop/mobile regression coverage.
+- Removed unrelated legacy Light Manager tests and its icon-generation script from this repository, fixing the failing GitHub test discovery.
+- Added opt-in publication for explicitly marked release commits, gated on tests, HACS and Hassfest, with release archives built from the checked commit.
+
 ## 1.3.1
 
 - Display full illuminance readings in lx with dotted thousands separators and no decimal places; convert klx before formatting without changing sensor values or program thresholds.

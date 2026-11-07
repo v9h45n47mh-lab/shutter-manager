@@ -46,6 +46,11 @@ def validate_layout(tag=None):
     js_schema = re.search(r'^const CONFIG_SCHEMA = (\d+);$', frontend, re.M)
     if not py_schema or not js_schema or py_schema[1] != js_schema[1]:
         raise ValueError('Die Protokollversionen unterscheiden sich.')
+    for directory in ('scripts', 'tests'):
+        for file in (ROOT / directory).rglob('*'):
+            if file.is_file() and file.suffix in ('.py', '.cjs', '.js'):
+                if ('custom_components/'+'light_manager') in file.read_text():
+                    raise ValueError(f'Unrelated Light Manager source in Shutter Manager: {file.relative_to(ROOT)}')
     return version
 
 
