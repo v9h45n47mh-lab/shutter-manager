@@ -32,7 +32,7 @@ const {execFileSync}=require('node:child_process');
      if(window.dropRulesNextSave && message.type.endsWith('/save')){window.dropRulesNextSave=false;result.snapshot.config.windows[0].sensor_rules=[];}
      return result.snapshot;
     }};
-    const c=document.querySelector('rollladenplaner-card');c.setConfig({type:'custom:rollladenplaner-card'});c.settingsSections={covers:true,sensors:false,status:false,'daily-history':true,'sensor-names':true};c.hass=host;
+    const c=document.querySelector('rollladenplaner-card');c.setConfig({type:'custom:rollladenplaner-card'});c.settingsSections={covers:true,sensors:true,status:false,'daily-history':true};c.hass=host;
    });
    await page.locator('rollladenplaner-card').getByRole('button',{name:'Einstellungen',exact:true}).waitFor();
   }
@@ -100,14 +100,14 @@ const {execFileSync}=require('node:child_process');
   await page.evaluate(async legacy=>{const c=document.querySelector('rollladenplaner-card');await c.importFile({size:100,text:async()=>JSON.stringify(legacy)});},legacy);
   assert.equal(await page.evaluate(()=>document.querySelector('rollladenplaner-card').error),'','legacy backup migration remains a confirmed save');
   assert.equal(JSON.parse(fs.readFileSync(store,'utf8')).config.windows[0].sensor_rules.length,1);
-  await card.getByRole('button',{name:'Sensoranzeigenamen bearbeiten',exact:true}).click();
+  await card.locator('[data-selected-sensor="sensor.temp"] [data-action="edit-sensor-name"]').click();
   await dialog.locator('label').filter({hasText:'sensor.temp'}).locator('input').fill('Außentemperatur');
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();await dialog.waitFor({state:'detached'});
   await open();
   assert.equal(await card.locator('.overview').getByText('Außentemperatur',{exact:true}).count(),1,'alias persists across actual Manager and page reload');
   assert.equal(JSON.parse(fs.readFileSync(store,'utf8')).config.sensor_names['sensor.temp'],'Außentemperatur');
   await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
-  await card.getByRole('button',{name:'Sensoranzeigenamen bearbeiten',exact:true}).click();
+  await card.locator('[data-selected-sensor="sensor.temp"] [data-action="edit-sensor-name"]').click();
   await dialog.locator('label').filter({hasText:'sensor.temp'}).locator('input').fill('');
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();await dialog.waitFor({state:'detached'});
   await card.getByRole('button',{name:'Programme',exact:true}).click();

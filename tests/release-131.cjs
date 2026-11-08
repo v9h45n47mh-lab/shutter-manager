@@ -1,4 +1,4 @@
-/* Release 1.3.1 in Chromium with the real Manager/store and simulated HA data. */
+/* Settings, navigation and history in Chromium with the real Manager/store and simulated HA data. */
 const {chromium}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
 const {execFileSync}=require('node:child_process');
@@ -46,7 +46,25 @@ const {execFileSync}=require('node:child_process');
    assert.equal(await page.evaluate(()=>host.states['sensor.lux'].state),value,'raw sensor reading is not changed by formatting');
   }
   await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
-  await card.locator('.settings-reveal-title[data-section="status"]').click();
+  for(const section of ['covers','sensors','status','daily-history']){
+   const fold=card.locator(`button.settings-fold[data-section="${section}"]`);
+   assert.equal(await fold.count(),1,'each section has one heading toggle');
+   assert.equal(await fold.locator('svg.chevron').count(),1,'each section uses a chevron');
+   assert.equal(await fold.getAttribute('aria-expanded'),'false');
+  }
+  assert.equal(await card.getByRole('button',{name:/^(Anzeigen|Ausblenden)$/}).count(),0,'no separate Show/Hide controls');
+  assert.equal(await card.locator('#settings-sensor-names-content,[data-section="sensor-names"]').count(),0,'sensor names have no separate Settings section');
+  for(const width of [1100,390,320]){
+   await page.setViewportSize({width,height:1100});
+   const arrows=await card.locator('.settings-fold svg.chevron').evaluateAll(elements=>elements.map(el=>el.getBoundingClientRect().left));
+   assert.ok(arrows.every(left=>Math.abs(left-arrows[0])<1),'all accordion arrows align');
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   await page.screenshot({path:path.join(directory,`settings-collapsed-${width}.png`),fullPage:true});
+  }
+  await page.setViewportSize({width:1100,height:1100});
+  await card.locator('.settings-fold[data-section="status"]').press('Enter');
+  assert.equal(await card.locator('.settings-fold[data-section="status"]').getAttribute('aria-expanded'),'true');
+  assert.equal(await card.locator('.settings-fold[data-section="status"] .chevron.expanded').count(),1);
   const status=card.locator('#settings-status-content'),history=card.locator('#settings-daily-history-content');
   assert.equal(await card.getByRole('heading',{name:'Letzte Fahrbefehle',exact:true}).count(),0,'recent commands are removed entirely');
   assert.equal(await status.locator('.recent-commands,.command-history-row').count(),0);
@@ -56,7 +74,8 @@ const {execFileSync}=require('node:child_process');
   assert.equal(await shutter.locator('span').innerText(),'Höhe 35%','shutters never display tilt');
   assert.equal(await status.locator('.cover-status-row small').count(),0,'no duplicate position line');
   assert.doesNotMatch(await status.locator('.cover-status-row').allTextContents().then(t=>t.join(' ')),/Geöffnet|Geschlossen|Öffnet|Schließt/);
-  await card.locator('.settings-reveal-title[data-section="daily-history"]').click();
+  await card.locator('.settings-fold[data-section="daily-history"]').press('Space');
+  assert.equal(await card.locator('.settings-fold[data-section="daily-history"]').getAttribute('aria-expanded'),'true');
   assert.equal(await status.locator('#settings-daily-history-content').count(),0,'daily history is outside Current status');
   assert.deepEqual(await history.locator('time').allTextContents(),['00:30','09:00','09:05'],'HA local day and chronological times');
   assert.equal(await history.locator('.daily-history-row').count(),3);
@@ -64,9 +83,9 @@ const {execFileSync}=require('node:child_process');
   assert.equal(await history.getByText('Fehlgeschlagen',{exact:true}).count(),1);
   assert.equal(await history.getByText('Erfolgreich',{exact:true}).count(),2);
   assert.match(await history.innerText(),/Morgens · Höhe 35%/);
-  await card.locator('.settings-reveal-title[data-section="status"]').click();
+  await card.locator('.settings-fold[data-section="status"]').click();
   assert.equal(await status.isVisible(),false);assert.equal(await history.isVisible(),true,'sections fold independently');
-  await card.locator('.settings-reveal-title[data-section="status"]').click();
+  await card.locator('.settings-fold[data-section="status"]').click();
   for(const width of [1100,390,320]){
    await page.setViewportSize({width,height:1100});
    const boxes=await card.locator('.card-top button').evaluateAll(elements=>elements.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width};}));
@@ -83,10 +102,14 @@ const {execFileSync}=require('node:child_process');
   await open();await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
   assert.equal(await history.locator('.daily-history-row').count(),3,'results survive a complete page and Manager reload');
   assert.equal(await history.isVisible(),true,'fold state survives page reload');
+  assert.equal(await status.isVisible(),true,'status fold state also survives page reload');
   await card.getByRole('button',{name:'🇬🇧 EN',exact:false}).click();
   assert.equal(await card.getByRole('button',{name:'Schedule',exact:true}).getAttribute('title'),'Schedule');
   assert.equal(await card.getByRole('button',{name:'Sensor programs',exact:true}).innerText(),'');
   assert.equal(await card.getByRole('button',{name:"Today's history",exact:true}).isVisible(),true);
+  assert.equal(await card.getByRole('button',{name:/^(Show|Hide)$/}).count(),0,'English layout has no separate reveal buttons');
+  assert.equal(await card.getByRole('button',{name:'Current status',exact:true}).locator('svg.chevron').count(),1);
+  assert.equal(await card.getByRole('button',{name:"Today's history",exact:true}).locator('svg.chevron').count(),1);
   assert.equal(await card.getByRole('heading',{name:'Recent movement commands',exact:true}).count(),0,'English layout also omits recent commands');
   await card.getByRole('button',{name:'Programs',exact:true}).click();
   assert.equal(await reading.innerText(),'20.300 lx','dotted thousands format also applies in English');
@@ -98,7 +121,7 @@ const {execFileSync}=require('node:child_process');
   assert.equal(await history.locator('.daily-history-row').count(),0,'new HA local day shows no previous-day commands');
   assert.match(await history.innerText(),/No movements completed today/);
   assert.deepEqual(errors,[]);
-  console.log('PASS: icon-only navigation, keyboard/translated tooltips, exact illuminance formatting, compact status without recent commands, separate daily history, success/failure targets, HA local midnight, durable reloads and 320/390/1100px layouts.');
+  console.log('PASS: consistent chevron headings without Show/Hide buttons or a separate sensor-names section, keyboard expansion and saved fold states; icon navigation, full illuminance, compact status, daily history results, HA-local midnight and 320/390/1100px layouts.');
   console.log('Internal screenshots: '+directory);
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});

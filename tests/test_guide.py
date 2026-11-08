@@ -34,9 +34,12 @@ class GuideTests(unittest.TestCase):
 
     def test_all_settings_sections_are_collapsible_and_guide_describes_execution_order(self):
         self.assertIn('data-action="toggle-settings-section"', SOURCE)
-        for section in ("covers", "status", "daily-history", "sensor-names"):
+        for section in ("covers", "sensors", "status", "daily-history"):
             self.assertIn(f"'{section}'", SOURCE)
         self.assertIn('sections in Settings can be collapsed independently', SOURCE)
+        self.assertIn('clickable headings and chevrons', SOURCE)
+        self.assertIn('use the pencil beside a selected sensor', SOURCE)
+        self.assertIn('über ihr Stiftsymbol umbenennen', SOURCE)
         self.assertIn("settingsSectionVisible(section)", SOURCE)
         self.assertIn(":settings:'+section", SOURCE)
         self.assertIn('commands tilt first, waits one second', SOURCE)

@@ -34,7 +34,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    }
    return structuredClone(model);
   }};
-  const card=document.querySelector('rollladenplaner-card');card.setConfig({type:'custom:rollladenplaner-card'});card.settingsSections={covers:true,sensors:false,status:false,'daily-history':true,'sensor-names':true};card.hass=host;
+  const card=document.querySelector('rollladenplaner-card');card.setConfig({type:'custom:rollladenplaner-card'});card.settingsSections={covers:true,sensors:true,status:false,'daily-history':true};card.hass=host;
  });
  const card=page.locator('rollladenplaner-card'),dialog=card.getByRole('dialog');
  const range=async (selector,value)=>{await dialog.locator(selector).evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event('input',{bubbles:true,composed:true}));el.dispatchEvent(new Event('change',{bubbles:true,composed:true}));},value);};
@@ -117,7 +117,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.locator('[data-action="export"]').count(),0);
  assert.equal(await card.getByRole('button',{name:'Fenster',exact:true}).count(),0);
  await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
- for (const [section,initial] of [['covers','true'],['status','false'],['daily-history','true'],['sensor-names','true']]) {
+ for (const [section,initial] of [['covers','true'],['status','false'],['daily-history','true'],['sensors','true']]) {
   const fold=card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).first();
   assert.equal(await fold.getAttribute('aria-expanded'),initial,`${section} section starts in its documented state`);
   await fold.click();
@@ -127,7 +127,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   assert.equal(await card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).first().getAttribute('aria-expanded'),changed,`${section} fold state survives refresh`);
   await card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).first().click();
  }
- await card.getByRole('button',{name:'Sensoranzeigenamen bearbeiten',exact:true}).click();
+ await card.locator('[data-selected-sensor="sensor.temp"] [data-action="edit-sensor-name"]').click();
  await dialog.locator('label').filter({hasText:'sensor.temp'}).locator('input').fill('Außen Süd');
  await page.evaluate(()=>{host.states['sensor.temp'].state='0';document.querySelector('rollladenplaner-card').hass=host;});
  assert.equal(await overview.count(),0,'overview belongs only in Programme');

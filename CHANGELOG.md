@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.4
+
+- Changed Current status and Today's history to the same clickable chevron headings used by the other collapsible Settings sections, removing the separate Show/Hide buttons. Saved fold states and keyboard controls are retained.
+- Added a pencil beside every selected sensor for editing its local display name directly in Sensors. Renaming affects only the selected sensor; clearing the name restores its Home Assistant label.
+- Removed the separate Sensor display names section while retaining existing aliases, configuration backups and administrator permissions.
+- Updated both guides and desktop/mobile browser regression coverage.
+
 ## 1.3.3
 
 - Reduced the delay between a successful blind tilt service call and the height command from three seconds to one second.
