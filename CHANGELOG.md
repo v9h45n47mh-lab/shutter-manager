@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.9
+
+- Reissued version 1.3.8 with synchronized integration, card and resource versions.
+- No functional, layout, configuration or installation changes.
+
 ## 1.3.8
 
 - Matched Light Manager 1.1.6 Settings spacing with compact collapsible sections, headings and cover/sensor/status entries, plus matching footer and narrow-screen history spacing.

@@ -1,4 +1,4 @@
-# Howto – Shutter Manager 1.3.8
+# Howto – Shutter Manager 1.3.9
 
 Der Shutter Manager verbindet Zeitprogramme, übergeordnete Beschattungsprogramme und Öffnungsprogramme. Ab 1.3.0 enthalten die Geräteeinstellungen nur Sensorzuordnungen und Kontakte. Gemeinsame Schwellenwerte, Verzögerungen, Gültigkeit und Fahrziele werden im Programm gepflegt. Das reine Zuordnen eines Sensors löst keine Fahrt aus.
 
@@ -31,7 +31,7 @@ Aussetzen, Urlaubspause oder Deaktivieren löst keine pauschale Rückfahrt aus. 
 
 Beim Update werden bisherige Schwellenwerte und Freigabeverzögerungen aus den Sensorregeln in die zugehörigen Programme übernommen. Sensoren, Fahrziele, Wochentage, Saison und Aktivierung bleiben erhalten. Verwendet ein altes Programm unterschiedliche Bedingungen oder Abschlussaktionen, entstehen getrennte Programme mit Namenszusatz. Unbenutzte alte Regeln mit Parametern werden als deaktivierte Programme übernommen. Mehrere Sensorzuordnungen bleiben erhalten.
 
-Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.3.8 anzeigen.
+Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.3.9 anzeigen.
 
 ## Einstellungen und Sensor-Auswahl
 
@@ -87,7 +87,7 @@ Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten
 
 ---
 
-# Shutter Manager 1.3.8
+# Shutter Manager 1.3.9
 
 Shutter Manager combines time schedules, overarching shading programs, and contact-based opening programs. Cover settings contain sensor assignments and contacts only. Shared thresholds, delays, validity, target positions, and end actions belong to programs. Assigning a sensor alone does not move a cover.
 
@@ -120,7 +120,7 @@ Pausing, disabling, or a vacation pause does not automatically return all covers
 
 Existing thresholds and release delays move from named cover rules to their programs. Sensor assignments, targets, weekdays, seasons, enabled flags, and pending work are preserved. A legacy program using different condition sets or end actions is split into separately named programs. Unused parameter rules become disabled programs. Multiple sensor associations are retained.
 
-The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.3.8. Older cards cannot overwrite the new protocol.
+The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.3.9. Older cards cannot overwrite the new protocol.
 
 ## Settings and sensor selection
 
