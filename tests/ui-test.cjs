@@ -52,10 +52,15 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  const vacationFilter=card.locator('[data-action="toggle-vacation-filter"]');
  assert.equal(await vacationFilter.innerText(),'Urlaub');
  assert.equal(await vacationFilter.getAttribute('aria-pressed'),'false');
+ const primaryColors=await card.locator('[data-action="new-program"]').evaluate(button=>({background:getComputedStyle(button).backgroundColor,text:getComputedStyle(button).color}));
+ const inactiveFilter=await vacationFilter.evaluate(button=>{const style=getComputedStyle(button);return {padding:style.padding,color:style.color,background:style.backgroundColor};});
+ assert.deepEqual(inactiveFilter,{padding:'6px 12px',color:primaryColors.background,background:'rgba(0, 0, 0, 0)'},'unselected Vacation filter matches Light Manager');
  const originalConfig=await page.evaluate(()=>JSON.stringify(model.config));
  const filterWrites=await page.evaluate(()=>calls.filter(message=>/\/(save|action)$/.test(message.type)).length);
  await vacationFilter.press('Space');
  assert.equal(await vacationFilter.getAttribute('aria-pressed'),'true');
+ const activeFilter=await vacationFilter.evaluate(button=>({background:getComputedStyle(button).backgroundColor,text:getComputedStyle(button).color}));
+ assert.deepEqual(activeFilter,primaryColors,'selected Vacation filter uses the same solid colors as the primary button');
  assert.equal(await card.locator('.program').count(),0,'vacation-paused programs are hidden');
  assert.equal(await card.getByText('Keine Programme für den Urlaubsmodus vorhanden.',{exact:true}).isVisible(),true);
  assert.equal(await page.evaluate(()=>JSON.stringify(model.config)),originalConfig,'filtering does not change configuration or vacation mode');

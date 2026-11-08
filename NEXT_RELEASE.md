@@ -1,10 +1,11 @@
 # Shutter Manager release requests
 
-Implemented in 1.3.7 on 2026-11-08:
+Implemented in 1.3.8 on 2026-11-08:
 
-- Remove the vacation-pause hint from the program overview in both languages. Keep the Vacation filter for finding programs that run during vacation.
+- Match Settings spacing to the current Light Manager reference (1.1.6).
+- Match the Vacation filter button in Programs to Light Manager, including selected/unselected colors and padding.
 - Update German/English help and the English changelog, run release tests and publish directly to GitHub.
 
-The compact expanded layout, mobile control visibility and Vacation filter introduced in 1.3.6 remain included.
+Reference: v9h45n47mh-lab/light-manager commit 2206d42c0597dc6b986bf9de102fb72cd14da760. The Light Manager repository is a read-only design reference.
 
 No additional release requests are pending. Verification is recorded in RELEASE_TESTS.md.

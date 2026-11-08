@@ -24,6 +24,13 @@ const {execFileSync}=require('node:child_process');
   assert.equal(await card.getByRole('button',{name:/^(Anzeigen|Ausblenden)$/}).count(),0);
   for(const width of [1100,390]){
    await page.setViewportSize({width,height:1100});
+   // Reference: Light Manager 1.1.6, commit 2206d42c0597dc6b986bf9de102fb72cd14da760.
+   for(const section of ['covers','sensors','status','daily-history']){
+    const spacing=await card.locator(`[data-settings="${section}"]`).evaluate(group=>{const fold=group.querySelector('.settings-fold'),style=getComputedStyle(group);return {top:style.paddingTop,bottom:style.paddingBottom,font:getComputedStyle(fold.querySelector('span')).fontSize,gap:getComputedStyle(fold).gap,arrow:getComputedStyle(fold.querySelector('svg')).width};});
+    assert.deepEqual(spacing,{top:'10px',bottom:'10px',font:'14px',gap:'6px',arrow:'20px'},'collapsible Settings sections match Light Manager spacing');
+   }
+   const footer=await card.locator('.settings-version-info').evaluate(element=>{const style=getComputedStyle(element);return {font:style.fontSize,margin:style.marginTop,padding:style.paddingTop};});
+   assert.deepEqual(footer,{font:'12px',margin:'16px',padding:'0px'},'footer uses Light Manager spacing');
    assert.equal(await card.getByRole('button',{name:'Rollläden auswählen',exact:true}).isVisible(),true);
    assert.equal(await card.getByRole('button',{name:'Sensoren auswählen',exact:true}).isVisible(),true);
    assert.equal(await card.locator('#settings-sensors-content').isVisible(),false);
@@ -73,6 +80,7 @@ const {execFileSync}=require('node:child_process');
    await page.setViewportSize({width,height:1100});
    const row=sensorRow('sensor.new_temperature'),label=await row.locator('strong').boundingBox(),pencil=await row.locator('button').boundingBox();
    assert.ok(pencil.x>=label.x+label.width,'pencil is on the right of its sensor');
+   assert.ok((await row.boundingBox()).height<=50,'sensor rows remain compact around the accessible pencil control');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await page.screenshot({path:path.join(directory,`sensor-pencils-${width}.png`),fullPage:true});
   }

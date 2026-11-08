@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.8
+
+- Matched Light Manager 1.1.6 Settings spacing with compact collapsible sections, headings and cover/sensor/status entries, plus matching footer and narrow-screen history spacing.
+- Matched the Vacation filter button padding and colors to Light Manager. Selected filters use a solid accent background with contrasting text.
+- Updated both guides and desktop/mobile regression coverage.
+
 ## 1.3.7
 
 - Removed the vacation-pause hint from individual program summaries in German and English. The Vacation filter remains the way to display programs configured to run during vacation.
