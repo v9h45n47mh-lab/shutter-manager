@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.3
+
+- Reduced the delay between a successful blind tilt service call and the height command from three seconds to one second.
+- Added a dedicated handoff timer so the one-second delay is independent of the regular five-second evaluation interval. Contact blocking and the current goal are rechecked before height is commanded.
+- Cancelled pending handoff timers when a movement stops, its goal changes, or the integration unloads; stale callbacks cannot restart those movements.
+- Updated the German and English guides and regression tests for timing, slow service calls, contact blocking, cancellation, service failures and height-only movements.
+
 ## 1.3.2
 
 - Removed the Recent movement commands block from Current status. Current status now contains only device names and position/tilt.

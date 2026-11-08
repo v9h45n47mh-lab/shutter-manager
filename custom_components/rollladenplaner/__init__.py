@@ -15,7 +15,7 @@ from homeassistant.components.cover import CoverEntityFeature
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.const import Platform
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.event import async_call_later, async_track_time_interval
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.sun import get_astral_event_date
@@ -23,7 +23,7 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.3.2'
+INTEGRATION_VERSION = '1.3.3'
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 7
 SIGNAL = DOMAIN + '_update'
@@ -42,8 +42,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.3.2')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.3.2')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.3.3')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.3.3')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -149,6 +149,8 @@ class Manager:
         moving = self.moving.pop(wid, None)
         if not moving:
             return
+        if cancel_wait := moving.pop('cancel_wait', None):
+            cancel_wait()
         w = self.engine.windows().get(wid)
         if not w:
             w = moving['window']
@@ -185,6 +187,8 @@ class Manager:
         if phase == 'height_wait':
             if now < motion['wait_until']:
                 return
+            if cancel_wait := motion.pop('cancel_wait', None):
+                cancel_wait()
             motion.update(phase='height', sent=False)
             phase = 'height'
         attr = 'current_position' if phase == 'height' else 'current_tilt_position'
@@ -217,7 +221,11 @@ class Manager:
         try:
             await self.command(w, service, **({'position': value} if phase == 'height' else {'tilt_position': value}))
             if phase == 'tilt' and intent['position'] is not None:
-                motion.update(phase='height_wait', sent=False, wait_until=now + timedelta(seconds=3))
+                motion.update(phase='height_wait', sent=False, wait_until=utcnow() + timedelta(seconds=1))
+                # Resume independently of the five-second evaluation interval.
+                async def resume_height(fired_at):
+                    await self.pulse(fired_at, waiting_for=(wid, motion))
+                motion['cancel_wait'] = async_call_later(self.hass, 1, resume_height)
         except Exception as err:  # Integration failures must not stall the other windows.
             _LOGGER.exception('Fahrt für %s fehlgeschlagen', w['cover'])
             await self.stop(wid)
@@ -243,8 +251,13 @@ class Manager:
         self._reported_errors = errors
         async_dispatcher_send(self.hass, SIGNAL)
 
-    async def pulse(self, _now=None):
+    async def pulse(self, _now=None, *, waiting_for=None):
         async with self.lock:
+            if waiting_for is not None:
+                wid, motion = waiting_for
+                # Ignore callbacks for a stopped, replaced or already advanced goal.
+                if self.moving.get(wid) is not motion or motion['phase'] != 'height_wait':
+                    return
             try:
                 await self._pulse_locked()
             except Exception:

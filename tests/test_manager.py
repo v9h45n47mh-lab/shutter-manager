@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import types
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 # Isolate Home Assistant imports; these stubs do not verify HA API compatibility.
 ROOT=Path(__file__).resolve().parents[1]
@@ -38,7 +38,7 @@ module('homeassistant.const',Platform=types.SimpleNamespace(SENSOR='sensor'))
 module('homeassistant.core',callback=identity)
 module('homeassistant.exceptions',HomeAssistantError=RuntimeError)
 module('homeassistant.helpers.dispatcher',async_dispatcher_send=lambda *a:None)
-module('homeassistant.helpers.event',async_track_time_interval=lambda *a:None)
+module('homeassistant.helpers.event',async_call_later=lambda *a:Mock(),async_track_time_interval=lambda *a:None)
 class Store:
     def __init__(self,*a):self.async_save=AsyncMock();self.async_load=AsyncMock(return_value=None)
 module('homeassistant.helpers.storage',Store=Store)
@@ -158,18 +158,106 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.m.engine.tick(self.now-timedelta(seconds=5),self.s,solar)
         self.intent=self.m.engine.tick(self.now,self.s,solar)['w']
         self.s['cover.wohnen']['attributes']['supported_features']=140
-    async def test_tilt_precedes_height_with_three_second_pause(self):
+        timer=patch.object(adapter,'async_call_later');self.schedule=timer.start();self.addCleanup(timer.stop)
+    async def test_tilt_precedes_height_with_one_second_pause(self):
         await self.m.advance('w',self.intent,self.now,self.s)
         self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_tilt_position')
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=2),self.s)
+        await self.m.advance('w',self.intent,self.now+timedelta(milliseconds=999),self.s)
         self.assertEqual(self.hass.services.async_call.call_count,1)
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=3),self.s)
+        await self.m.advance('w',self.intent,self.now+timedelta(seconds=1),self.s)
         self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_position')
         self.s['cover.wohnen']['attributes']['current_position']=0
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=4),self.s)
+        await self.m.advance('w',self.intent,self.now+timedelta(seconds=2),self.s)
         self.assertNotIn('w',self.m.moving)
         self.assertEqual(self.m.engine.rt['history'][0]['kind'],'done')
         self.assertEqual([call.args[1] for call in self.hass.services.async_call.call_args_list],['set_cover_tilt_position','set_cover_position'])
+    async def test_height_timer_runs_before_the_next_regular_pulse(self):
+        await self.m.pulse()
+        self.schedule.assert_called_once()
+        hass,delay,callback=self.schedule.call_args.args
+        self.assertIs(hass,self.hass)
+        self.assertEqual(delay,1)
+        self.now+=timedelta(seconds=1)
+        await callback(self.now)
+        self.assertEqual([call.args[1] for call in self.hass.services.async_call.call_args_list],['set_cover_tilt_position','set_cover_position'])
+        self.schedule.return_value.assert_called_once_with()
+        await callback(self.now)
+        self.assertEqual(self.hass.services.async_call.call_count,2)
+    async def test_wait_starts_after_the_tilt_service_returns(self):
+        async def slow_tilt(*args,**kwargs):
+            self.now+=timedelta(seconds=2)
+        self.hass.services.async_call.side_effect=slow_tilt
+        await self.m.pulse()
+        self.assertEqual(self.m.moving['w']['wait_until'],self.now+timedelta(seconds=1))
+        callback=self.schedule.call_args.args[2]
+        self.hass.services.async_call.side_effect=None
+        self.now+=timedelta(milliseconds=999)
+        await self.m.pulse()
+        self.assertEqual(self.hass.services.async_call.call_count,1)
+        self.now+=timedelta(milliseconds=1)
+        await callback(self.now)
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_position')
+        self.assertEqual(self.m.moving['w']['deadline'],self.now+timedelta(seconds=150))
+    async def test_height_timer_rechecks_contact_blocking(self):
+        await self.m.pulse()
+        callback=self.schedule.call_args.args[2]
+        self.s['binary_sensor.fenster']['state']='on'
+        self.now+=timedelta(seconds=1)
+        await callback(self.now)
+        self.assertEqual([call.args[1] for call in self.hass.services.async_call.call_args_list],['set_cover_tilt_position','stop_cover'])
+        self.assertNotIn('w',self.m.moving)
+        self.assertTrue(self.m.engine.rt['pending']['w']['time']['reason'])
+        self.schedule.return_value.assert_called_once_with()
+    async def test_disabling_program_cancels_the_height_timer(self):
+        await self.m.pulse()
+        callback=self.schedule.call_args.args[2]
+        await self.m.action(types.SimpleNamespace(is_admin=True),{'action':'program','program':'p','value':False,'entity_id':['cover.wohnen'],'revision':self.m.revision})
+        self.schedule.return_value.assert_called_once_with()
+        self.now+=timedelta(seconds=1)
+        await callback(self.now)
+        self.assertNotIn('set_cover_position',[call.args[1] for call in self.hass.services.async_call.call_args_list])
+        self.assertNotIn('w',self.m.moving)
+    async def test_unload_cancels_the_height_timer_and_ignores_queued_callback(self):
+        await self.m.pulse()
+        callback=self.schedule.call_args.args[2]
+        self.hass.data={adapter.DOMAIN:self.m}
+        self.hass.config_entries=types.SimpleNamespace(async_unload_platforms=AsyncMock(return_value=True))
+        self.m.unsub=Mock()
+        self.assertTrue(await adapter.async_unload_entry(self.hass,types.SimpleNamespace(runtime_data=self.m)))
+        self.m.unsub.assert_called_once_with()
+        self.schedule.return_value.assert_called_once_with()
+        self.now+=timedelta(seconds=1)
+        await callback(self.now)
+        self.assertNotIn('set_cover_position',[call.args[1] for call in self.hass.services.async_call.call_args_list])
+        self.assertNotIn(adapter.DOMAIN,self.hass.data)
+    async def test_failed_tilt_service_does_not_schedule_height(self):
+        self.hass.services.async_call.side_effect=RuntimeError('offline')
+        with self.assertLogs(adapter._LOGGER,level='WARNING'):
+            await self.m.pulse()
+        self.schedule.assert_not_called()
+        self.assertNotIn('w',self.m.moving)
+        self.assertNotIn('set_cover_position',[call.args[1] for call in self.hass.services.async_call.call_args_list])
+    async def test_height_only_movement_does_not_schedule_a_tilt_wait(self):
+        self.intent['tilt']=None
+        await self.m.advance('w',self.intent,self.now,self.s)
+        self.schedule.assert_not_called()
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_position')
+    async def test_old_timer_cannot_advance_a_replacement_movement(self):
+        await self.m.pulse()
+        old_callback=self.schedule.call_args.args[2]
+        old_motion=self.m.moving['w']
+        await self.m.stop('w')
+        self.schedule.return_value.assert_called_once_with()
+        self.now+=timedelta(milliseconds=500)
+        await self.m.pulse()
+        self.assertIsNot(self.m.moving['w'],old_motion)
+        new_callback=self.schedule.call_args.args[2]
+        self.now+=timedelta(milliseconds=500)
+        await old_callback(self.now)
+        self.assertNotIn('set_cover_position',[call.args[1] for call in self.hass.services.async_call.call_args_list])
+        self.now+=timedelta(milliseconds=500)
+        await new_callback(self.now)
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_position')
     async def test_saturday_1800_wait_1801_close_1802_edit_1803_can_skip(self):
         self.c['programs'][0]['days']=[5]
         self.c['programs'][0]['rides'][0].update(time='18:00',earliest='00:00',latest='23:59',position=85,tilt=0)
@@ -234,7 +322,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.assertEqual(self.m.engine.planned_today(self.now,solar),[])
     async def test_height_timeout_after_tilt_and_pause(self):
         await self.m.advance('w',self.intent,self.now,self.s)
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=3),self.s)
+        await self.m.advance('w',self.intent,self.now+timedelta(seconds=1),self.s)
         await self.m.advance('w',self.intent,self.now+timedelta(seconds=154),self.s)
         services=[c.args[1] for c in self.hass.services.async_call.call_args_list]
         self.assertIn('set_cover_tilt_position',services)
@@ -293,11 +381,11 @@ class AdapterTests(IsolatedAsyncioTestCase):
     async def test_fixed_150_seconds_ignores_legacy_window_value(self):
         await self.m.advance('w',self.intent,self.now,self.s)
         self.assertNotIn('deadline',self.m.moving['w'])
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=3),self.s)
-        self.assertEqual(self.m.moving['w']['deadline'],self.now+timedelta(seconds=153))
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=152),self.s)
+        await self.m.advance('w',self.intent,self.now+timedelta(seconds=1),self.s)
+        self.assertEqual(self.m.moving['w']['deadline'],self.now+timedelta(seconds=151))
+        await self.m.advance('w',self.intent,self.now+timedelta(seconds=150),self.s)
         self.assertIn('w',self.m.moving)
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=153),self.s)
+        await self.m.advance('w',self.intent,self.now+timedelta(seconds=151),self.s)
         self.assertNotIn('w',self.m.moving)
     async def test_skip_today_stops_current_motion_without_marking_next(self):
         await self.m.advance('w',self.intent,self.now,self.s)
