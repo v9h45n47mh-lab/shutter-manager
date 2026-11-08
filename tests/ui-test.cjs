@@ -39,7 +39,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  const card=page.locator('rollladenplaner-card'),dialog=card.getByRole('dialog');
  const assertCompactSummaries=async()=>{
   for(const text of await card.locator('.program .tags>span').allTextContents()){
-   assert.doesNotMatch(text,/^(?:\d+ (?:Fahrt|Fahrten|action|actions)|Zeitprogramm|Sensorprogramm|Öffnungsprogramm|Schedule|Sensor program|Opening program)$/,'program summaries omit action counts and program types');
+   assert.doesNotMatch(text,/^(?:\d+ (?:Fahrt|Fahrten|action|actions)|Zeitprogramm|Sensorprogramm|Öffnungsprogramm|Schedule|Sensor program|Opening program|Pause im Urlaub|Paused during vacation)$/,'program summaries omit action counts and program types');
   }
  };
  const range=async (selector,value)=>{await dialog.locator(selector).evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event('input',{bubbles:true,composed:true}));el.dispatchEvent(new Event('change',{bubbles:true,composed:true}));},value);};
@@ -48,7 +48,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.locator('.program-group-head').first().getAttribute('aria-expanded'),'true','groups start expanded');
  assert.equal(await card.locator('[data-action="fold-program"]').first().getAttribute('aria-expanded'),'false','programs start collapsed');
  await assertCompactSummaries();
- assert.deepEqual(await card.locator('.program .tags>span').allTextContents(),['Mo · Di · Mi · Do · Fr','Pause im Urlaub'],'time summaries keep weekdays and vacation pause');
+ assert.deepEqual(await card.locator('.program .tags>span').allTextContents(),['Mo · Di · Mi · Do · Fr'],'time summaries keep weekdays and omit the vacation-pause hint');
  const vacationFilter=card.locator('[data-action="toggle-vacation-filter"]');
  assert.equal(await vacationFilter.innerText(),'Urlaub');
  assert.equal(await vacationFilter.getAttribute('aria-pressed'),'false');

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.7
+
+- Removed the vacation-pause hint from individual program summaries in German and English. The Vacation filter remains the way to display programs configured to run during vacation.
+- Updated both guides and browser regression coverage.
+
 ## 1.3.6
 
 - Added a Vacation filter aligned left opposite + Program. It shows programs without a vacation pause, updates visible group counts, retains its state across refreshes/tab changes, and never changes vacation mode or program settings. Filtered desktop sorting respects the visible program order.
