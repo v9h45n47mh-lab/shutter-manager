@@ -37,11 +37,18 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   const card=document.querySelector('rollladenplaner-card');card.setConfig({type:'custom:rollladenplaner-card'});card.settingsSections={covers:true,sensors:true,status:false,'daily-history':true};card.hass=host;
  });
  const card=page.locator('rollladenplaner-card'),dialog=card.getByRole('dialog');
+ const assertCompactSummaries=async()=>{
+  for(const text of await card.locator('.program .tags>span').allTextContents()){
+   assert.doesNotMatch(text,/^(?:\d+ (?:Fahrt|Fahrten|action|actions)|Zeitprogramm|Sensorprogramm|Öffnungsprogramm|Schedule|Sensor program|Opening program)$/,'program summaries omit action counts and program types');
+  }
+ };
  const range=async (selector,value)=>{await dialog.locator(selector).evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event('input',{bubbles:true,composed:true}));el.dispatchEvent(new Event('change',{bubbles:true,composed:true}));},value);};
  await card.getByRole('button',{name:'Wohnbereich · Wochentage',exact:true}).waitFor();
  assert.equal(await card.locator('.program-group-head').count(),1,'time programs are grouped');
  assert.equal(await card.locator('.program-group-head').first().getAttribute('aria-expanded'),'true','groups start expanded');
  assert.equal(await card.locator('[data-action="fold-program"]').first().getAttribute('aria-expanded'),'false','programs start collapsed');
+ await assertCompactSummaries();
+ assert.deepEqual(await card.locator('.program .tags>span').allTextContents(),['Mo · Di · Mi · Do · Fr','Pause im Urlaub'],'time summaries keep weekdays and vacation pause');
  await page.evaluate(async()=>{model.sun_times={date:'2026-10-30',sunrise:'2026-10-30T06:30:00Z',sunset:'2026-10-30T17:00:00Z'};model.time_zone='Europe/Berlin';await document.querySelector('rollladenplaner-card').refresh();});
  const overview=card.getByRole('region',{name:'Sonnenzeiten und Sensorwerte'});
  assert.equal(await overview.locator('.overview-item').count(),3,'three distinct assigned sensors, separate from solar row');
@@ -477,6 +484,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await dialog.getByRole('button',{name:'Speichern',exact:true}).click();await dialog.waitFor({state:'detached'});
  assert.equal(await page.evaluate(()=>model.config.programs.at(-1).sensor_mode),'opening');
  assert.equal(await page.evaluate(()=>model.config.programs.at(-1).rides[0].tilt),35);
+ await assertCompactSummaries();
+ assert.ok((await card.locator('.program .tags>span').allTextContents()).includes('08:00–20:00'),'opening time windows remain visible');
  await page.evaluate(async()=>{
    model.config.programs.splice(1,0,{id:'p2',name:'Zweites Zeitprogramm',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[]});
    model.revision++;
@@ -498,6 +507,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.locator('[data-action="fold-program"][data-program="p"]').getAttribute('aria-expanded'),expandedBeforeRecreate);
  await card.locator('[data-action="fold-program"]').first().click();
  await page.screenshot({path:path.join(__dirname,'../../planner-mobile.png'),fullPage:true});
+ await assertCompactSummaries();
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  await page.setViewportSize({width:1100,height:1000});
  await page.screenshot({path:path.join(__dirname,'../../planner-desktop.png'),fullPage:true});
@@ -530,7 +540,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  const englishFold=card.locator('[data-action="fold-program"][data-program="p"]');
  if(await englishFold.getAttribute('aria-expanded')==='false')await englishFold.click();
  const englishProgramText=await card.locator('main').innerText();
- assert.ok(englishProgramText.includes('Opening program'),'opening program label is translated');
+ await assertCompactSummaries();
+ assert.equal(englishProgramText.includes('Opening program'),false,'program type is also omitted in the English overview');
  const target=await page.evaluate(()=>model.config.programs.find(p=>p.id==='p').rides[0]);
  assert.ok(englishProgramText.includes('Position '+target.position+'%') && englishProgramText.includes('Tilt '+target.tilt+'%'),'dynamic height and tilt summaries are translated');
  assert.equal(englishProgramText.includes('Höhe'),false);

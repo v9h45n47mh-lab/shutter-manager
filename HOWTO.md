@@ -1,4 +1,4 @@
-# Howto – Shutter Manager 1.3.4
+# Howto – Shutter Manager 1.3.5
 
 Der Shutter Manager verbindet Zeitprogramme, übergeordnete Beschattungsprogramme und Öffnungsprogramme. Ab 1.3.0 enthalten die Geräteeinstellungen nur Sensorzuordnungen und Kontakte. Gemeinsame Schwellenwerte, Verzögerungen, Gültigkeit und Fahrziele werden im Programm gepflegt. Das reine Zuordnen eines Sensors löst keine Fahrt aus.
 
@@ -31,7 +31,7 @@ Aussetzen, Urlaubspause oder Deaktivieren löst keine pauschale Rückfahrt aus. 
 
 Beim Update werden bisherige Schwellenwerte und Freigabeverzögerungen aus den Sensorregeln in die zugehörigen Programme übernommen. Sensoren, Fahrziele, Wochentage, Saison und Aktivierung bleiben erhalten. Verwendet ein altes Programm unterschiedliche Bedingungen oder Abschlussaktionen, entstehen getrennte Programme mit Namenszusatz. Unbenutzte alte Regeln mit Parametern werden als deaktivierte Programme übernommen. Mehrere Sensorzuordnungen bleiben erhalten.
 
-Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.3.4 anzeigen.
+Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.3.5 anzeigen.
 
 ## Einstellungen und Sensor-Auswahl
 
@@ -75,7 +75,7 @@ Im Tab Sensorprogramme lässt sich ein Programm bis zur nächsten lokalen Mitter
 
 ## Oberfläche, Kopieren und Sicherung
 
-Programme und Fahrten lassen sich einzeln oder gesammelt auf-/zuklappen. Neue Fahrten öffnen direkt. Kopieren und Verschieben einzelner Fahrten erfolgt über eine Zielprogrammauswahl und wird erst beim Speichern gemeinsam übernommen. Es gelten danach Bedingungen, Tage, Urlaub und Gültigkeit des Zielprogramms. Bei Beschattungsprogrammen müssen Sensorzuordnung und benötigte Sensorarten weiterhin passen. Konflikte werden gemeldet; Abbrechen verwirft den Entwurf. Ganze Programme können mit neuer ID kopiert werden.
+Die Programmübersicht zeigt keine Fahrtenanzahl und keine Programmart mehr. Wochentage, Zeitfenster, Beschattungsschwellen und Urlaubspause bleiben als kompakte Angaben sichtbar. Programme und Fahrten lassen sich einzeln oder gesammelt auf-/zuklappen. Neue Fahrten öffnen direkt. Kopieren und Verschieben einzelner Fahrten erfolgt über eine Zielprogrammauswahl und wird erst beim Speichern gemeinsam übernommen. Es gelten danach Bedingungen, Tage, Urlaub und Gültigkeit des Zielprogramms. Bei Beschattungsprogrammen müssen Sensorzuordnung und benötigte Sensorarten weiterhin passen. Konflikte werden gemeldet; Abbrechen verwirft den Entwurf. Ganze Programme können mit neuer ID kopiert werden.
 
 Der Messwertebereich im Programme-Tab zeigt Sonnenzeiten, Kontakte, Temperatur und Helligkeit; Sensoren werden nach Anzeigename sortiert. Änderungen der Messwerte verwerfen keine offenen Eingaben. Unter Einstellungen → Sicherung die Konfiguration exportieren oder wiederherstellen. Administratoren konfigurieren; andere Benutzer benötigen HA-Lese- und Steuerrechte für die betroffenen Geräte.
 
@@ -87,7 +87,7 @@ Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten
 
 ---
 
-# Shutter Manager 1.3.4
+# Shutter Manager 1.3.5
 
 Shutter Manager combines time schedules, overarching shading programs, and contact-based opening programs. Cover settings contain sensor assignments and contacts only. Shared thresholds, delays, validity, target positions, and end actions belong to programs. Assigning a sensor alone does not move a cover.
 
@@ -120,7 +120,7 @@ Pausing, disabling, or a vacation pause does not automatically return all covers
 
 Existing thresholds and release delays move from named cover rules to their programs. Sensor assignments, targets, weekdays, seasons, enabled flags, and pending work are preserved. A legacy program using different condition sets or end actions is split into separately named programs. Unused parameter rules become disabled programs. Multiple sensor associations are retained.
 
-The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.3.4. Older cards cannot overwrite the new protocol.
+The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.3.5. Older cards cannot overwrite the new protocol.
 
 ## Settings and sensor selection
 
@@ -162,7 +162,7 @@ Sensor programs can be paused until local midnight, including across restarts. O
 
 ## Editor, copy, and backups
 
-Programs and actions can be expanded or collapsed individually or together. New actions open immediately. Copy/move uses a target-program dialog and remains staged until Save applies both sides. The destination program's conditions, weekdays, vacation, and validity apply. Sensor assignments must meet its required sensor types. Conflicts remain visible without losing the draft. Whole-program copies receive new IDs.
+The program overview omits action counts and program-type labels. Weekdays, time windows, shading thresholds and vacation pause remain as compact details. Programs and actions can be expanded or collapsed individually or together. New actions open immediately. Copy/move uses a target-program dialog and remains staged until Save applies both sides. The destination program's conditions, weekdays, vacation, and validity apply. Sensor assignments must meet its required sensor types. Conflicts remain visible without losing the draft. Whole-program copies receive new IDs.
 
 The Programs readings panel shows sun times, contacts, temperature, and illuminance, sorted by display name. Reading updates do not discard editor inputs. Use Settings → Backup to export or restore configuration. Administrators configure; other users require HA read/control permissions for affected devices.
 

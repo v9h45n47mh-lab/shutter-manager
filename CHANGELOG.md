@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.5
+
+- Removed action counts and program-type labels from individual program summaries in Programs, reducing the space used by the overview.
+- Retained weekdays, time windows, shading thresholds and vacation pause in the compact summaries. Group headings and program counts remain available.
+- Updated the German/English guides and program-overview browser regressions.
+
 ## 1.3.4
 
 - Changed Current status and Today's history to the same clickable chevron headings used by the other collapsible Settings sections, removing the separate Show/Hide buttons. Saved fold states and keyboard controls are retained.
