@@ -2,7 +2,7 @@
 
 A local Home Assistant integration and dashboard card for cover schedules, sensor shading, and window-contact opening programs.
 
-**Version 1.3.5 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
+**Version 1.3.6 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
 
 Shutter Manager controls existing `cover` entities. Manage covers, sensor assignments, and programs in one dashboard card. Choose German 🇩🇪 or English 🇬🇧 in Settings.
 
@@ -46,11 +46,17 @@ The Home Assistant integration domain and folder stay `rollladenplaner` to prese
 
 ## Existing installations
 
-Update the custom HACS repository, download the release, restart Home Assistant Core, and reload the browser or app. Check the card's Guide or Settings to confirm that the card and integration both report version 1.3.5.
+Update the custom HACS repository, download the release, restart Home Assistant Core, and reload the browser or app. Check the card's Guide or Settings to confirm that the card and integration both report version 1.3.6.
 
-If you have manually added the old resource URL, it remains supported. New manual resources can use `/shutter-manager/shutter-manager-card.js?v=1.3.5`. Do not load both URLs on the same dashboard.
+If you have manually added the old resource URL, it remains supported. New manual resources can use `/shutter-manager/shutter-manager-card.js?v=1.3.6`. Do not load both URLs on the same dashboard.
 
-## New in 1.3.5
+## New in 1.3.6
+
+Added a small Vacation filter on the left, aligned with + Program. It shows only time and sensor programs whose vacation pause is disabled, updates group counts, and can be toggled with mouse or keyboard. It filters the view without changing vacation mode or saved programs.
+
+Reduced spacing around programs and between expanded actions, including the gap before the first action. In the mobile layout up to 600 px, only the enable switch and Edit appear beside each program name; program sorting arrows and Copy program are hidden. Desktop sorting and copying remain available. Schedule and target details keep their existing text sizes.
+
+## Features retained from 1.3.5
 
 Removed the action count and program-type label from each program summary in Programs. Weekdays, daily windows, shading thresholds and vacation pause remain in the compact summary. The Time programs and Sensor programs groups keep their headings and program counts.
 
@@ -91,7 +97,7 @@ Frontend and backend use protocol 7. Older or missing save protocols are rejecte
 
 GitHub Releases provide:
 
-- `Shutter-Manager-1.3.5.zip`: complete package with the integration folder, documentation, and tests.
+- `Shutter-Manager-1.3.6.zip`: complete package with the integration folder, documentation, and tests.
 - `shutter-manager.zip`: integration folder only, for manual installation under `/config/custom_components/rollladenplaner/`.
 
 The release workflow runs the Python and browser checks, then builds and attaches both archives when a release is published. The version in the release tag must match `manifest.json`.
@@ -111,8 +117,8 @@ python3 -m pip install -r tests/requirements.txt
 python3 -m unittest discover -s tests -q
 node tests/sensor-selection.cjs
 node --check custom_components/rollladenplaner/frontend/shutter-manager-card.js
-python3 scripts/build_release.py --check-only --tag v1.3.5
-python3 scripts/build_release.py --tag v1.3.5
+python3 scripts/build_release.py --check-only --tag v1.3.6
+python3 scripts/build_release.py --tag v1.3.6
 ```
 
 Browser tests use Playwright and Chromium. GitHub Actions runs behavior tests plus HACS and Hassfest validation.
@@ -139,7 +145,7 @@ Tests simulate Home Assistant I/O and cover position feedback. They do not opera
 
 Copy this package into the `shutter-manager` checkout. Under `custom_components`, keep only `rollladenplaner`. Remove unrelated integration folders such as `custom_components/light_manager` from this repository checkout before committing; copying a ZIP over an existing folder does not remove extra files. Preserve the checkout's `.git` directory and include this package's `.github` directory. If an older upload left integration files at the repository root, remove those duplicates (`manifest.json`, `__init__.py`, `engine.py`, `config_flow.py`, `sensor.py`, `services.yaml`, `strings.json` and any root `translations/` folder). These integration files belong only under `custom_components/rollladenplaner/`; retain this package's root `hacs.json`, documentation, and workflows. This cleanup applies to the Shutter Manager GitHub checkout, not the separate Light Manager repository or the Home Assistant configuration directory.
 
-Commit and push the complete cleaned tree, then create the new tag `v1.3.5` from that commit. Verify that the tag contains only `custom_components/rollladenplaner` before downloading through HACS. HACS must show `/config/custom_components/rollladenplaner` as the Shutter Manager installation destination.
+Commit and push the complete cleaned tree, then create the new tag `v1.3.6` from that commit. Verify that the tag contains only `custom_components/rollladenplaner` before downloading through HACS. HACS must show `/config/custom_components/rollladenplaner` as the Shutter Manager installation destination.
 
 ## Sensor selection in Settings
 

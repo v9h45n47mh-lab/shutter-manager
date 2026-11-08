@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.6
+
+- Added a Vacation filter aligned left opposite + Program. It shows programs without a vacation pause, updates visible group counts, retains its state across refreshes/tab changes, and never changes vacation mode or program settings. Filtered desktop sorting respects the visible program order.
+- Reduced program padding, the gap before the first expanded action, and spacing between action rows and their details.
+- Hid program sorting arrows and Copy program in the mobile layout up to 600 px. Kept the enable switch and Edit beside the program name, with schedule details directly below. Desktop sorting and copying remain available.
+- Updated both guides and browser regressions for compact expanded programs and responsive control visibility.
+
 ## 1.3.5
 
 - Removed action counts and program-type labels from individual program summaries in Programs, reducing the space used by the overview.

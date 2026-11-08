@@ -49,6 +49,52 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.locator('[data-action="fold-program"]').first().getAttribute('aria-expanded'),'false','programs start collapsed');
  await assertCompactSummaries();
  assert.deepEqual(await card.locator('.program .tags>span').allTextContents(),['Mo · Di · Mi · Do · Fr','Pause im Urlaub'],'time summaries keep weekdays and vacation pause');
+ const vacationFilter=card.locator('[data-action="toggle-vacation-filter"]');
+ assert.equal(await vacationFilter.innerText(),'Urlaub');
+ assert.equal(await vacationFilter.getAttribute('aria-pressed'),'false');
+ const originalConfig=await page.evaluate(()=>JSON.stringify(model.config));
+ const filterWrites=await page.evaluate(()=>calls.filter(message=>/\/(save|action)$/.test(message.type)).length);
+ await vacationFilter.press('Space');
+ assert.equal(await vacationFilter.getAttribute('aria-pressed'),'true');
+ assert.equal(await card.locator('.program').count(),0,'vacation-paused programs are hidden');
+ assert.equal(await card.getByText('Keine Programme für den Urlaubsmodus vorhanden.',{exact:true}).isVisible(),true);
+ assert.equal(await page.evaluate(()=>JSON.stringify(model.config)),originalConfig,'filtering does not change configuration or vacation mode');
+ await vacationFilter.press('Enter');
+ assert.equal(await card.locator('.program').count(),1,'pressing the filter again restores all programs');
+ await page.evaluate(async()=>{
+  window.filterOriginal={programs:structuredClone(model.config.programs),controls:structuredClone(model.controls),revision:model.revision};
+  const base=model.config.programs[0];
+  const make=(id,pause,kind='time')=>({...structuredClone(base),id,name:id,pause_in_vacation:pause,kind,...(kind==='sensor'?{sensor_mode:'opening',opening_start:'08:00',opening_end:'20:00'}:{}),rides:base.rides.map((ride,index)=>({...structuredClone(ride),id:id+'_'+index}))});
+  model.config.programs=[make('vacation_a',false),make('paused_time',true),make('vacation_b',false),make('vacation_sensor',false,'sensor'),make('paused_sensor',true,'sensor')];
+  model.controls=Object.fromEntries(model.config.programs.map(program=>[program.id,true]));
+  await document.querySelector('rollladenplaner-card').refresh();
+ });
+ const vacationConfig=await page.evaluate(()=>JSON.stringify(model.config));
+ await vacationFilter.click();
+ assert.deepEqual(await card.locator('[data-action="fold-program"]').evaluateAll(elements=>elements.map(element=>element.dataset.program)),['vacation_a','vacation_b','vacation_sensor']);
+ assert.deepEqual(await card.locator('.program-group-head>span').allTextContents(),['2','1'],'group badges count visible programs');
+ await page.evaluate(()=>document.querySelector('rollladenplaner-card').refresh());
+ assert.equal(await vacationFilter.getAttribute('aria-pressed'),'true','filter survives live refresh');
+ await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
+ await card.getByRole('button',{name:'Programme',exact:true}).click();
+ assert.equal(await vacationFilter.getAttribute('aria-pressed'),'true','filter survives tab changes');
+ assert.equal(await page.evaluate(()=>JSON.stringify(model.config)),vacationConfig);
+ assert.equal(await page.evaluate(()=>calls.filter(message=>/\/(save|action)$/.test(message.type)).length),filterWrites,'filter clicks never send save/action requests');
+ for(const width of [320,390,1100]){
+  await page.setViewportSize({width,height:1000});
+  const filterBox=await vacationFilter.boundingBox(),addBox=await card.locator('[data-action="new-program"]').boundingBox();
+  assert.ok(filterBox.x<addBox.x && Math.abs(filterBox.y+filterBox.height/2-addBox.y-addBox.height/2)<2,'Vacation aligns left opposite + Program');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  if(width===390)await page.screenshot({path:path.join(__dirname,'../../planner-vacation-filter-mobile.png'),fullPage:true});
+ }
+ await card.locator('[data-action="move-program"][data-program="vacation_b"][data-direction="up"]').click();
+ assert.deepEqual(await page.evaluate(()=>model.config.programs.filter(program=>program.kind==='time').map(program=>program.id)),['vacation_b','paused_time','vacation_a'],'filtered sorting swaps visible programs and preserves hidden positions');
+ await page.evaluate(async()=>{model.admin=false;await document.querySelector('rollladenplaner-card').refresh();});
+ assert.equal(await vacationFilter.isVisible(),true,'view filters remain available to read-only users');
+ assert.equal(await card.locator('[data-action="new-program"]').count(),0);
+ await vacationFilter.press('Space');
+ assert.equal(await card.locator('.program').count(),5);
+ await page.evaluate(async()=>{model.admin=true;model.config.programs=filterOriginal.programs;model.controls=filterOriginal.controls;model.revision=filterOriginal.revision;const c=document.querySelector('rollladenplaner-card');c.vacationFilter=false;await c.refresh();delete window.filterOriginal;});
  await page.evaluate(async()=>{model.sun_times={date:'2026-10-30',sunrise:'2026-10-30T06:30:00Z',sunset:'2026-10-30T17:00:00Z'};model.time_zone='Europe/Berlin';await document.querySelector('rollladenplaner-card').refresh();});
  const overview=card.getByRole('region',{name:'Sonnenzeiten und Sensorwerte'});
  assert.equal(await overview.locator('.overview-item').count(),3,'three distinct assigned sensors, separate from solar row');
@@ -496,8 +542,39 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await card.locator('[data-action="fold-program-group"][data-group="sensor"]').click();
  assert.equal(await card.locator('[data-action="edit-program"][data-program="'+await page.evaluate(()=>model.config.programs.find(p=>p.sensor_mode==='opening').id)+'"]').count(),0,'sensor group can be collapsed independently');
  await card.locator('[data-action="fold-program-group"][data-group="sensor"]').click();
+ await page.setViewportSize({width:1100,height:1000});
+ assert.equal(await card.locator('[data-action="copy-program"][data-program="p"]').isVisible(),true,'desktop offers program copying');
  await card.locator('[data-action="move-program"][data-program="p"][data-direction="down"]').click();
  assert.deepEqual(await page.evaluate(()=>model.config.programs.filter(p=>p.kind==='time').map(p=>p.id)),['p2','p'],'program order is saved within its group');
+ const layoutProgram=card.locator('section.program').filter({has:page.locator('button[data-action="fold-program"][data-program="p"]')});
+ const layoutFold=layoutProgram.locator('[data-action="fold-program"]');
+ if(await layoutFold.getAttribute('aria-expanded')==='false')await layoutFold.click();
+ for(const width of [320,390,600]){
+  await page.setViewportSize({width,height:1000});
+  assert.equal(await layoutProgram.locator('[data-action="move-program"][data-direction="up"]').isVisible(),false,'mobile hides upward sorting');
+  assert.equal(await layoutProgram.locator('[data-action="move-program"][data-direction="down"]').isVisible(),false,'mobile hides downward sorting');
+  assert.equal(await layoutProgram.locator('[data-action="copy-program"]').isVisible(),false,'mobile omits whole-program copying');
+  const toolbar=layoutProgram.locator('.program-head>.toolbar');
+  assert.equal(await toolbar.locator('button:visible').count(),2,'mobile offers only the switch and Edit');
+  assert.equal(await toolbar.locator('[data-action="program"]').isVisible(),true);
+  assert.equal(await toolbar.locator('[data-action="edit-program"]').isVisible(),true);
+  const title=await layoutFold.boundingBox(),controls=await toolbar.boundingBox();
+  assert.ok(Math.abs(title.y+title.height/2-controls.y-controls.height/2)<2,'mobile controls share the title row');
+  assert.ok(controls.x>=title.x+title.width-1,'controls remain to the right of the title');
+  const header=await layoutProgram.locator('.program-head').boundingBox(),first=await layoutProgram.locator('.ride').first().boundingBox();
+  assert.ok(first.y-header.y-header.height<=8,'expanded actions start close to the program header');
+  const details=await layoutProgram.locator('.ride-info').first().locator(':scope>*').evaluateAll(elements=>elements.map(element=>{const box=element.getBoundingClientRect();return {top:box.top,bottom:box.bottom};}));
+  assert.ok(details.slice(1).every((box,index)=>box.top-details[index].bottom<=4),'action details use compact line spacing');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'expanded mobile programs do not overflow');
+  await page.screenshot({path:path.join(__dirname,`../../planner-expanded-${width}.png`),fullPage:true});
+ }
+ await page.setViewportSize({width:390,height:1000});
+ await layoutProgram.locator('[data-action="edit-program"]').click();
+ assert.equal(await dialog.isVisible(),true,'editing remains usable in the mobile layout');
+ await dialog.getByRole('button',{name:'Abbrechen',exact:true}).click();
+ await page.setViewportSize({width:601,height:1000});
+ assert.equal(await layoutProgram.locator('[data-action="copy-program"]').isVisible(),true,'copying returns above the mobile breakpoint');
+ assert.equal(await layoutProgram.locator('[data-action="move-program"][data-direction="up"]').isVisible(),true,'desktop sorting returns after resizing');
  // XSS-safe names and fold persistence across full element recreation.
  const expandedBeforeRecreate=await card.locator('[data-action="fold-program"][data-program="p"]').getAttribute('aria-expanded');
  await page.evaluate(async()=>{model.config.programs[0].name='<img src=x onerror="window.injected=true">';await document.querySelector('rollladenplaner-card').refresh();});
@@ -506,6 +583,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await card.locator('[data-action="fold-program"]').first().waitFor();
  assert.equal(await card.locator('[data-action="fold-program"][data-program="p"]').getAttribute('aria-expanded'),expandedBeforeRecreate);
  await card.locator('[data-action="fold-program"]').first().click();
+ await page.setViewportSize({width:390,height:844});
  await page.screenshot({path:path.join(__dirname,'../../planner-mobile.png'),fullPage:true});
  await assertCompactSummaries();
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
@@ -537,6 +615,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByRole('heading',{name:'Language',exact:true}).count(),1,'language picker is translated and available without admin permission');
  await card.getByRole('button',{name:'Programs',exact:true}).click();
  assert.equal(await card.getByRole('button',{name:'Schedule',exact:true}).count(),1,'tab labels switch to English');
+ assert.equal(await vacationFilter.innerText(),'Vacation','filter label is translated');
  const englishFold=card.locator('[data-action="fold-program"][data-program="p"]');
  if(await englishFold.getAttribute('aria-expanded')==='false')await englishFold.click();
  const englishProgramText=await card.locator('main').innerText();
