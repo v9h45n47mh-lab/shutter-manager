@@ -159,12 +159,13 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.intent=self.m.engine.tick(self.now,self.s,solar)['w']
         self.s['cover.wohnen']['attributes']['supported_features']=140
         timer=patch.object(adapter,'async_call_later');self.schedule=timer.start();self.addCleanup(timer.stop)
-    async def test_tilt_precedes_height_with_one_second_pause(self):
+    async def test_tilt_precedes_height_with_one_and_a_half_second_pause(self):
         await self.m.advance('w',self.intent,self.now,self.s)
         self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_tilt_position')
-        await self.m.advance('w',self.intent,self.now+timedelta(milliseconds=999),self.s)
-        self.assertEqual(self.hass.services.async_call.call_count,1)
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=1),self.s)
+        for elapsed in (1000,1499):
+            await self.m.advance('w',self.intent,self.now+timedelta(milliseconds=elapsed),self.s)
+            self.assertEqual(self.hass.services.async_call.call_count,1)
+        await self.m.advance('w',self.intent,self.now+timedelta(milliseconds=1500),self.s)
         self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_position')
         self.s['cover.wohnen']['attributes']['current_position']=0
         await self.m.advance('w',self.intent,self.now+timedelta(seconds=2),self.s)
@@ -176,8 +177,8 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.schedule.assert_called_once()
         hass,delay,callback=self.schedule.call_args.args
         self.assertIs(hass,self.hass)
-        self.assertEqual(delay,1)
-        self.now+=timedelta(seconds=1)
+        self.assertEqual(delay,1.5)
+        self.now+=timedelta(seconds=1.5)
         await callback(self.now)
         self.assertEqual([call.args[1] for call in self.hass.services.async_call.call_args_list],['set_cover_tilt_position','set_cover_position'])
         self.schedule.return_value.assert_called_once_with()
@@ -188,10 +189,10 @@ class AdapterTests(IsolatedAsyncioTestCase):
             self.now+=timedelta(seconds=2)
         self.hass.services.async_call.side_effect=slow_tilt
         await self.m.pulse()
-        self.assertEqual(self.m.moving['w']['wait_until'],self.now+timedelta(seconds=1))
+        self.assertEqual(self.m.moving['w']['wait_until'],self.now+timedelta(seconds=1.5))
         callback=self.schedule.call_args.args[2]
         self.hass.services.async_call.side_effect=None
-        self.now+=timedelta(milliseconds=999)
+        self.now+=timedelta(milliseconds=1499)
         await self.m.pulse()
         self.assertEqual(self.hass.services.async_call.call_count,1)
         self.now+=timedelta(milliseconds=1)
@@ -202,7 +203,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
         await self.m.pulse()
         callback=self.schedule.call_args.args[2]
         self.s['binary_sensor.fenster']['state']='on'
-        self.now+=timedelta(seconds=1)
+        self.now+=timedelta(seconds=1.5)
         await callback(self.now)
         self.assertEqual([call.args[1] for call in self.hass.services.async_call.call_args_list],['set_cover_tilt_position','stop_cover'])
         self.assertNotIn('w',self.m.moving)
@@ -213,7 +214,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
         callback=self.schedule.call_args.args[2]
         await self.m.action(types.SimpleNamespace(is_admin=True),{'action':'program','program':'p','value':False,'entity_id':['cover.wohnen'],'revision':self.m.revision})
         self.schedule.return_value.assert_called_once_with()
-        self.now+=timedelta(seconds=1)
+        self.now+=timedelta(seconds=1.5)
         await callback(self.now)
         self.assertNotIn('set_cover_position',[call.args[1] for call in self.hass.services.async_call.call_args_list])
         self.assertNotIn('w',self.m.moving)
@@ -226,7 +227,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.assertTrue(await adapter.async_unload_entry(self.hass,types.SimpleNamespace(runtime_data=self.m)))
         self.m.unsub.assert_called_once_with()
         self.schedule.return_value.assert_called_once_with()
-        self.now+=timedelta(seconds=1)
+        self.now+=timedelta(seconds=1.5)
         await callback(self.now)
         self.assertNotIn('set_cover_position',[call.args[1] for call in self.hass.services.async_call.call_args_list])
         self.assertNotIn(adapter.DOMAIN,self.hass.data)
@@ -252,7 +253,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
         await self.m.pulse()
         self.assertIsNot(self.m.moving['w'],old_motion)
         new_callback=self.schedule.call_args.args[2]
-        self.now+=timedelta(milliseconds=500)
+        self.now+=timedelta(milliseconds=1000)
         await old_callback(self.now)
         self.assertNotIn('set_cover_position',[call.args[1] for call in self.hass.services.async_call.call_args_list])
         self.now+=timedelta(milliseconds=500)
@@ -322,7 +323,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.assertEqual(self.m.engine.planned_today(self.now,solar),[])
     async def test_height_timeout_after_tilt_and_pause(self):
         await self.m.advance('w',self.intent,self.now,self.s)
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=1),self.s)
+        await self.m.advance('w',self.intent,self.now+timedelta(seconds=1.5),self.s)
         await self.m.advance('w',self.intent,self.now+timedelta(seconds=154),self.s)
         services=[c.args[1] for c in self.hass.services.async_call.call_args_list]
         self.assertIn('set_cover_tilt_position',services)
@@ -381,11 +382,11 @@ class AdapterTests(IsolatedAsyncioTestCase):
     async def test_fixed_150_seconds_ignores_legacy_window_value(self):
         await self.m.advance('w',self.intent,self.now,self.s)
         self.assertNotIn('deadline',self.m.moving['w'])
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=1),self.s)
-        self.assertEqual(self.m.moving['w']['deadline'],self.now+timedelta(seconds=151))
+        await self.m.advance('w',self.intent,self.now+timedelta(seconds=1.5),self.s)
+        self.assertEqual(self.m.moving['w']['deadline'],self.now+timedelta(seconds=151.5))
         await self.m.advance('w',self.intent,self.now+timedelta(seconds=150),self.s)
         self.assertIn('w',self.m.moving)
-        await self.m.advance('w',self.intent,self.now+timedelta(seconds=151),self.s)
+        await self.m.advance('w',self.intent,self.now+timedelta(seconds=151.5),self.s)
         self.assertNotIn('w',self.m.moving)
     async def test_skip_today_stops_current_motion_without_marking_next(self):
         await self.m.advance('w',self.intent,self.now,self.s)

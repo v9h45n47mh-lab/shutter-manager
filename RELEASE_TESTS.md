@@ -1,28 +1,28 @@
-# Release verification: Shutter Manager 1.3.9
+# Release verification: Shutter Manager 1.4.0
 
-Local verification completed on 2026-11-08 against this release source.
+Prepared on 2026-11-09 against the release source. Full release verification runs in GitHub Actions because the local execution environment became unavailable after the focused timing checks.
 
-| Check | Result |
+| Check | Verification |
 | --- | --- |
-| Python behavior tests | PASS: 303 tests |
-| JavaScript sensor-selection checks | PASS |
-| Card JavaScript syntax and Python compilation | PASS |
-| General UI: tests/ui-test.cjs | PASS |
-| Production Manager save/restore flow: tests/save-flow.cjs | PASS |
-| Settings and sensor rename: tests/settings-flow.cjs | PASS |
-| Shared shading editor: tests/shading-flow.cjs | PASS |
-| Settings/navigation/history: tests/release-131.cjs | PASS |
-| Baseline source compared with published 1.3.8 commit | PASS: all 41 tracked files matched before preparing this release |
-| Runtime source and guides compared with 1.3.8 after normalizing version strings | PASS: identical |
-| Release metadata/layout for tag v1.3.9 | PASS |
-| Archive CRC and source-byte comparison | Performed by scripts/build_release.py |
+| Local timing regressions | PASS: 3 focused tests |
+| Python behavior tests | 303 tests; GitHub Actions publication requirement |
+| JavaScript sensor-selection checks | GitHub Actions publication requirement |
+| Card JavaScript syntax | GitHub Actions publication requirement |
+| General UI: tests/ui-test.cjs | GitHub Actions publication requirement |
+| Production Manager save/restore flow: tests/save-flow.cjs | GitHub Actions publication requirement |
+| Settings and sensor rename: tests/settings-flow.cjs | GitHub Actions publication requirement |
+| Shared shading editor: tests/shading-flow.cjs | GitHub Actions publication requirement |
+| Settings/navigation/history: tests/release-131.cjs | GitHub Actions publication requirement |
+| HACS and Hassfest | GitHub Actions publication requirements |
+| Baseline source compared with published 1.3.9 commit | PASS: all 41 tracked files matched before preparing this release |
+| Release metadata/layout and archive CRC/source-byte comparison | Enforced by scripts/build_release.py in GitHub Actions |
 
-This release reissues 1.3.8 without functional, layout, configuration or installation changes. Only synchronized version strings and release documentation change. All tests, movement engine logic, configuration schema and HACS metadata remain byte-for-byte unchanged. The baseline commit is 90575580207175878aa393b7fb5cffdf8eed13a9.
+The three local timing tests failed against the previous one-second behavior and passed after the change. They verify that height is not commanded at 1.000 or 1.499 seconds, starts at 1.500 seconds, uses a fractional-second timer, and waits from the successful return of the tilt service call. The timing, cancellation, contact-blocking, stale-timer and 150-second movement-timeout regressions use the new delay.
 
-All five standard browser flows passed with the production card and simulated Home Assistant I/O. Desktop/mobile controls, sensor selection/renaming, settings folds, vacation filtering, shading, save/reload, permissions, navigation and history remain covered. The 303 Python tests retain the one-second tilt-to-height timer and movement/contact regressions.
+Both the earliest height-command timestamp and the dedicated timer use TILT_TO_HEIGHT_DELAY_SECONDS = 1.5. The regular evaluation interval remains five seconds. Contact/current-goal checks, cancellation on stop/replacement/unload, height-only commands and the 150-second target-confirmation timeout are retained.
 
-Backend, manifest, card, both guides and automatic resource URLs use 1.3.9. The configuration protocol remains 7. The full archive contains exactly one integration, custom_components/rollladenplaner, plus documentation, tests, scripts and GitHub workflows. Dependencies, caches, internal screenshots and build metadata are excluded. Source timestamps are preserved.
+Backend, manifest, card, both guides and automatic resource URLs use 1.4.0. The configuration protocol remains 7. The full archive contains exactly one integration, custom_components/rollladenplaner, plus documentation, tests, scripts and GitHub workflows. Build metadata, dependencies, caches and internal screenshots are excluded. Source timestamps are preserved.
 
-Publication runs only for main-branch commits marked [publish-release], after the tests, HACS and Hassfest jobs succeed. The release/tag and both archives use that checked commit. GitHub Actions records remote validation and publication results.
+The [Validate workflow](https://github.com/v9h45n47mh-lab/shutter-manager/actions/workflows/validate.yml) runs the full Python suite and all five browser flows with simulated Home Assistant I/O. Publication is gated on successful tests, HACS and Hassfest jobs. The tag and both archives are created from the same checked commit; the release notes confirm those gates passed.
 
-No physical actuator was operated. After installing, restart Home Assistant Core and reload the browser/app. Both displayed versions should report 1.3.9. This release does not claim to fix the previously reported GitHub download timeout.
+No physical actuator was operated. After installing, restart Home Assistant Core and reload the browser/app. Both displayed versions should report 1.4.0.

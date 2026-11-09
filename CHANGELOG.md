@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0
+
+- Increased the delay between a successful blind tilt service call and the height command from one second to 1.5 seconds. Both the timer and earliest height-command time use the same delay.
+- Updated the German/English guides and timing regressions, including the fractional-second boundary, delayed tilt completion, contact checks, timer cancellation and movement timeout.
+
 ## 1.3.9
 
 - Reissued version 1.3.8 with synchronized integration, card and resource versions.

@@ -23,7 +23,8 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.3.9'
+INTEGRATION_VERSION = '1.4.0'
+TILT_TO_HEIGHT_DELAY_SECONDS = 1.5
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 7
 SIGNAL = DOMAIN + '_update'
@@ -42,8 +43,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.3.9')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.3.9')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.4.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.4.0')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -221,11 +222,11 @@ class Manager:
         try:
             await self.command(w, service, **({'position': value} if phase == 'height' else {'tilt_position': value}))
             if phase == 'tilt' and intent['position'] is not None:
-                motion.update(phase='height_wait', sent=False, wait_until=utcnow() + timedelta(seconds=1))
+                motion.update(phase='height_wait', sent=False, wait_until=utcnow() + timedelta(seconds=TILT_TO_HEIGHT_DELAY_SECONDS))
                 # Resume independently of the five-second evaluation interval.
                 async def resume_height(fired_at):
                     await self.pulse(fired_at, waiting_for=(wid, motion))
-                motion['cancel_wait'] = async_call_later(self.hass, 1, resume_height)
+                motion['cancel_wait'] = async_call_later(self.hass, TILT_TO_HEIGHT_DELAY_SECONDS, resume_height)
         except Exception as err:  # Integration failures must not stall the other windows.
             _LOGGER.exception('Fahrt für %s fehlgeschlagen', w['cover'])
             await self.stop(wid)
