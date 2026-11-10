@@ -27,7 +27,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   for(const theme of ['light','dark'])for(const width of [320,375,390,430,1100]){
    await page.setViewportSize({width,height:1100});
    await page.evaluate(theme=>{
-    const variables=theme==='dark'?{'--primary-color':'#90caf9','--primary-text-color':'#eee','--secondary-text-color':'#aaa','--text-primary-color':'#102030','--card-background-color':'#202124','--divider-color':'#444'}:{'--primary-color':'#03a9f4','--primary-text-color':'#212121','--secondary-text-color':'#727272','--text-primary-color':'#fff','--card-background-color':'#fff','--divider-color':'#e0e0e0'};
+    const variables=theme==='dark'?{'--primary-color':'#90caf9','--primary-text-color':'#eee','--secondary-text-color':'#aaa','--text-primary-color':'#102030','--card-background-color':'#202124','--divider-color':'#444','--secondary-background-color':'#2b2c2e','--input-fill-color':'#2b2c2e'}:{'--primary-color':'#03a9f4','--primary-text-color':'#212121','--secondary-text-color':'#727272','--text-primary-color':'#fff','--card-background-color':'#fff','--divider-color':'#e0e0e0','--secondary-background-color':'#f5f5f5','--input-fill-color':'#f5f5f5'};
     for(const [key,value] of Object.entries(variables))document.body.style.setProperty(key,value);
     document.body.style.background=theme==='dark'?'#121212':'#f5f7fa';window.card.tab=0;window.card.render();
     window.card.shadowRoot.getElementById('ui-reference')?.remove();
@@ -64,6 +64,21 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   assert.equal(await card.locator('dialog.modal').evaluate(el=>el.open&&el.matches(':modal')),true,'native modal is active');
   assert.equal(await card.getByRole('button',{name:'Close',exact:true}).count(),1);
   await page.screenshot({path:path.join(directory,'desktop-native-dialog.png'),fullPage:true});
+  const contrast=({foreground,background})=>{
+   const luminance=color=>color.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>v/255).map(v=>v<=0.04045?v/12.92:((v+0.055)/1.055)**2.4).reduce((sum,v,i)=>sum+v*[0.2126,0.7152,0.0722][i],0);
+   const values=[luminance(foreground),luminance(background)].sort((a,b)=>b-a);return (values[0]+0.05)/(values[1]+0.05);
+  };
+  const inputColors=()=>card.locator('dialog.modal input:not([type=checkbox])').first().evaluate(el=>({foreground:getComputedStyle(el).color,background:getComputedStyle(el).backgroundColor}));
+  assert.ok(contrast(await inputColors())>=4.5,'dark HA input tokens keep text readable');
+  await page.setViewportSize({width:390,height:1100});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await page.screenshot({path:path.join(directory,'dark-mobile-native-dialog.png'),fullPage:true});
+  await page.evaluate(()=>{for(const [key,value] of Object.entries({'--primary-color':'#03a9f4','--primary-text-color':'#212121','--secondary-text-color':'#727272','--text-primary-color':'#fff','--card-background-color':'#fff','--divider-color':'#e0e0e0','--secondary-background-color':'#f5f5f5','--input-fill-color':'#f5f5f5'}))document.body.style.setProperty(key,value);document.body.style.background='#f5f7fa';});
+  assert.ok(contrast(await inputColors())>=4.5,'light HA input tokens keep text readable');
+  await page.screenshot({path:path.join(directory,'light-mobile-native-dialog.png'),fullPage:true});
+  await page.setViewportSize({width:1100,height:1100});
+  await page.screenshot({path:path.join(directory,'light-desktop-native-dialog.png'),fullPage:true});
+
   await card.locator('dialog.modal button').last().focus();await page.keyboard.press('Tab');
   assert.equal(await card.locator('dialog.modal button').first().evaluate(el=>el===el.getRootNode().activeElement),true,'Tab stays inside the modal');
   await page.keyboard.press('Escape');assert.equal(await card.locator('dialog.modal').count(),0);
