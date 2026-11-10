@@ -459,7 +459,7 @@ class ShutterManagerCard extends HTMLElement {
   }
   settingsList() {
     const {config:c,admin}=this.data;
-    return `<section class="settings-group language-group">${uiRow({title:'Sprache',trailing:`<div class="language-picker">${filterButton({label:'DE',action:'set-language',selected:this.language()==='de',data:{language:'de'}})}${filterButton({label:'EN',action:'set-language',selected:this.language()==='en',data:{language:'en'}})}</div>`})}</section>
+    return `<section class="settings-group language-group">${uiRow({title:'Sprache',trailing:`<div class="language-picker">${filterButton({label:'🇩🇪 DE',action:'set-language',selected:this.language()==='de',data:{language:'de'}})}${filterButton({label:'🇬🇧 EN',action:'set-language',selected:this.language()==='en',data:{language:'en'}})}</div>`}).replace('<strong>','<strong role="heading" aria-level="3">')}</section>
       <section class="settings-group">${uiRow({title:this.language()==='en'?'Vacation mode':'Urlaubsmodus',trailing:toggle('vacation',c.vacation,this.language()==='en'?'Vacation mode':'Urlaubsmodus','',!admin)})}</section>
       ${this.settingsSection('covers',this.language()==='en'?'Shutters and blinds':'Rollläden und Jalousien',this.windowList(),{trailing:admin?`${uiButton({label:this.language()==='en'?'Select covers':'Rollläden auswählen',action:'select-covers',variant:'primary'}).replace('class="primary"','class="primary settings-select"')}`:''})}
       ${this.settingsSection('sensors',this.language()==='en'?'Sensors':'Sensoren',this.sensorSettingsList(),{trailing:admin?`${uiButton({label:this.language()==='en'?'Select sensors':'Sensoren auswählen',action:'select-sensors',variant:'primary'}).replace('class="primary"','class="primary settings-select"')}`:''})}
@@ -1106,8 +1106,8 @@ h4{margin:20px 0 12px;font-size:14px;font-weight:500}
 .planned-heading{margin:10px 0 6px}
 .planned-heading h3{font-size:14px}
 .once-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px;padding:10px 0 14px;border-bottom:1px solid var(--divider-color,#e0e0e0)}
-.once-form .field{font-size:12px}
-.once-form input,.once-form select{font-size:13px}
+
+
 .planned-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:3px 10px;align-items:center;padding:9px 0}
 .planned-time{font-size:14px;font-variant-numeric:tabular-nums;line-height:1.4}
 .planned-cover{display:flex;flex-direction:column;gap:3px;min-width:0;overflow-wrap:anywhere}
@@ -1116,11 +1116,11 @@ h4{margin:20px 0 12px;font-size:14px;font-weight:500}
 .planned-reason,.planned-done{font-size:12px;color:var(--secondary-text-color,#727272);line-height:1.4}
 .planned-cover strong{font-size:13px;font-weight:500}
 .planned-position{font-size:12px;color:var(--secondary-text-color,#727272);font-variant-numeric:tabular-nums}
-.planned-action button{font-size:12px;padding:7px 10px;min-height:36px}
+
 .skipped .planned-cover{opacity:.6}
 .planned-time small{display:block;font-size:11px}
 .planned-action,.sensor-action{align-self:center}
-.planned-action button,.sensor-action button{font-size:13px}
+
 .plan-status{color:var(--primary-color,#03a9f4);font-size:12px}
 .skipped .ride-info{opacity:.6}
 .skipped strong{text-decoration:line-through}
@@ -1145,7 +1145,7 @@ footer>div{display:flex;gap:8px}
 .days input:focus-visible+span{outline:2px solid var(--primary-color,#03a9f4)}
 .timing-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .timing-grid .field>span{white-space:nowrap}
-.timing-grid input,.timing-grid select{font-size:12px;padding:10px 7px}
+
 .season-box{padding:8px 0}
 .season-dates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:360px;margin:10px 0}
 .position-control{min-width:0;padding:6px 0}
@@ -1156,7 +1156,7 @@ footer>div{display:flex;gap:8px}
 .position-control input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--primary-color,#03a9f4)}
 .position-control input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--primary-color,#03a9f4)}
 .slider-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--secondary-text-color,#727272);font-size:11px}
-.keep-value{font-size:11px;padding:4px 8px}
+
 .keep-value.selected{background:color-mix(in srgb,var(--primary-color,#03a9f4) 12%,transparent)}
 .howto{line-height:1.6;font-size:14px;padding:12px 0}
 .howto h2{font-size:20px;font-weight:400;margin:0 0 14px}
@@ -1171,7 +1171,7 @@ footer>div{display:flex;gap:8px}
 .rides-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:20px}
 .rides-heading h4{margin:0}
 .rides-heading .toolbar{gap:0}
-.rides-heading button{font-size:12px;padding:8px 10px}
+
 .ride-editor-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .ride-fold{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:4px 0;text-align:left;color:var(--primary-text-color,#212121);border-radius:4px}
 .ride-fold-text{display:flex;flex-direction:column;gap:5px;min-width:0;overflow-wrap:anywhere}
@@ -1183,12 +1183,12 @@ footer>div{display:flex;gap:8px}
 .ride-fold{flex-basis:100%}
 .ride-editor-actions{margin-left:28px;justify-content:flex-end;flex:1}
 .rides-heading .toolbar{margin-left:auto}
-.rides-heading button{padding:8px}
+
 .ride-editor-body{margin-top:12px;padding-top:12px}}
 .transfer-modal{width:440px}
 .transfer-modal .modal-body{padding-top:20px;padding-bottom:24px}
 .transfer-notice{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 0;color:var(--secondary-text-color,#727272);font-size:12px}
-.transfer-notice button{font-size:12px;padding:6px 8px}
+
 .modal-save-error{flex-basis:100%;width:100%;color:var(--error-color,#db4437);font-size:13px;line-height:1.5;margin:0 0 4px}
 .overview-panel{border-bottom:1px solid var(--divider-color,#e0e0e0)}
 .overview-toggle{display:flex;align-items:center;gap:6px;padding:10px 16px;color:var(--secondary-text-color,#727272);font-size:12px;border-radius:0}
@@ -1222,7 +1222,7 @@ footer>div{display:flex;gap:8px}
 .planned-row{grid-template-columns:40px minmax(0,1fr) auto;gap:3px 8px}
 .planned-target{flex-direction:column;align-items:flex-start;gap:2px}
 .planned-time{font-size:13px}
-.planned-action button{padding:7px 9px;max-width:100px}
+
 .sensor-row{grid-template-columns:minmax(0,1fr);gap:10px}
 .timing-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .subpanel{padding:12px}
