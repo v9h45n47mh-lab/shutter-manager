@@ -38,21 +38,20 @@ jobs:
           npm --prefix .ci/ha-ui-kit test
           npm --prefix .ci/ha-ui-kit run check
           node .ci/ha-ui-kit/scripts/vendor.mjs --target custom_components/rollladenplaner/frontend --check
-      - name: Shared UI and desktop/mobile theme checks
-        env:
-          NODE_PATH: ${{ github.workspace }}/.ci/node_modules
-        run: |
-          node .ci/ha-ui-kit/tests/browser.cjs
-          node tests/ui-kit-flow.cjs
       - name: Browser and save-flow tests
         env:
           NODE_PATH: ${{ github.workspace }}/.ci/node_modules
         run: |
-          node tests/ui-test.cjs
-          node tests/save-flow.cjs
-          node tests/settings-flow.cjs
-          node tests/shading-flow.cjs
-          node tests/release-131.cjs
+          python - <<'PYCODE'
+          import subprocess
+          scripts = ['.ci/ha-ui-kit/tests/browser.cjs', 'tests/ui-kit-flow.cjs', 'tests/ui-test.cjs', 'tests/save-flow.cjs', 'tests/settings-flow.cjs', 'tests/shading-flow.cjs', 'tests/release-131.cjs']
+          failed = []
+          for script in scripts:
+              if subprocess.run(['node', script]).returncode:
+                  failed.append(script)
+          if failed:
+              raise SystemExit('Browser checks failed: '+', '.join(failed))
+          PYCODE
       - uses: actions/upload-artifact@v4
         if: always()
         with:
