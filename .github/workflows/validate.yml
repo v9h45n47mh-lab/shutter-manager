@@ -32,11 +32,6 @@ jobs:
           repository: v9h45n47mh-lab/ha-ui-kit
           ref: a3b7a7d3bd3a05a97093b2263c5b6fc7d2c4af50
           path: .ci/ha-ui-kit
-      - uses: actions/checkout@v4
-        with:
-          repository: v9h45n47mh-lab/light-manager
-          ref: 4599ef0a4303f2b62706f3b73e7b9990b972f5a8
-          path: .ci/light-reference
       - name: Verify shared UI build, tests and vendoring
         run: |
           npm --prefix .ci/ha-ui-kit run build

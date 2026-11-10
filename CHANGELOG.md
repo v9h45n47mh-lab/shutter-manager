@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.2
+
+- Removed the local Light Manager compatibility profile and duplicate CSS for shared typography, indentation, spacing and controls.
+- Used HA UI Kit 1.2.0 program groups, program rows and action rows with the original shared styling, including the responsive mobile layout.
+- Kept program behavior, permissions, vacation controls in Settings and the 1.5-second tilt-to-height delay.
+- Updated both guides and added isolated UI Kit parity checks for desktop/mobile, light/dark themes and collapsed/expanded programs.
+
 ## 1.5.1
 
 - Updated the pinned local HA UI Kit to 1.2.0 and adopted its program-group, program-row and action-row components.
