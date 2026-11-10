@@ -531,9 +531,9 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   assert.equal(await toolbar.locator('[data-action="program"]').isVisible(),true);
   assert.equal(await toolbar.locator('[data-action="edit-program"]').isVisible(),true);
   const title=await layoutFold.boundingBox(),controls=await toolbar.boundingBox();
-  assert.ok(Math.abs(title.y+title.height/2-controls.y-controls.height/2)<2,'mobile controls share the title row');
-  assert.ok(controls.x>=title.x+title.width-1,'controls remain to the right of the title');
   const header=await layoutProgram.locator('.program-head').boundingBox(),first=await layoutProgram.locator('.ride').first().boundingBox();
+  assert.ok(Math.abs(header.y+header.height/2-controls.y-controls.height/2)<2,'mobile controls are centered beside the complete program heading, as in Light Manager');
+  assert.ok(controls.x>=title.x+title.width-1,'controls remain to the right of the title');
   assert.ok(first.y-header.y-header.height<=8,'expanded actions start close to the program header');
   const details=await layoutProgram.locator('.ride-info').first().locator(':scope>*').evaluateAll(elements=>elements.map(element=>{const box=element.getBoundingClientRect();return {top:box.top,bottom:box.bottom};}));
   assert.ok(details.slice(1).every((box,index)=>box.top-details[index].bottom<=4),'action details use compact line spacing');
