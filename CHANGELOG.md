@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0
+
+- Adopted pinned, locally bundled HA UI Kit 1.1.0 components and styles for navigation, Settings, icons, switches, filters, dialogs and version information.
+- Replaced custom program-add and ordering markup with the shared program controls. Sorting arrows use the HA accent color.
+- Added native modal dialogs with contained keyboard navigation and focus return, and served all UI modules through both supported card aliases.
+- Updated both guides, release integrity checks and desktop/mobile theme regressions while retaining existing automation and authorization behavior.
+
 ## 1.4.0
 
 - Increased the delay between a successful blind tilt service call and the height command from one second to 1.5 seconds. Both the timer and earliest height-command time use the same delay.

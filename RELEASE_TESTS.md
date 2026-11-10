@@ -1,28 +1,11 @@
-# Release verification: Shutter Manager 1.4.0
+# Release verification: Shutter Manager 1.5.0
 
-Prepared on 2026-11-09 against the release source. Full release verification runs in GitHub Actions because the local execution environment became unavailable after the focused timing checks.
+Prepared on 2026-11-10. Local Python verification passed 303 tests. Local UI Kit build, four upstream unit tests and integrity checks passed. The local browser process is blocked by the execution environment; browser verification is therefore required in GitHub Actions before publication.
 
-| Check | Verification |
-| --- | --- |
-| Local timing regressions | PASS: 3 focused tests |
-| Python behavior tests | 303 tests; GitHub Actions publication requirement |
-| JavaScript sensor-selection checks | GitHub Actions publication requirement |
-| Card JavaScript syntax | GitHub Actions publication requirement |
-| General UI: tests/ui-test.cjs | GitHub Actions publication requirement |
-| Production Manager save/restore flow: tests/save-flow.cjs | GitHub Actions publication requirement |
-| Settings and sensor rename: tests/settings-flow.cjs | GitHub Actions publication requirement |
-| Shared shading editor: tests/shading-flow.cjs | GitHub Actions publication requirement |
-| Settings/navigation/history: tests/release-131.cjs | GitHub Actions publication requirement |
-| HACS and Hassfest | GitHub Actions publication requirements |
-| Baseline source compared with published 1.3.9 commit | PASS: all 41 tracked files matched before preparing this release |
-| Release metadata/layout and archive CRC/source-byte comparison | Enforced by scripts/build_release.py in GitHub Actions |
+The Validate workflow runs all five existing application browser flows, the shared UI Kit browser suite and the new application/UI Kit comparison. The comparison covers light/dark themes, DE/EN, 320/375/390/430/1100 px, shared program controls, collapsed Settings, native modal keyboard focus, focus return and local module loading. Screenshots and measurements are uploaded as the ui-kit-desktop-mobile workflow artifact for review.
 
-The three local timing tests failed against the previous one-second behavior and passed after the change. They verify that height is not commanded at 1.000 or 1.499 seconds, starts at 1.500 seconds, uses a fractional-second timer, and waits from the successful return of the tilt service call. The timing, cancellation, contact-blocking, stale-timer and 150-second movement-timeout regressions use the new delay.
+The UI Kit is pinned at 1.1.0, commit 6e57c4079ff20d56a7cbd91470216c27c9767e13. Build verification checks module/CSS/license SHA-256 values and delivery through both card aliases. Release archives are checked against source bytes and preserve source timestamps. The complete archive includes UI_KIT.md and the locally bundled UI; internal build references and screenshots are excluded.
 
-Both the earliest height-command timestamp and the dedicated timer use TILT_TO_HEIGHT_DELAY_SECONDS = 1.5. The regular evaluation interval remains five seconds. Contact/current-goal checks, cancellation on stop/replacement/unload, height-only commands and the 150-second target-confirmation timeout are retained.
+The movement engine remains byte-for-byte unchanged. Existing program/save/restore, contact/movement, permissions, sensor selection/names and daily-history regressions remain in the full suite. The configuration protocol remains 7 and the tilt-to-height delay remains 1.5 seconds. Home Assistant I/O is simulated; no physical actuators are operated.
 
-Backend, manifest, card, both guides and automatic resource URLs use 1.4.0. The configuration protocol remains 7. The full archive contains exactly one integration, custom_components/rollladenplaner, plus documentation, tests, scripts and GitHub workflows. Build metadata, dependencies, caches and internal screenshots are excluded. Source timestamps are preserved.
-
-The [Validate workflow](https://github.com/v9h45n47mh-lab/shutter-manager/actions/workflows/validate.yml) runs the full Python suite and all five browser flows with simulated Home Assistant I/O. Publication is gated on successful tests, HACS and Hassfest jobs. The tag and both archives are created from the same checked commit; the release notes confirm those gates passed.
-
-No physical actuator was operated. After installing, restart Home Assistant Core and reload the browser/app. Both displayed versions should report 1.4.0.
+Publication is gated on successful tests, HACS and Hassfest jobs. The release tag and both archives use the same checked commit. After installing, restart Home Assistant Core and reload the browser/app. Settings and Help show card/integration 1.5.0 and UI 1.1.0.

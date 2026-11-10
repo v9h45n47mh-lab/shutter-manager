@@ -1,3 +1,4 @@
+const {serveFamilyUI}=require('./frontend.cjs');
 /* Settings, navigation and history in Chromium with the real Manager/store and simulated HA data. */
 const {chromium}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
@@ -22,6 +23,7 @@ const {execFileSync}=require('node:child_process');
   const page=await browser.newPage({viewport:{width:1100,height:1100}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
   await page.exposeFunction('backend',message=>{const result=call(message);assert.equal(result.motor_calls,0);return result;});
   await page.route('http://release131.test/**',async route=>{
+   if(await serveFamilyUI(route))return;
    if(route.request().url().endsWith('/card.js'))await route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(__dirname,'../custom_components/rollladenplaner/frontend/shutter-manager-card.js'),'utf8')});
    else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{margin:8px;--primary-color:#81d2eb;--text-primary-color:#18333e;--primary-text-color:#212121;--secondary-text-color:#727272;--divider-color:#e4e4e4}shutter-manager-card{display:block;max-width:500px;margin:auto}</style><script type="module" src="/card.js"></script><shutter-manager-card></shutter-manager-card></html>'});
   });

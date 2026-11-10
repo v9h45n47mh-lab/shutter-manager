@@ -126,6 +126,11 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.assertEqual(add_js.call_args_list[0].args[1], '/rollladenplaner/rollladenplaner-card.js?v='+adapter.INTEGRATION_VERSION)
         self.assertEqual(add_js.call_args_list[1].args[1], '/shutter-manager/shutter-manager-card.js?v='+adapter.INTEGRATION_VERSION)
         self.assertEqual(hass.http.async_register_static_paths.call_args.args[0][1][0], '/shutter-manager/shutter-manager-card.js')
+        paths=hass.http.async_register_static_paths.call_args.args[0]
+        self.assertEqual([row[0] for row in paths[2:]], ['/rollladenplaner/family-ui','/shutter-manager/family-ui'])
+        for _, directory, cache in paths[2:]:
+            self.assertTrue((Path(directory)/'1.1.0/family-ui.js').is_file())
+            self.assertFalse(cache)
         self.assertEqual(register_ws.call_count, 3)
 
     async def test_product_rename_preserves_custom_entry_names(self):

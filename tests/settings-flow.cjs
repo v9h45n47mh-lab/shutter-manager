@@ -1,3 +1,4 @@
+const {serveFamilyUI}=require('./frontend.cjs');
 /* Actual settings DOM and durable Python backend; no real HA devices are called. */
 const {chromium}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
@@ -11,6 +12,7 @@ const {execFileSync}=require('node:child_process');
   const page=await browser.newPage({viewport:{width:1100,height:1100}}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
   await page.exposeFunction('backend',msg=>{const r=call(msg);assert.equal(r.motor_calls,0);return r;});
   await page.route('http://settings.test/**',async route=>{
+   if(await serveFamilyUI(route))return;
    if(route.request().url().endsWith('/card.js'))await route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(__dirname,'../custom_components/rollladenplaner/frontend/shutter-manager-card.js'),'utf8')});
    else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{margin:8px;background:#fff;--primary-color:#81d2eb;--text-primary-color:#18333e;--primary-text-color:#212121;--secondary-text-color:#727272;--divider-color:#e4e4e4}shutter-manager-card{display:block;max-width:490px;margin:auto}</style><script type="module" src="/card.js"></script><shutter-manager-card></shutter-manager-card></html>'});
   });
@@ -34,7 +36,7 @@ const {execFileSync}=require('node:child_process');
    assert.equal(await card.getByRole('button',{name:'Rollläden auswählen',exact:true}).isVisible(),true);
    assert.equal(await card.getByRole('button',{name:'Sensoren auswählen',exact:true}).isVisible(),true);
    assert.equal(await card.locator('#settings-sensors-content').isVisible(),false);
-   const language=await card.locator('.language-group h3').boundingBox(),picker=await card.locator('.language-picker').boundingBox();
+   const language=await card.locator('.language-group .row-text strong').boundingBox(),picker=await card.locator('.language-picker').boundingBox();
    assert.ok(Math.abs((language.y+language.height/2)-(picker.y+picker.height/2))<3,'language controls align on one horizontal row');
    for(const section of ['covers','sensors']){
     const row=card.locator(`button.settings-fold[data-section="${section}"]`).locator('..');

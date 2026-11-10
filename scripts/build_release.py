@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -51,6 +52,22 @@ def validate_layout(tag=None):
             if file.is_file() and file.suffix in ('.py', '.cjs', '.js'):
                 if ('custom_components/'+'light_manager') in file.read_text():
                     raise ValueError(f'Unrelated Light Manager source in Shutter Manager: {file.relative_to(ROOT)}')
+    ui = COMPONENT / 'frontend'
+    lock = json.loads((ui / 'family-ui.lock.json').read_text())
+    bundle = ui / 'family-ui' / lock['version']
+    release = json.loads((bundle / 'manifest.json').read_text())
+    if release['version'] != lock['version'] or release['files'] != lock['files']:
+        raise ValueError('UI Kit lock and manifest differ')
+    for name, digest in lock['files'].items():
+        if hashlib.sha256((bundle / name).read_bytes()).hexdigest() != digest:
+            raise ValueError(f'UI Kit checksum mismatch: {name}')
+    if hashlib.sha256((bundle / 'LICENSE').read_bytes()).hexdigest() != lock['licenseSha256']:
+        raise ValueError('UI Kit license checksum mismatch')
+    if f"from '{lock['module']}'" not in frontend:
+        raise ValueError('The card must import the pinned UI Kit module')
+    for alias in ('rollladenplaner', 'shutter-manager'):
+        if f'/{alias}/family-ui' not in adapter:
+            raise ValueError(f'UI Kit static route missing: {alias}')
     return version
 
 
@@ -88,7 +105,7 @@ def main():
     integration_zip = args.output_dir / 'shutter-manager.zip'
     write_zip(integration_zip, integration_files, COMPONENT)
     allowed = {'README.md','HOWTO.md','LICENSE','CHANGELOG.md','hacs.json','dashboard.yaml',
-               '.gitignore','NEXT_RELEASE.md','RELEASE_TESTS.md'}
+               '.gitignore','NEXT_RELEASE.md','RELEASE_TESTS.md','UI_KIT.md'}
     files = [p for p in ROOT.iterdir() if p.is_file() and p.name in allowed]
     for directory in ('custom_components','tests','scripts','.github'):
         if (ROOT / directory).is_dir():

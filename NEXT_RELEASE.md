@@ -1,9 +1,9 @@
 # Shutter Manager release requests
 
-Implemented in 1.4.0 on 2026-11-09:
+Implemented in 1.5.0 on 2026-11-10:
 
-- Increase the delay between a successful blind tilt service call and the height command from one second to 1.5 seconds.
-- Keep the dedicated timer, contact/current-goal checks, cancellation behavior and 150-second target-confirmation timeout.
-- Update German/English guides and the English changelog, run release tests and publish directly to GitHub.
+- Adopt the latest HA UI Kit values and shared components from v9h45n47mh-lab/ha-ui-kit.
+- Pin and bundle UI Kit 1.1.0, including accent-colored sorting arrows and the shared + Program button.
+- Update both guides, run behavior and desktop/mobile theme checks, then publish directly to GitHub.
 
 No additional release requests are pending. Verification is recorded in RELEASE_TESTS.md.

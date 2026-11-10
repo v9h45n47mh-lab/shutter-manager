@@ -5,8 +5,9 @@ const path = require('node:path');
 const assert = require('node:assert/strict');
 const context = vm.createContext({HTMLElement: class {}, customElements: {get: () => null, define() {}}, window: {}, crypto: require('node:crypto').webcrypto, structuredClone});
 const source = fs.readFileSync(path.join(__dirname, '../custom_components/rollladenplaner/frontend/shutter-manager-card.js'), 'utf8');
-vm.runInContext(source + '\nglobalThis.Card = ShutterManagerCard;', context);
+
 (async () => {
+  await require('./frontend.cjs').loadCardIntoVm(context);
   const card = new context.Card();
   card.render = () => {};
   card._hass = {states: {'sensor.temp': {attributes: {device_class: 'temperature'}}, 'sensor.lux': {attributes: {unit_of_measurement: ' Lux '}}, 'sensor.power': {attributes: {device_class: 'power'}}}};

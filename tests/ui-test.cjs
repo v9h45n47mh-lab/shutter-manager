@@ -1,3 +1,4 @@
+const {serveFamilyUI}=require('./frontend.cjs');
 /* Real card in Chromium; fake Home Assistant host and WebSocket responses. */
 const {chromium}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
@@ -6,6 +7,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  const page=await browser.newPage({viewport:{width:1100,height:1000}});page.setDefaultTimeout(8000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('http://planner.test/**',async route=>{
+   if(await serveFamilyUI(route))return;
   if(route.request().url().endsWith('/card.js'))await route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(__dirname,'../custom_components/rollladenplaner/frontend/shutter-manager-card.js'),'utf8')});
   else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{font-family:Arial;background:#f5f7fa;padding:24px;--primary-text-color:#243449;--secondary-text-color:#63748b;--primary-color:#087eaa;--card-background-color:white;--divider-color:#dce3eb}rollladenplaner-card{max-width:920px;display:block;margin:auto}ha-card{display:block}</style><script type="module" src="/card.js"></script><rollladenplaner-card></rollladenplaner-card></html>'});
  });

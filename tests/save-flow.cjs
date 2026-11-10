@@ -1,3 +1,4 @@
+const {serveFamilyUI}=require('./frontend.cjs');
 /* Real card + real Python Manager validation/persistence; all HA I/O is simulated. */
 const {chromium}=require('playwright');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
@@ -15,6 +16,7 @@ const {execFileSync}=require('node:child_process');
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.exposeFunction('plannerBackend',message=>{const result=call({...message,...fixtureOptions});assert.equal(result.motor_calls || 0,0,'parameter saves never drive fixture motors');return result;});
   await page.route('http://save.test/**',async route=>{
+   if(await serveFamilyUI(route))return;
    if(route.request().url().endsWith('/card.js'))await route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(__dirname,'../custom_components/rollladenplaner/frontend/shutter-manager-card.js'),'utf8')});
    else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{font-family:Arial;background:#f5f7fa;padding:24px;--primary-text-color:#243449;--secondary-text-color:#63748b;--primary-color:#087eaa;--card-background-color:white;--divider-color:#dce3eb}rollladenplaner-card{display:block;max-width:920px;margin:auto}</style><script type="module" src="/card.js"></script><rollladenplaner-card></rollladenplaner-card></html>'});
   });
