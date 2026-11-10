@@ -1,10 +1,10 @@
 # Release status
 
-Implemented in 1.5.2 on 2026-11-10:
+Implemented in 1.5.3 on 2026-11-10:
 
-- Use original HA UI Kit 1.2.1 program groups, program rows and action rows.
-- Remove local typography, indentation, spacing and shared-control overrides.
-- Keep functions, permissions and vacation mode in Settings.
-- Compare desktop/mobile and both themes with an isolated, unmodified UI Kit reference before publication.
+- Use pinned, unmodified HA UI Kit 1.2.2 for the existing shared components.
+- Adopt the central 28 px program text alignment fix without local style overrides.
+- Keep functions, permissions and the 1.5-second tilt-to-height delay unchanged.
+- Compare desktop/mobile and both themes with an independent UI Kit reference, including explicit title/metadata/action alignment checks.
 
 No additional requested changes are pending.

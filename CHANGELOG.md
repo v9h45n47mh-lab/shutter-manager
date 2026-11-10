@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.3
+
+- Updated the pinned, unmodified local HA UI Kit to 1.2.2.
+- Applied the central alignment fix so program names, metadata and actions share the same 28 px indent, while general icon buttons retain their spacing.
+- Retained the shared navigation, program groups/rows, fields, selection lists, date/weekday controls, buttons and native dialogs without local shared-style overrides.
+- Kept existing functions, permissions, configuration protocol 7 and the 1.5-second tilt-to-height delay.
+- Updated both guides and added an explicit production-card text-alignment assertion to the isolated desktop/mobile and light/dark comparison.
+
 ## 1.5.2
 
 - Removed the local Light Manager compatibility profile and duplicate CSS for shared typography, indentation, spacing and controls.
