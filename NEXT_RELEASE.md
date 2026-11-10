@@ -1,10 +1,10 @@
-# Shutter Manager release requests
+# Release status
 
-Implemented in 1.5.1 on 2026-11-10:
+Implemented in 1.5.2 on 2026-11-10:
 
-- Adopt locally pinned HA UI Kit 1.2.0.
-- Remove the Vacation button/filter from Programs; use Settings for vacation mode.
-- Match Programs typography, sizes, line heights and spacing to Light Manager, with desktop/mobile comparisons against the real reference card.
-- Update both guides and the English changelog, run release checks and publish directly to GitHub.
+- Use original HA UI Kit 1.2.1 program groups, program rows and action rows.
+- Remove local typography, indentation, spacing and shared-control overrides.
+- Keep functions, permissions and vacation mode in Settings.
+- Compare desktop/mobile and both themes with an isolated, unmodified UI Kit reference before publication.
 
-No additional release requests are pending. Verification is recorded in RELEASE_TESTS.md.
+No additional requested changes are pending.

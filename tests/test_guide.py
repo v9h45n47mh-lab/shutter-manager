@@ -47,5 +47,7 @@ class GuideTests(unittest.TestCase):
         self.assertIn('Vacation mode is controlled only in Settings', SOURCE)
         self.assertIn('Der Urlaubsmodus wird ausschließlich in den Einstellungen geschaltet', SOURCE)
         self.assertNotIn('toggle-vacation-filter', SOURCE)
+        self.assertIn('ohne lokale CSS-Überschreibungen', SOURCE)
+        self.assertIn('without local CSS overrides', SOURCE)
         self.assertIn('A dedicated timer triggers this handoff', SOURCE)
         self.assertIn('Ein eigener Timer löst diesen Übergang', SOURCE)
