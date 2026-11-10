@@ -1,6 +1,6 @@
 # Shared UI provenance
 
-Shutter Manager 1.5.2 bundles HA UI Kit 1.2.1 from v9h45n47mh-lab/ha-ui-kit, pinned to commit 78324b4f971b96ec198647a0ac08fcde1a0073d8. The original bundle, CSS, manifest and MIT license are copied unchanged into frontend/family-ui/1.2.1/ and verified by family-ui.lock.json. The prior fixed version remains available for existing module URLs. No CDN or main/latest request is used at runtime.
+Shutter Manager 1.5.2 bundles HA UI Kit 1.2.1 from v9h45n47mh-lab/ha-ui-kit, pinned to commit 78324b4f971b96ec198647a0ac08fcde1a0073d8. The original bundle, CSS, manifest and MIT license are copied unchanged into frontend/family-ui/1.2.1/ and verified by family-ui.lock.json. Prior fixed versions remain available for existing module URLs. No CDN or main/latest request is used at runtime.
 
 Programs uses the shared programGroup, programRow and actionRow renderers. Font family, size, weight, line height, indentation, spacing and shared-control geometry are supplied exclusively by UI_CSS. The local Light Manager compatibility profile and all duplicate shared-component CSS were removed. Remaining local CSS only arranges cover-specific timetable, shading and assignment content; it uses UI Kit spacing tokens. Common editor, sensor, Settings, history, slider and help styles also come from the kit.
 

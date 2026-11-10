@@ -26,5 +26,6 @@ const classNames=css=>new Set([...css.matchAll(/\.([a-zA-Z_][\w-]*)/g)].map(matc
 const shared=classNames(kitCSS);
 assert.deepEqual([...classNames(localCSS)].filter(name=>shared.has(name)),[],'local CSS must not target shared UI classes');
 assert.ok(!/(?:font-(?:family|size|weight|style)|line-height|letter-spacing|text-indent)\s*:/.test(localCSS),'typography must come from the UI Kit');
+assert.ok(!/(?:^|[;{])\s*(?:color|background(?:-color)?|fill|stroke)\s*:/.test(localCSS),'colors and symbols must come from the UI Kit');
 assert.ok(!/Light Manager program typography/.test(card),'the local compatibility profile is removed');
 console.log('PASS: pinned UI 1.2.1 module, CSS, license, checksums and shared program controls.');

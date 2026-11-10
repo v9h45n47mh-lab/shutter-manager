@@ -91,6 +91,15 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   assert.equal(await card.locator('dialog.modal button').first().evaluate(el=>el===el.getRootNode().activeElement),true,'Tab stays inside the modal');
   await page.keyboard.press('Escape');assert.equal(await card.locator('dialog.modal').count(),0);
   assert.equal(await card.locator('[data-action="new-program"]').evaluate(el=>el===el.getRootNode().activeElement),true,'focus returns to the opener');
+  await card.locator('[data-action="tab"][data-tab="3"]').click();
+  for(const theme of ['light','dark']){
+   await page.setViewportSize({width:theme==='light'?1100:390,height:1100});
+   await page.evaluate(theme=>{const dark=theme==='dark';for(const [key,value] of Object.entries({'--primary-color':dark?'#90caf9':'#03a9f4','--primary-text-color':dark?'#eee':'#212121','--secondary-text-color':dark?'#aaa':'#727272','--text-primary-color':dark?'#102030':'#fff','--card-background-color':dark?'#202124':'#fff','--divider-color':dark?'#444':'#e0e0e0','--secondary-background-color':dark?'#2b2c2e':'#f5f5f5','--input-fill-color':dark?'#2b2c2e':'#f5f5f5'}))document.body.style.setProperty(key,value);},theme);
+   await card.getByRole('button',{name:'Select sensors',exact:true}).click();
+   const list=await page.evaluate(()=>window.compareCommon([['dialog.modal .cover-option','.fui-multi .cover-option'],['dialog.modal .cover-option strong','.fui-multi .cover-option strong'],['dialog.modal .cover-option small','.fui-multi .cover-option small']]));for(const pair of list)assert.deepEqual(pair.actual,pair.expected,'isolated UI Kit selection list: '+pair.selector);
+   await page.screenshot({path:path.join(directory,theme+'-sensor-selection.png'),fullPage:true});
+   await card.getByRole('button',{name:'Cancel',exact:true}).click();
+  }
   assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith('http://uikit.test/')),'no runtime CDN requests');
   fs.writeFileSync(path.join(directory,'measurements.json'),JSON.stringify(measurements,null,2));
   console.log('PASS: real UI Kit parity, isolated list/field/dialog styles, accent arrows, add button, fixed local modules, native dialog/focus, DE/EN, light/dark and 320/375/390/430/1100px.');
