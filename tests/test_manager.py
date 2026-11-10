@@ -129,7 +129,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
         paths=hass.http.async_register_static_paths.call_args.args[0]
         self.assertEqual([row[0] for row in paths[2:]], ['/rollladenplaner/family-ui','/shutter-manager/family-ui'])
         for _, directory, cache in paths[2:]:
-            self.assertTrue((Path(directory)/'1.1.0/family-ui.js').is_file())
+            self.assertTrue((Path(directory)/'1.2.0/family-ui.js').is_file())
             self.assertFalse(cache)
         self.assertEqual(register_ws.call_count, 3)
 

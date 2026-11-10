@@ -5,8 +5,8 @@ const lock=JSON.parse(fs.readFileSync(path.join(frontend,'family-ui.lock.json'),
 const folder=path.join(frontend,'family-ui',lock.version);
 const manifest=JSON.parse(fs.readFileSync(path.join(folder,'manifest.json'),'utf8'));
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
-assert.equal(lock.version,'1.1.0');
-assert.equal(lock.module,'./family-ui/1.1.0/family-ui.js');
+assert.equal(lock.version,'1.2.0');
+assert.equal(lock.module,'./family-ui/1.2.0/family-ui.js');
 assert.deepEqual(manifest.files,lock.files);
 for(const [file,digest] of Object.entries(lock.files))assert.equal(hash(fs.readFileSync(path.join(folder,file))),digest,file);
 assert.equal(hash(fs.readFileSync(path.join(folder,'LICENSE'))),lock.licenseSha256);
@@ -14,8 +14,10 @@ const card=fs.readFileSync(path.join(frontend,'shutter-manager-card.js'),'utf8')
 assert.ok(card.includes("from '"+lock.module+"'"));
 assert.ok(card.includes('return UI_CSS +'));
 assert.ok(card.includes('programAddButton()'));
-assert.ok(card.includes('programOrderButtons({programId:p.id,index,count:group.programs.length'));
+assert.ok(card.includes('uiProgramRow({'));
+assert.ok(card.includes('uiProgramGroup({'));
+assert.ok(!card.includes('toggle-vacation-filter'));
 assert.ok(card.includes('bindUI(this.shadowRoot'));
 assert.ok(card.includes('uiDialog({'));
 assert.ok(!card.includes('const paths={'),'icons come from the shared module');
-console.log('PASS: pinned UI 1.1.0 module, CSS, license, checksums and shared program controls.');
+console.log('PASS: pinned UI 1.2.0 module, CSS, license, checksums and shared program controls.');

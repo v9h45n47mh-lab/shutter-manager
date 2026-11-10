@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.1
+
+- Updated the pinned local HA UI Kit to 1.2.0 and adopted its program-group, program-row and action-row components.
+- Removed the Vacation button and view filter from Programs. Vacation mode remains available in Settings. Program ordering now consistently includes the complete group.
+- Matched program typography and compact row spacing to Light Manager, including 14 px names, group headings, metadata indentation and expanded action text on desktop and mobile.
+- Updated the German/English guides and added a read-only comparison against the real Light Manager card in both themes.
+
 ## 1.5.0
 
 - Adopted pinned, locally bundled HA UI Kit 1.1.0 components and styles for navigation, Settings, icons, switches, filters, dialogs and version information.

@@ -1,6 +1,6 @@
-# Howto – Shutter Manager 1.5.0
+# Howto – Shutter Manager 1.5.1
 
-Die Oberfläche verwendet das lokal mitgelieferte HA UI Kit 1.1.0 für Symbole, Farben, Schriften, Abstände, Programm-Aktionen und Dialoge. Sortierpfeile nutzen die HA-Akzentfarbe. Dialoge unterstützen Escape, begrenzte Tab-Navigation und die Rückkehr zum auslösenden Bedienelement. Die UI-Version steht in Einstellungen und Hilfe.
+Die Oberfläche verwendet das lokal mitgelieferte HA UI Kit 1.2.0 für Symbole, Farben, Schriften, Abstände, Programm-Aktionen und Dialoge. Sortierpfeile nutzen die HA-Akzentfarbe. Dialoge unterstützen Escape, begrenzte Tab-Navigation und die Rückkehr zum auslösenden Bedienelement. Die UI-Version steht in Einstellungen und Hilfe.
 
 Der Shutter Manager verbindet Zeitprogramme, übergeordnete Beschattungsprogramme und Öffnungsprogramme. Ab 1.3.0 enthalten die Geräteeinstellungen nur Sensorzuordnungen und Kontakte. Gemeinsame Schwellenwerte, Verzögerungen, Gültigkeit und Fahrziele werden im Programm gepflegt. Das reine Zuordnen eines Sensors löst keine Fahrt aus.
 
@@ -33,7 +33,7 @@ Aussetzen, Urlaubspause oder Deaktivieren löst keine pauschale Rückfahrt aus. 
 
 Beim Update werden bisherige Schwellenwerte und Freigabeverzögerungen aus den Sensorregeln in die zugehörigen Programme übernommen. Sensoren, Fahrziele, Wochentage, Saison und Aktivierung bleiben erhalten. Verwendet ein altes Programm unterschiedliche Bedingungen oder Abschlussaktionen, entstehen getrennte Programme mit Namenszusatz. Unbenutzte alte Regeln mit Parametern werden als deaktivierte Programme übernommen. Mehrere Sensorzuordnungen bleiben erhalten.
 
-Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.5.0 anzeigen.
+Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.5.1 anzeigen.
 
 ## Einstellungen und Sensor-Auswahl
 
@@ -77,7 +77,7 @@ Im Tab Sensorprogramme lässt sich ein Programm bis zur nächsten lokalen Mitter
 
 ## Oberfläche, Kopieren und Sicherung
 
-Links auf Höhe von + Programm steht der Filter Urlaub. Der Button entspricht dem Light Manager; ein aktiver Filter wird vollflächig in der Akzentfarbe mit passender Kontrastschrift hervorgehoben. Aktiviert zeigt er Zeit- und Sensorprogramme, bei denen Im Urlaub aussetzen ausgeschaltet ist. Er ändert weder den Urlaubsmodus noch die Programme. Erneutes Drücken zeigt wieder alle Programme. Der Filter bleibt während Aktualisierungen und Tabwechseln erhalten und startet nach Neuladen ausgeschaltet. Die Programmübersicht zeigt keine Fahrtenanzahl und keine Programmart mehr. Wochentage, Zeitfenster und Beschattungsschwellen bleiben als kompakte Angaben sichtbar. Der Hinweis Pause im Urlaub entfällt in der Übersicht; dafür steht der Filter Urlaub zur Verfügung. Aufgeklappte Programme verwenden kleinere Abstände vor und zwischen den Fahrten. In der mobilen Ansicht bis 600 px stehen Schalter und Bearbeiten neben dem Programmnamen; Sortierpfeile und Programm kopieren werden ausgeblendet. In der Desktopansicht sind Sortieren und Kopieren verfügbar. Programme und Fahrten lassen sich einzeln oder gesammelt auf-/zuklappen. Neue Fahrten öffnen direkt. Kopieren und Verschieben einzelner Fahrten erfolgt über eine Zielprogrammauswahl und wird erst beim Speichern gemeinsam übernommen. Es gelten danach Bedingungen, Tage, Urlaub und Gültigkeit des Zielprogramms. Bei Beschattungsprogrammen müssen Sensorzuordnung und benötigte Sensorarten weiterhin passen. Konflikte werden gemeldet; Abbrechen verwirft den Entwurf. Ganze Programme können mit neuer ID kopiert werden.
+Der Urlaubsmodus wird ausschließlich in den Einstellungen geschaltet. Die Programmübersicht zeigt alle Programme; es gibt dort keinen Urlaubsknopf und keinen Urlaubsfilter. Programmtexte, Überschriften, Schriftgrößen, Zeilenhöhen und Einrückungen entsprechen dem Light Manager. Die Programmübersicht zeigt keine Fahrtenanzahl und keine Programmart mehr. Wochentage, Zeitfenster und Beschattungsschwellen bleiben als kompakte Angaben sichtbar. Der Hinweis Pause im Urlaub entfällt in der Übersicht. Aufgeklappte Programme verwenden kleinere Abstände vor und zwischen den Fahrten. In der mobilen Ansicht bis 600 px stehen Schalter und Bearbeiten neben dem Programmnamen; Sortierpfeile und Programm kopieren werden ausgeblendet. In der Desktopansicht sind Sortieren und Kopieren verfügbar. Programme und Fahrten lassen sich einzeln oder gesammelt auf-/zuklappen. Neue Fahrten öffnen direkt. Kopieren und Verschieben einzelner Fahrten erfolgt über eine Zielprogrammauswahl und wird erst beim Speichern gemeinsam übernommen. Es gelten danach Bedingungen, Tage, Urlaub und Gültigkeit des Zielprogramms. Bei Beschattungsprogrammen müssen Sensorzuordnung und benötigte Sensorarten weiterhin passen. Konflikte werden gemeldet; Abbrechen verwirft den Entwurf. Ganze Programme können mit neuer ID kopiert werden.
 
 Der Messwertebereich im Programme-Tab zeigt Sonnenzeiten, Kontakte, Temperatur und Helligkeit; Sensoren werden nach Anzeigename sortiert. Änderungen der Messwerte verwerfen keine offenen Eingaben. Unter Einstellungen → Sicherung die Konfiguration exportieren oder wiederherstellen. Administratoren konfigurieren; andere Benutzer benötigen HA-Lese- und Steuerrechte für die betroffenen Geräte.
 
@@ -89,9 +89,9 @@ Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten
 
 ---
 
-# Shutter Manager 1.5.0
+# Shutter Manager 1.5.1
 
-The interface uses locally bundled HA UI Kit 1.1.0 components for icons, colors, typography, spacing, program controls and dialogs. Sorting arrows use the HA accent color. Dialogs support Escape, contained Tab navigation and focus return to the opener. Settings and Help show the UI version.
+The interface uses locally bundled HA UI Kit 1.2.0 components for icons, colors, typography, spacing, program controls and dialogs. Sorting arrows use the HA accent color. Dialogs support Escape, contained Tab navigation and focus return to the opener. Settings and Help show the UI version.
 
 Shutter Manager combines time schedules, overarching shading programs, and contact-based opening programs. Cover settings contain sensor assignments and contacts only. Shared thresholds, delays, validity, target positions, and end actions belong to programs. Assigning a sensor alone does not move a cover.
 
@@ -124,7 +124,7 @@ Pausing, disabling, or a vacation pause does not automatically return all covers
 
 Existing thresholds and release delays move from named cover rules to their programs. Sensor assignments, targets, weekdays, seasons, enabled flags, and pending work are preserved. A legacy program using different condition sets or end actions is split into separately named programs. Unused parameter rules become disabled programs. Multiple sensor associations are retained.
 
-The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.5.0. Older cards cannot overwrite the new protocol.
+The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.5.1. Older cards cannot overwrite the new protocol.
 
 ## Settings and sensor selection
 
@@ -166,7 +166,7 @@ Sensor programs can be paused until local midnight, including across restarts. O
 
 ## Editor, copy, and backups
 
-The Vacation filter sits on the left, level with + Program. Its button matches Light Manager; an active filter uses a solid accent background and contrasting text. When active, it shows time and sensor programs with Pause during vacation switched off. It changes neither vacation mode nor program settings. Press it again to show all programs. It remains active across refreshes and tab changes and starts off after a page reload. The program overview omits action counts and program-type labels. Weekdays, time windows and shading thresholds remain as compact details. The vacation-pause hint is omitted from the overview; use the Vacation filter to find programs that run during vacation. Expanded programs use smaller gaps before and between actions. In the mobile layout up to 600 px, the switch and Edit sit beside the program name; sorting arrows and Copy program are hidden. Sorting and copying remain available on desktop. Programs and actions can be expanded or collapsed individually or together. New actions open immediately. Copy/move uses a target-program dialog and remains staged until Save applies both sides. The destination program's conditions, weekdays, vacation, and validity apply. Sensor assignments must meet its required sensor types. Conflicts remain visible without losing the draft. Whole-program copies receive new IDs.
+Vacation mode is controlled only in Settings. Programs shows every program, with no Vacation button or filter. Program text, headings, font sizes, line heights and indentation match Light Manager. The program overview omits action counts and program-type labels. Weekdays, time windows and shading thresholds remain as compact details. The vacation-pause hint is omitted from the overview. Expanded programs use smaller gaps before and between actions. In the mobile layout up to 600 px, the switch and Edit sit beside the program name; sorting arrows and Copy program are hidden. Sorting and copying remain available on desktop. Programs and actions can be expanded or collapsed individually or together. New actions open immediately. Copy/move uses a target-program dialog and remains staged until Save applies both sides. The destination program's conditions, weekdays, vacation, and validity apply. Sensor assignments must meet its required sensor types. Conflicts remain visible without losing the draft. Whole-program copies receive new IDs.
 
 The Programs readings panel shows sun times, contacts, temperature, and illuminance, sorted by display name. Reading updates do not discard editor inputs. Use Settings → Backup to export or restore configuration. Administrators configure; other users require HA read/control permissions for affected devices.
 

@@ -44,5 +44,8 @@ class GuideTests(unittest.TestCase):
         self.assertIn(":settings:'+section", SOURCE)
         self.assertIn('commands tilt first, waits 1.5 seconds', SOURCE)
         self.assertIn('nach erfolgreichem Serviceaufruf 1,5 Sekunden', SOURCE)
+        self.assertIn('Vacation mode is controlled only in Settings', SOURCE)
+        self.assertIn('Der Urlaubsmodus wird ausschließlich in den Einstellungen geschaltet', SOURCE)
+        self.assertNotIn('toggle-vacation-filter', SOURCE)
         self.assertIn('A dedicated timer triggers this handoff', SOURCE)
         self.assertIn('Ein eigener Timer löst diesen Übergang', SOURCE)

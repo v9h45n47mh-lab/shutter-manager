@@ -40,7 +40,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  });
  const card=page.locator('rollladenplaner-card'),dialog=card.getByRole('dialog');
  const assertCompactSummaries=async()=>{
-  for(const text of await card.locator('.program .tags>span').allTextContents()){
+  for(const text of await card.locator('.program .tags span').allTextContents()){
    assert.doesNotMatch(text,/^(?:\d+ (?:Fahrt|Fahrten|action|actions)|Zeitprogramm|Sensorprogramm|Öffnungsprogramm|Schedule|Sensor program|Opening program|Pause im Urlaub|Paused during vacation)$/,'program summaries omit action counts and program types');
   }
  };
@@ -50,58 +50,23 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.locator('.program-group-head').first().getAttribute('aria-expanded'),'true','groups start expanded');
  assert.equal(await card.locator('[data-action="fold-program"]').first().getAttribute('aria-expanded'),'false','programs start collapsed');
  await assertCompactSummaries();
- assert.deepEqual(await card.locator('.program .tags>span').allTextContents(),['Mo · Di · Mi · Do · Fr'],'time summaries keep weekdays and omit the vacation-pause hint');
- const vacationFilter=card.locator('[data-action="toggle-vacation-filter"]');
- assert.equal(await vacationFilter.innerText(),'Urlaub');
- assert.equal(await vacationFilter.getAttribute('aria-pressed'),'false');
- const primaryColors=await card.locator('[data-action="new-program"]').evaluate(button=>({background:getComputedStyle(button).backgroundColor,text:getComputedStyle(button).color}));
- const inactiveFilter=await vacationFilter.evaluate(button=>{const style=getComputedStyle(button);return {padding:style.padding,color:style.color,background:style.backgroundColor};});
- assert.deepEqual(inactiveFilter,{padding:'6px 12px',color:primaryColors.background,background:'rgba(0, 0, 0, 0)'},'unselected Vacation filter matches Light Manager');
- const originalConfig=await page.evaluate(()=>JSON.stringify(model.config));
- const filterWrites=await page.evaluate(()=>calls.filter(message=>/\/(save|action)$/.test(message.type)).length);
- await vacationFilter.press('Space');
- assert.equal(await vacationFilter.getAttribute('aria-pressed'),'true');
- const activeFilter=await vacationFilter.evaluate(button=>({background:getComputedStyle(button).backgroundColor,text:getComputedStyle(button).color}));
- assert.deepEqual(activeFilter,primaryColors,'selected Vacation filter uses the same solid colors as the primary button');
- assert.equal(await card.locator('.program').count(),0,'vacation-paused programs are hidden');
- assert.equal(await card.getByText('Keine Programme für den Urlaubsmodus vorhanden.',{exact:true}).isVisible(),true);
- assert.equal(await page.evaluate(()=>JSON.stringify(model.config)),originalConfig,'filtering does not change configuration or vacation mode');
- await vacationFilter.press('Enter');
- assert.equal(await card.locator('.program').count(),1,'pressing the filter again restores all programs');
+ assert.deepEqual(await card.locator('.program .tags span').allTextContents(),['Mo · Di · Mi · Do · Fr'],'time summaries keep weekdays and omit the vacation-pause hint');
+ assert.equal(await card.locator('[data-action="toggle-vacation-filter"]').count(),0,'Programs has no Vacation control');
  await page.evaluate(async()=>{
-  window.filterOriginal={programs:structuredClone(model.config.programs),controls:structuredClone(model.controls),revision:model.revision};
+  window.programOriginal={programs:structuredClone(model.config.programs),controls:structuredClone(model.controls),revision:model.revision};
   const base=model.config.programs[0];
-  const make=(id,pause,kind='time')=>({...structuredClone(base),id,name:id,pause_in_vacation:pause,kind,...(kind==='sensor'?{sensor_mode:'opening',opening_start:'08:00',opening_end:'20:00'}:{}),rides:base.rides.map((ride,index)=>({...structuredClone(ride),id:id+'_'+index}))});
-  model.config.programs=[make('vacation_a',false),make('paused_time',true),make('vacation_b',false),make('vacation_sensor',false,'sensor'),make('paused_sensor',true,'sensor')];
-  model.controls=Object.fromEntries(model.config.programs.map(program=>[program.id,true]));
-  await document.querySelector('rollladenplaner-card').refresh();
+  const make=(id,pause)=>({...structuredClone(base),id,name:id,pause_in_vacation:pause,rides:base.rides.map((r,i)=>({...structuredClone(r),id:id+'_'+i}))});
+  model.config.programs=[make('holiday_a',false),make('paused_time',true),make('holiday_b',false)];
+  model.controls=Object.fromEntries(model.config.programs.map(p=>[p.id,true]));
+  const card=document.querySelector('rollladenplaner-card');card.vacationFilter=true;await card.refresh();
  });
- const vacationConfig=await page.evaluate(()=>JSON.stringify(model.config));
- await vacationFilter.click();
- assert.deepEqual(await card.locator('[data-action="fold-program"]').evaluateAll(elements=>elements.map(element=>element.dataset.program)),['vacation_a','vacation_b','vacation_sensor']);
- assert.deepEqual(await card.locator('.program-group-head>span').allTextContents(),['2','1'],'group badges count visible programs');
- await page.evaluate(()=>document.querySelector('rollladenplaner-card').refresh());
- assert.equal(await vacationFilter.getAttribute('aria-pressed'),'true','filter survives live refresh');
- await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
- await card.getByRole('button',{name:'Programme',exact:true}).click();
- assert.equal(await vacationFilter.getAttribute('aria-pressed'),'true','filter survives tab changes');
- assert.equal(await page.evaluate(()=>JSON.stringify(model.config)),vacationConfig);
- assert.equal(await page.evaluate(()=>calls.filter(message=>/\/(save|action)$/.test(message.type)).length),filterWrites,'filter clicks never send save/action requests');
- for(const width of [320,390,1100]){
-  await page.setViewportSize({width,height:1000});
-  const filterBox=await vacationFilter.boundingBox(),addBox=await card.locator('[data-action="new-program"]').boundingBox();
-  assert.ok(filterBox.x<addBox.x && Math.abs(filterBox.y+filterBox.height/2-addBox.y-addBox.height/2)<2,'Vacation aligns left opposite + Program');
-  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-  if(width===390)await page.screenshot({path:path.join(__dirname,'../../planner-vacation-filter-mobile.png'),fullPage:true});
- }
- await card.locator('[data-action="move-program"][data-program="vacation_b"][data-direction="up"]').click();
- assert.deepEqual(await page.evaluate(()=>model.config.programs.filter(program=>program.kind==='time').map(program=>program.id)),['vacation_b','paused_time','vacation_a'],'filtered sorting swaps visible programs and preserves hidden positions');
+ assert.equal(await card.locator('.program').count(),3,'old transient filter state never hides programs');
+ await card.locator('[data-action="move-program"][data-program="holiday_b"][data-direction="up"]').click();
+ assert.deepEqual(await page.evaluate(()=>model.config.programs.map(p=>p.id)),['holiday_a','holiday_b','paused_time'],'sorting includes every program in the group');
  await page.evaluate(async()=>{model.admin=false;await document.querySelector('rollladenplaner-card').refresh();});
- assert.equal(await vacationFilter.isVisible(),true,'view filters remain available to read-only users');
  assert.equal(await card.locator('[data-action="new-program"]').count(),0);
- await vacationFilter.press('Space');
- assert.equal(await card.locator('.program').count(),5);
- await page.evaluate(async()=>{model.admin=true;model.config.programs=filterOriginal.programs;model.controls=filterOriginal.controls;model.revision=filterOriginal.revision;const c=document.querySelector('rollladenplaner-card');c.vacationFilter=false;await c.refresh();delete window.filterOriginal;});
+ assert.equal(await card.locator('[data-action="toggle-vacation-filter"]').count(),0);
+ await page.evaluate(async()=>{model.admin=true;model.config.programs=programOriginal.programs;model.controls=programOriginal.controls;model.revision=programOriginal.revision;await document.querySelector('rollladenplaner-card').refresh();delete window.programOriginal;});
  await page.evaluate(async()=>{model.sun_times={date:'2026-10-30',sunrise:'2026-10-30T06:30:00Z',sunset:'2026-10-30T17:00:00Z'};model.time_zone='Europe/Berlin';await document.querySelector('rollladenplaner-card').refresh();});
  const overview=card.getByRole('region',{name:'Sonnenzeiten und Sensorwerte'});
  assert.equal(await overview.locator('.overview-item').count(),3,'three distinct assigned sensors, separate from solar row');
@@ -538,7 +503,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await page.evaluate(()=>model.config.programs.at(-1).sensor_mode),'opening');
  assert.equal(await page.evaluate(()=>model.config.programs.at(-1).rides[0].tilt),35);
  await assertCompactSummaries();
- assert.ok((await card.locator('.program .tags>span').allTextContents()).includes('08:00–20:00'),'opening time windows remain visible');
+ assert.ok((await card.locator('.program .tags span').allTextContents()).includes('08:00–20:00'),'opening time windows remain visible');
  await page.evaluate(async()=>{
    model.config.programs.splice(1,0,{id:'p2',name:'Zweites Zeitprogramm',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[]});
    model.revision++;
@@ -622,7 +587,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByRole('heading',{name:'Language',exact:true}).count(),1,'language picker is translated and available without admin permission');
  await card.getByRole('button',{name:'Programs',exact:true}).click();
  assert.equal(await card.getByRole('button',{name:'Schedule',exact:true}).count(),1,'tab labels switch to English');
- assert.equal(await vacationFilter.innerText(),'Vacation','filter label is translated');
+ assert.equal(await card.locator('[data-action=\"toggle-vacation-filter\"]').count(),0,'English Programs has no Vacation control');
  const englishFold=card.locator('[data-action="fold-program"][data-program="p"]');
  if(await englishFold.getAttribute('aria-expanded')==='false')await englishFold.click();
  const englishProgramText=await card.locator('main').innerText();
