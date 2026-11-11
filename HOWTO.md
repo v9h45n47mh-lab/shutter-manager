@@ -1,4 +1,4 @@
-# Howto – Shutter Manager 1.5.3
+# Howto – Shutter Manager 1.5.4
 
 Die Oberfläche verwendet das lokal mitgelieferte HA UI Kit 1.2.2 für Symbole, Farben, Schriften, Abstände, Programm-Aktionen und Dialoge. Sortierpfeile nutzen die HA-Akzentfarbe. Dialoge unterstützen Escape, begrenzte Tab-Navigation und die Rückkehr zum auslösenden Bedienelement. Die UI-Version steht in Einstellungen und Hilfe. Programmname, Zusatztexte und Fahrten sind mit der gemeinsamen Einrückung von 28 px bündig ausgerichtet. Allgemeine Symbolbuttons behalten ihren UI-Kit-Abstand.
 
@@ -33,7 +33,7 @@ Aussetzen, Urlaubspause oder Deaktivieren löst keine pauschale Rückfahrt aus. 
 
 Beim Update werden bisherige Schwellenwerte und Freigabeverzögerungen aus den Sensorregeln in die zugehörigen Programme übernommen. Sensoren, Fahrziele, Wochentage, Saison und Aktivierung bleiben erhalten. Verwendet ein altes Programm unterschiedliche Bedingungen oder Abschlussaktionen, entstehen getrennte Programme mit Namenszusatz. Unbenutzte alte Regeln mit Parametern werden als deaktivierte Programme übernommen. Mehrere Sensorzuordnungen bleiben erhalten.
 
-Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.5.3 anzeigen.
+Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.5.4 anzeigen.
 
 ## Einstellungen und Sensor-Auswahl
 
@@ -83,13 +83,13 @@ Der Messwertebereich im Programme-Tab zeigt Sonnenzeiten, Kontakte, Temperatur u
 
 ## Betrieb und Grenzen
 
-Die reguläre Auswertung erfolgt alle fünf Sekunden. Bei Jalousien wird zuerst die Lamellenposition gesetzt, nach erfolgreichem Serviceaufruf 1,5 Sekunden gewartet und danach die Höhe gefahren. Ein eigener Timer löst diesen Übergang unabhängig vom Fünf-Sekunden-Takt aus und prüft vorher Kontaktsperren und den aktuellen Auftrag erneut. Bei Stopp, Auftragswechsel oder Entladen der Integration wird der Timer verworfen. Ohne Zielbestätigung wird nach 150 Sekunden je Bewegungsphase ein Fehler gemeldet und nach Möglichkeit gestoppt. Geräte ohne Lamellenziel erhalten nur den Höhenbefehl. Positionslogik und Rückmeldung stammen aus der HA-Cover-Integration.
+Die reguläre Auswertung erfolgt alle fünf Sekunden. Bei Jalousien wird zuerst die Lamellenposition gesetzt, nach erfolgreichem Serviceaufruf 2,0 Sekunden gewartet und danach die Höhe gefahren. Ein eigener Timer löst diesen Übergang unabhängig vom Fünf-Sekunden-Takt aus und prüft vorher Kontaktsperren und den aktuellen Auftrag erneut. Bei Stopp, Auftragswechsel oder Entladen der Integration wird der Timer verworfen. Ohne Zielbestätigung wird nach 150 Sekunden je Bewegungsphase ein Fehler gemeldet und nach Möglichkeit gestoppt. Geräte ohne Lamellenziel erhalten nur den Höhenbefehl. Positionslogik und Rückmeldung stammen aus der HA-Cover-Integration.
 
 Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten werden nicht pauschal nachgeholt. Erkannt fehlgeschlagene Befehle erscheinen im Verlauf; eine erfolgreiche Serviceannahme allein beweist keine physische Fahrt. Feiertage, Wind-/Frostschutz und eine automatische manuelle Sperre sind nicht eingebaut.
 
 ---
 
-# Shutter Manager 1.5.3
+# Shutter Manager 1.5.4
 
 The interface uses locally bundled HA UI Kit 1.2.2 components for icons, colors, typography, spacing, program controls and dialogs. Sorting arrows use the HA accent color. Dialogs support Escape, contained Tab navigation and focus return to the opener. Settings and Help show the UI version. Program names, metadata and actions align at the shared 28 px indent. General icon buttons retain their UI Kit spacing.
 
@@ -124,7 +124,7 @@ Pausing, disabling, or a vacation pause does not automatically return all covers
 
 Existing thresholds and release delays move from named cover rules to their programs. Sensor assignments, targets, weekdays, seasons, enabled flags, and pending work are preserved. A legacy program using different condition sets or end actions is split into separately named programs. Unused parameter rules become disabled programs. Multiple sensor associations are retained.
 
-The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.5.3. Older cards cannot overwrite the new protocol.
+The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.5.4. Older cards cannot overwrite the new protocol.
 
 ## Settings and sensor selection
 
@@ -172,6 +172,6 @@ The Programs readings panel shows sun times, contacts, temperature, and illumina
 
 ## Operation and limits
 
-Regular evaluation runs every five seconds. For blinds, the integration commands tilt first, waits 1.5 seconds after the successful service call, and then commands height. A dedicated timer triggers this handoff independently of the five-second interval and rechecks contact blocking and the current goal first. Stopping, replacing the goal, or unloading the integration cancels the timer. Each movement phase has a 150-second target-confirmation timeout; detected failures are logged and stopped where supported. Covers without tilt targets receive only height commands. Position direction and feedback come from the underlying HA cover integration.
+Regular evaluation runs every five seconds. For blinds, the integration commands tilt first, waits 2.0 seconds after the successful service call, and then commands height. A dedicated timer triggers this handoff independently of the five-second interval and rechecks contact blocking and the current goal first. Stopping, replacing the goal, or unloading the integration cancels the timer. Each movement phase has a 150-second target-confirmation timeout; detected failures are logged and stopped where supported. Covers without tilt targets receive only height commands. Position direction and feedback come from the underlying HA cover integration.
 
 Pending work survives restarts; missed past times are not indiscriminately replayed. A successful service call alone does not prove physical movement. Holiday calendars, wind/frost protection, and automatic manual-operation locks are not built in.

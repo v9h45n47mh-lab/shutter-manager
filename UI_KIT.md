@@ -1,6 +1,6 @@
 # Shared UI provenance
 
-Shutter Manager 1.5.3 bundles HA UI Kit 1.2.2 from v9h45n47mh-lab/ha-ui-kit, pinned to commit 6e398ba9415ed5a0b64e9703d11ab935ee7ea47d. The original bundle, CSS, manifest and MIT license are copied unchanged into frontend/family-ui/1.2.2/ and verified by family-ui.lock.json. Prior fixed versions remain available for existing module URLs. No CDN or main/latest request is used at runtime.
+Shutter Manager 1.5.4 bundles HA UI Kit 1.2.2 from v9h45n47mh-lab/ha-ui-kit, pinned to commit 6e398ba9415ed5a0b64e9703d11ab935ee7ea47d. The original bundle, CSS, manifest and MIT license are copied unchanged into frontend/family-ui/1.2.2/ and verified by family-ui.lock.json. Prior fixed versions remain available for existing module URLs. No CDN or main/latest request is used at runtime.
 
 Programs uses the shared programGroup, programRow and actionRow renderers. Version 1.2.2 removes the extra inherited icon margin from program titles centrally: their text, metadata and action text share the same 28 px indent. General icon buttons retain the original spacing. Font family, size, weight, line height, indentation, spacing and shared-control geometry are supplied exclusively by UI_CSS. The local Light Manager compatibility profile and all duplicate shared-component CSS were removed. Remaining local CSS only arranges cover-specific timetable, shading and assignment content; it uses UI Kit spacing tokens. Common editor, sensor, Settings, history, slider and help styles also come from the kit.
 
@@ -8,4 +8,4 @@ Behavior, stable-ID, translation, authorization and accessibility adapters prese
 
 The common-control flow also compares fields, select fields, Settings list text and dialog sections with an independent UI-only ShadowRoot in both themes. The program-layout browser test creates an independent ShadowRoot reference with only the original UI Kit CSS and its programGroup, programRow and actionRow output. No application CSS reaches that reference. It compares computed typography, indentation, spacing, controls and relative layout in light/dark themes at 320/390/1100 px, collapsed/expanded and admin/non-admin states. A static check rejects local rules targeting shared selectors or setting typography. Workflow screenshots and numeric measurements provide review evidence.
 
-Automation, configuration protocol 7 and the 1.5-second tilt-to-height delay are unchanged. No Light Manager code or checkout is required.
+The UI and configuration protocol 7 are unchanged. The tilt-to-height delay is 2.0 seconds in this release. No Light Manager code or checkout is required.

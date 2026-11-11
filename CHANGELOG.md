@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.4
+
+- Increased the delay between a successful blind tilt service call and the height command from 1.5 to 2.0 seconds.
+- Kept the dedicated timer, contact checks, cancellation behavior and 150-second target-confirmation timeout.
+- Updated German/English Help and timing boundary tests, including suppression before 2.0 seconds and timer cancellation/replacement.
+
 ## 1.5.3
 
 - Updated the pinned, unmodified local HA UI Kit to 1.2.2.

@@ -1,10 +1,9 @@
 # Release status
 
-Implemented in 1.5.3 on 2026-11-10:
+Implemented in 1.5.4 on 2026-11-11:
 
-- Use pinned, unmodified HA UI Kit 1.2.2 for the existing shared components.
-- Adopt the central 28 px program text alignment fix without local style overrides.
-- Keep functions, permissions and the 1.5-second tilt-to-height delay unchanged.
-- Compare desktop/mobile and both themes with an independent UI Kit reference, including explicit title/metadata/action alignment checks.
+- Increase the wait between a successful tilt command and the height command from 1.5 to 2.0 seconds.
+- Keep contact checks, cancellation, the 150-second target-confirmation timeout, protocol 7 and UI Kit 1.2.2 unchanged.
+- Update both guides and verify timing boundaries and the existing regression suites before publication.
 
 No additional requested changes are pending.

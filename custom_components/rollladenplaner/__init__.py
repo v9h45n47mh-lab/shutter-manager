@@ -23,8 +23,8 @@ from homeassistant.helpers.sun import get_astral_event_date
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.5.3'
-TILT_TO_HEIGHT_DELAY_SECONDS = 1.5
+INTEGRATION_VERSION = '1.5.4'
+TILT_TO_HEIGHT_DELAY_SECONDS = 2.0
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 7
 SIGNAL = DOMAIN + '_update'
@@ -46,8 +46,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/family-ui', ui_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.5.3')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.5.3')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.5.4')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.5.4')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
