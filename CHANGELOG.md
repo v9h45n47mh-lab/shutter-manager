@@ -2,7 +2,8 @@
 
 ## 1.6.0
 
-- Added optional, read-only Wecker cover movements to the chronological daily schedule, marked only by the shared alarm icon.
+- Added optional, read-only Wecker cover movements to the chronological schedule, marked only by the shared alarm icon.
+- Extended Schedule to the next 24 elapsed hours across midnight, without weekday/date headings; preserved outstanding native movements and permission-checked skips for concrete future executions.
 - Reused Wecker's real calendar, day-type, enabled-state and completed-run preview with alarm-owner and cover-read permission checks.
 - Kept alarm configuration and execution in Wecker; alarm movements cannot be skipped, removed or edited from Shutter Manager and create no stored program or duplicate command.
 - Isolated unavailable or incompatible previews from native schedules and rechecked current cover selection after asynchronous queries.

@@ -360,6 +360,40 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.assertEqual(view['external_planned'],[])
         self.assertEqual(view['planned'],expected)
 
+    async def test_wecker_preview_includes_tomorrow_but_rejects_outside_the_horizon(self):
+        user=types.SimpleNamespace(is_admin=True)
+        row={'source':'wecker','time':(self.now+timedelta(hours=23)).isoformat(),'targets':['w'],
+             'cover_entity':'cover.wohnen','position':75,'occurrence':'wecker:tomorrow'}
+        outside={**row,'occurrence':'wecker:outside','time':(self.now+timedelta(hours=24,seconds=1)).isoformat()}
+        with patch.object(adapter,'async_planned_wecker',AsyncMock(return_value=[row,outside])):
+            view=await self.m.async_snapshot(user)
+        self.assertEqual(view['external_planned'],[row])
+        self.hass.services.async_call.assert_not_called()
+
+    async def test_tomorrows_native_row_keeps_skip_permissions(self):
+        self.now=at('2026-11-13T23:00')
+        self.c['programs'][0]['days']=[5]
+        self.m.engine=adapter.Engine(self.c)
+        user=types.SimpleNamespace(is_admin=False,permissions=types.SimpleNamespace(check_entity=lambda entity,policy:policy=='read'))
+        row=self.m.snapshot(user)['planned'][0]
+        self.assertEqual(row['occurrence'],'2026-11-14:r')
+        self.assertFalse(row['can_control'])
+        message={'action':'skip_today','value':True,'occurrence':row['occurrence'],
+                 'entity_id':['cover.wohnen'],'revision':self.m.revision}
+        with self.assertRaisesRegex(ValueError,'Steuerberechtigung'):
+            await self.m.action(user,message)
+        await self.m.action(types.SimpleNamespace(is_admin=True),message)
+        self.assertTrue(self.m.snapshot(user)['planned'][0]['skip'])
+        self.hass.services.async_call.assert_not_called()
+
+    async def test_one_time_preview_also_uses_24_elapsed_hours_on_the_fall_dst_day(self):
+        self.now=at('2026-10-25T00:01')
+        self.m.engine.rt['one_time']=[{'id':name,'target':'w','position':75,
+            'scheduled':(self.now+timedelta(hours=24,seconds=extra)).isoformat()}
+            for name,extra in [('inside',0),('outside',1)]]
+        rows=self.m.snapshot(types.SimpleNamespace(is_admin=True))['planned']
+        self.assertEqual([row['occurrence'] for row in rows if row.get('one_time')],['inside'])
+
     async def test_height_timeout_after_tilt_and_pause(self):
         await self.m.advance('w',self.intent,self.now,self.s)
         await self.m.advance('w',self.intent,self.now+timedelta(seconds=2.0),self.s)

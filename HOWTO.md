@@ -55,7 +55,7 @@ Die Historie bleibt nach Neuladen und Neustart erhalten und wechselt mit dem lok
 
 ## Zeitprogramme und Einzelfahrten
 
-Zeitprogramme unterstützen einzelne Wochentage, feste Uhrzeit, Sonnenaufgang/-untergang, Versatz und frühestens/spätestens. Die Liste wird nach der wirksamen Uhrzeit für heute sortiert. Eine zukünftige Programmfahrt kann einmal ausgelassen und wieder eingeplant werden. Bereits erledigte oder verworfene Fahrten werden nicht erneut nachgeholt. Eine ausdrücklich in die Zukunft verschobene Fahrt wird neu eingeplant.
+Zeitprogramme unterstützen einzelne Wochentage, feste Uhrzeit, Sonnenaufgang/-untergang, Versatz und frühestens/spätestens. Die Liste zeigt die nächsten 24 Stunden über Mitternacht hinweg, chronologisch und ohne Tages- oder Datumsüberschrift. Bereits wartende Fahrten bleiben zusätzlich sichtbar. Eine zukünftige Programmfahrt kann einmal ausgelassen und wieder eingeplant werden. Bereits erledigte oder verworfene Fahrten werden nicht erneut nachgeholt. Eine ausdrücklich in die Zukunft verschobene Fahrt wird neu eingeplant.
 
 Im Zeitprogramm über + Einzelfahrt eine Fahrt für genau ein Gerät am heutigen Tag einplanen. Sie wird chronologisch einsortiert und erzeugt kein gespeichertes Programm. Nach erfolgreicher Ausführung verschwindet sie. Bei Blockierung oder Fehler bleibt sie sichtbar; abgelaufene Fahrten werden am Folgetag verworfen. Lamellen sind nur bei Jalousien verfügbar.
 
@@ -146,7 +146,7 @@ History survives reloads and restarts and rolls over with the Home Assistant loc
 
 ## Schedules and one-time movements
 
-Schedules support individual weekdays, fixed times, sunrise/sunset, offsets, and earliest/latest bounds. Actions sort by their effective time today. Upcoming recurring actions may be skipped once and rescheduled. Completed or discarded actions are not replayed. Moving an action explicitly into the future reschedules it.
+Schedules support individual weekdays, fixed times, sunrise/sunset, offsets, and earliest/latest bounds. Schedule shows the next 24 elapsed hours across midnight in chronological order without weekday or date headings. Outstanding movements remain visible as well. Upcoming recurring actions may be skipped once and rescheduled. Completed or discarded actions are not replayed. Moving an action explicitly into the future reschedules it.
 
 In Schedule, use + One-time movement for one cover today. One-time movements are inserted chronologically. Each does not create a saved program and disappears after success. It stays visible while blocked or after an error and expires the next day; tilt is available only for blinds.
 
@@ -179,10 +179,10 @@ Pending work survives restarts; missed past times are not indiscriminately repla
 
 ## Fahrten aus dem Wecker / Alarm movements
 
-Ist die Integration **Wecker** eingerichtet, werden ihre heute noch ausstehenden Fahrten für in Shutter Manager ausgewählte Rollläden chronologisch im Zeitprogramm ergänzt. Nur das kleine UI-Kit-Weckersymbol markiert die Herkunft; der Hinweis am Symbol zeigt Wecker und Tagestyp. Tagestypen, Kalender und bereits ausgeführte Vorgänge werden direkt über die Vorschau der Wecker-Integration ausgewertet. Eigentümer und Administratoren sehen nur die jeweils berechtigten Wecker und Geräte.
+Ist die Integration **Wecker** eingerichtet, werden ihre Fahrten der nächsten 24 Stunden für in Shutter Manager ausgewählte Rollläden chronologisch im Zeitprogramm ergänzt. Nur das kleine UI-Kit-Weckersymbol markiert die Herkunft; der Hinweis am Symbol zeigt Wecker und Tagestyp. Tagestypen, Kalender und bereits ausgeführte Vorgänge werden direkt über die Vorschau der Wecker-Integration ausgewertet. Eigentümer und Administratoren sehen nur die jeweils berechtigten Wecker und Geräte.
 
 Weckerfahrten sind hier ausschließlich lesbar: kein Auslassen, Entfernen oder Bearbeiten. Änderungen und Ausführung bleiben im Wecker; es entsteht kein gespeichertes Programm und keine zweite Ausführung. Ist Wecker nicht eingerichtet, nicht kompatibel oder nicht erreichbar, bleibt das native Zeitprogramm nutzbar. Alte YAML-Wecker werden nicht automatisch eingelesen.
 
-When **Wecker** is configured, its remaining movements for today appear chronologically in Schedule for covers selected in Shutter Manager. A small shared alarm icon is the only source marker; its tooltip gives the alarm and day type. Wecker supplies its own calendar/day-type/completed-run calculation. The original alarm ownership and device read permissions apply.
+When **Wecker** is configured, its movements in the next 24 hours appear chronologically in Schedule for covers selected in Shutter Manager. A small shared alarm icon is the only source marker; its tooltip gives the alarm and day type. Wecker supplies its own calendar/day-type/completed-run calculation. The original alarm ownership and device read permissions apply.
 
 These movements are read-only here: no Skip, Remove or Edit controls. Configuration and execution stay in Wecker; the preview does not create a stored program or a duplicate command. Native schedules remain available if Wecker is absent, incompatible or unavailable. Legacy YAML alarms are not imported automatically.

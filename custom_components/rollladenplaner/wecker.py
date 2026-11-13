@@ -1,7 +1,7 @@
 """Optional, read-only cover previews from the installed Wecker integration."""
 import asyncio
 from collections.abc import Mapping
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import sys
 
 DOMAIN = 'wecker_manager'
@@ -9,14 +9,14 @@ MODULE = 'custom_components.wecker_manager.wake_cards'
 PREVIEW_TIMEOUT_SECONDS = 3.0
 
 
-def _scheduled(value, now, zone):
+def _scheduled(value, now):
     if not isinstance(value, str):
         return None
     try:
         at = datetime.fromisoformat(value.replace('Z', '+00:00'))
     except ValueError:
         return None
-    if at.tzinfo is None or at < now or at.astimezone(zone).date() != now.astimezone(zone).date():
+    if at.tzinfo is None or not now <= at <= now.astimezone(timezone.utc) + timedelta(hours=24):
         return None
     return at
 
@@ -59,7 +59,7 @@ async def async_planned_wecker(hass, user, windows, now, zone):
                 for kind, planned in info.get('types', {}).items():
                     if planned.get('active') is not True or not record['settings']['types'].get(kind, {}).get('enabled'):
                         continue
-                    at = _scheduled(planned.get('at'), now, zone)
+                    at = _scheduled(planned.get('at'), now)
                     if at is None:
                         continue
                     for item in record['binding'].get('covers', []):

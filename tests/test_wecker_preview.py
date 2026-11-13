@@ -89,12 +89,13 @@ class WeckerPreviewTests(IsolatedAsyncioTestCase):
         self.info['types'] = {}
         self.assertEqual(await self.rows(), [])
 
-    async def test_only_future_times_on_the_current_ha_local_day_are_shown(self):
-        for at in ['2026-11-13T04:59:59+00:00', '2026-11-13T23:00:00+00:00', '2026-11-13T06:00:00', 'invalid']:
+    async def test_only_the_next_24_elapsed_hours_are_shown_including_tomorrow(self):
+        for at in ['2026-11-13T04:59:59+00:00', '2026-11-14T05:00:01+00:00', '2026-11-13T06:00:00', 'invalid']:
             self.info['types']['school']['at'] = at
             self.assertEqual(await self.rows(), [], at)
-        self.info['types']['school']['at'] = '2026-11-13T22:59:59Z'
-        self.assertEqual(len(await self.rows()), 2)
+        for at in ['2026-11-13T23:00:00Z', '2026-11-14T04:59:59Z', '2026-11-14T05:00:00Z']:
+            self.info['types']['school']['at'] = at
+            self.assertEqual(len(await self.rows()), 2, at)
 
     async def test_dst_fold_uses_instants_instead_of_wall_clock_order(self):
         self.now = datetime(2026, 10, 25, 0, 40, tzinfo=timezone.utc)

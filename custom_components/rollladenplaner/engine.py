@@ -1266,6 +1266,15 @@ class Engine:
         return intent.get('occurrence') or intent['id'].rsplit(':', 1)[0]
 
     def planned_today(self, now, solar, states=None):
+        """Keep the local-day view available for existing engine consumers."""
+        return self._planned(now, solar, states)
+
+    def planned_next24(self, now, solar, states=None):
+        """Preview 24 elapsed hours, including dates reached across DST changes."""
+        until = now.astimezone(UTC) + timedelta(hours=24)
+        return self._planned(now, solar, states, until)
+
+    def _planned(self, now, solar, states=None, until=None):
         """Future time events and outstanding carried/sensor occurrences only.
 
         Global OFF/vacation are displayed as pauses. Disabled programs/rides/windows
@@ -1285,28 +1294,35 @@ class Engine:
                     'skip': key in self.rt['skipped_occurrences'] or r['skip_next'],
                     'can_undo': due > now, 'carried': False}
 
-        for p in self.config['programs']:
-            if not p['enabled'] or day.weekday() not in p['days'] or p['kind'] != 'time':
-                continue
-            for r in p['rides']:
-                targets = [t for t in r['targets'] if windows[t]['enabled']]
-                if not r['enabled'] or not targets:
+        last_day = until.astimezone(self.zone).date() if until else day
+        next_triggers = set()
+        for offset in range((last_day - day).days + 1):
+            planned_day = day + timedelta(days=offset)
+            for p in self.config['programs']:
+                if not p['enabled'] or planned_day.weekday() not in p['days'] or p['kind'] != 'time':
                     continue
-                due = self.due(r, day, solar)
-                key = f"{day}:{r['id']}"
-                if due is None or due <= now or key in self.rt['claimed']:
-                    continue
-                row = base(p, r, key, due, targets)
-                if not self.config['enabled']:
-                    row['status'] = 'paused'; row['reason'] = 'Steuerung ausgeschaltet'
-                elif self.config['vacation'] and p['pause_in_vacation']:
-                    row['status'] = 'paused'; row['reason'] = 'Urlaubspause'
-                elif states is not None and not row['skip']:
-                    contacts = self.blocking_contacts(windows[targets[0]], states)
-                    if contacts:
-                        row['blocked_contacts'] = contacts
-                        row['contact_preview'] = True
-                rows[key] = row
+                for r in p['rides']:
+                    targets = [t for t in r['targets'] if windows[t]['enabled']]
+                    if not r['enabled'] or not targets:
+                        continue
+                    due = self.due(r, planned_day, solar)
+                    key = f"{planned_day}:{r['id']}"
+                    if due is None or due <= now or (until is not None and due > until) or key in self.rt['claimed']:
+                        continue
+                    row = base(p, r, key, due, targets)
+                    # A next-trigger flag belongs to the first occurrence only.
+                    row['skip'] = key in self.rt['skipped_occurrences'] or (r['skip_next'] and r['id'] not in next_triggers)
+                    next_triggers.add(r['id'])
+                    if not self.config['enabled']:
+                        row['status'] = 'paused'; row['reason'] = 'Steuerung ausgeschaltet'
+                    elif self.config['vacation'] and p['pause_in_vacation']:
+                        row['status'] = 'paused'; row['reason'] = 'Urlaubspause'
+                    elif states is not None and not row['skip']:
+                        contacts = self.blocking_contacts(windows[targets[0]], states)
+                        if contacts:
+                            row['blocked_contacts'] = contacts
+                            row['contact_preview'] = True
+                    rows[key] = row
 
         for target, slots in self.rt['pending'].items():
             if target not in windows or not windows[target]['enabled']:
@@ -1349,8 +1365,9 @@ class Engine:
         return sorted(rows.values(), key=lambda row: (row['time'], row['name'], row['occurrence']))
 
     def skip_today(self, now, solar, occurrence, value):
-        """Change this concrete execution only; never silently skip tomorrow."""
-        row = next((r for r in self.planned_today(now, solar) if r['occurrence'] == occurrence), None)
+        """Change the selected execution only, including tomorrow's visible preview."""
+        planned = self.planned_next24(now, solar)
+        row = next((r for r in planned if r['occurrence'] == occurrence), None)
         if row is None:
             raise ValueError('Diese Fahrt ist nicht mehr offen. Bitte aktualisieren.')
         if row['status'] == 'contact_skipped':
@@ -1367,13 +1384,15 @@ class Engine:
                         slots.pop(kind)
                         if kind == 'opening' and intent.get('phase') == 'release':
                             self.rt['opening_holds'].pop(intent['window'], None)
-            self.log(now, 'skipped', row['name'] + ': heutige Ausführung ausgelassen', program=row['program'])
+            self.log(now, 'skipped', row['name'] + ': gewählte Ausführung ausgelassen', program=row['program'])
         else:
             self.rt['skipped_occurrences'].pop(occurrence, None)
-            # An existing next-trigger skip is shown in today's row as well.
+            # Undo a next-trigger flag only on that ride's first future execution.
             program = next(p for p in self.config['programs'] if p['id'] == row['program'])
             ride = next(r for r in program['rides'] if r['id'] == row['ride'])
-            ride['skip_next'] = False
+            first = next((r['occurrence'] for r in planned if r['ride'] == row['ride'] and r['can_undo']), None)
+            if occurrence == first:
+                ride['skip_next'] = False
         return row
 
 

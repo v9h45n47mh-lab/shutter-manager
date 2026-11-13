@@ -52,7 +52,7 @@ If you have manually added the old resource URL, it remains supported. New manua
 
 ## New in 1.6.0
 
-Schedule optionally includes today's future cover movements from the installed Wecker integration. Native schedules, one-time movements and alarm movements share chronological display order. A small shared alarm icon marks the external source; alarm rows have no Skip, Remove or Edit controls. The alarm remains solely responsible for execution and settings, so the preview creates no stored program and sends no cover command.
+Schedule shows the next 24 elapsed hours across midnight without weekday or date headings. It optionally includes upcoming cover movements from the installed Wecker integration. Outstanding native movements remain visible until resolved. Native schedules, one-time movements and alarm movements share chronological display order. A small shared alarm icon marks the external source; alarm rows have no Skip, Remove or Edit controls. The alarm remains solely responsible for execution and settings, so the preview creates no stored program and sends no cover command.
 
 The preview uses Wecker's actual calendar/day-type/completed-run calculation and checks alarm ownership plus device read access. Only covers selected in Shutter Manager are included. Missing or unavailable Wecker instances cannot break native schedules. Legacy YAML alarms are not imported. Interoperability is tested against Wecker 1.4.0 and its pinned Music Manager dependency.
 

@@ -312,7 +312,7 @@ class Manager:
                     return due.timestamp() if due is not None else float('inf')
                 program['rides'].sort(key=due_key)
         planned = []
-        for row in self.engine.planned_today(now, self.solar, self.states()):
+        for row in self.engine.planned_next24(now, self.solar, self.states()):
             if row['kind'] in ('shade', 'opening'):
                 if any(t not in visible for t in row['targets']):
                     continue
@@ -329,6 +329,8 @@ class Manager:
             if item['target'] not in visible:
                 continue
             scheduled = datetime.fromisoformat(item['scheduled'])
+            if scheduled > now.astimezone(timezone.utc) + timedelta(hours=24):
+                continue
             planned.append({'occurrence': item['id'], 'program': '__one_time__', 'ride': item['id'],
                 'name': 'Einzelfahrt', 'kind': 'time', 'one_time': True, 'time': item['scheduled'],
                 'targets': [item['target']], 'position': item['position'], 'tilt': item.get('tilt'),
@@ -362,14 +364,14 @@ class Manager:
     async def async_snapshot(self, user):
         view = self.snapshot(user)
         rows = await async_planned_wecker(self.hass, user, view['config']['windows'], utcnow(), self.engine.zone)
-        # Recheck the current selection and local day after optional calendar I/O.
+        # Recheck selection and the rolling horizon after optional calendar I/O.
         view = self.snapshot(user)
         visible = {window['id']: window['cover'] for window in view['config']['windows']}
         now = utcnow()
         view['external_planned'] = [row for row in rows
             if all(visible.get(target) == row['cover_entity'] for target in row['targets'])
             and datetime.fromisoformat(row['time']) >= now
-            and datetime.fromisoformat(row['time']).astimezone(self.engine.zone).date().isoformat() == view['planned_date']]
+            and datetime.fromisoformat(row['time']) <= now.astimezone(timezone.utc) + timedelta(hours=24)]
         return view
 
     async def save(self, config, revision):
@@ -513,7 +515,7 @@ class Manager:
                 return
             if action == 'skip_today':
                 now = utcnow()
-                row = next((r for r in self.engine.planned_today(now, self.solar)
+                row = next((r for r in self.engine.planned_next24(now, self.solar)
                             if r['occurrence'] == msg['occurrence']), None)
                 if row is None:
                     raise ValueError('Diese Fahrt ist nicht mehr offen. Bitte aktualisieren.')
