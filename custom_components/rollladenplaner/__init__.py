@@ -21,9 +21,10 @@ from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.sun import get_astral_event_date
 
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
+from .wecker import async_planned_wecker
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.5.4'
+INTEGRATION_VERSION = '1.6.0'
 TILT_TO_HEIGHT_DELAY_SECONDS = 2.0
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 7
@@ -46,8 +47,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/family-ui', ui_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.5.4')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.5.4')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.6.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.6.0')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -358,6 +359,19 @@ class Manager:
                 'command_history': history,
                 'daily_history': [row for row in self.engine.command_results_today(now) if row.get('window') in visible]}
 
+    async def async_snapshot(self, user):
+        view = self.snapshot(user)
+        rows = await async_planned_wecker(self.hass, user, view['config']['windows'], utcnow(), self.engine.zone)
+        # Recheck the current selection and local day after optional calendar I/O.
+        view = self.snapshot(user)
+        visible = {window['id']: window['cover'] for window in view['config']['windows']}
+        now = utcnow()
+        view['external_planned'] = [row for row in rows
+            if all(visible.get(target) == row['cover_entity'] for target in row['targets'])
+            and datetime.fromisoformat(row['time']) >= now
+            and datetime.fromisoformat(row['time']).astimezone(self.engine.zone).date().isoformat() == view['planned_date']]
+        return view
+
     async def save(self, config, revision):
         checked = validate_config(self.individual_controls(config))
         # Classification controls which axes a ride may set; the feature checks
@@ -588,7 +602,7 @@ def manager(hass):
 @websocket_api.async_response
 async def ws_get(hass, connection, msg):
     try:
-        connection.send_result(msg['id'], manager(hass).snapshot(connection.user))
+        connection.send_result(msg['id'], await manager(hass).async_snapshot(connection.user))
     except (ValueError, KeyError) as err:
         connection.send_error(msg['id'], 'invalid_config', str(err))
 
@@ -603,7 +617,7 @@ async def ws_save(hass, connection, msg):
         if msg.get('config_schema') != CONFIG_SCHEMA_VERSION:
             raise ValueError('Kartenoberfläche und Integration sind nicht kompatibel. Bitte Browser/App neu laden.')
         await m.save(msg['config'], msg['revision'])
-        connection.send_result(msg['id'], m.snapshot(connection.user))
+        connection.send_result(msg['id'], await m.async_snapshot(connection.user))
     except (ValueError, KeyError, TypeError, StopIteration) as err:
         connection.send_error(msg['id'], 'invalid_config', str(err))
 
@@ -622,6 +636,6 @@ async def ws_action(hass, connection, msg):
     try:
         m = manager(hass)
         await m.action(connection.user, msg)
-        connection.send_result(msg['id'], m.snapshot(connection.user))
+        connection.send_result(msg['id'], await m.async_snapshot(connection.user))
     except (ValueError, KeyError, TypeError, StopIteration) as err:
         connection.send_error(msg['id'], 'not_allowed', str(err))

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.0
+
+- Added optional, read-only Wecker cover movements to the chronological daily schedule, marked only by the shared alarm icon.
+- Reused Wecker's real calendar, day-type, enabled-state and completed-run preview with alarm-owner and cover-read permission checks.
+- Kept alarm configuration and execution in Wecker; alarm movements cannot be skipped, removed or edited from Shutter Manager and create no stored program or duplicate command.
+- Isolated unavailable or incompatible previews from native schedules and rechecked current cover selection after asynchronous queries.
+- Updated the unmodified local HA UI Kit to 1.4.1 and refreshed German/English Help.
+- Added backend, real-provider interoperability and desktop/mobile light/dark browser coverage. The 2.0-second tilt-to-height delay is unchanged.
+
 ## 1.5.4
 
 - Increased the delay between a successful blind tilt service call and the height command from 1.5 to 2.0 seconds.

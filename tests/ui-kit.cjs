@@ -5,8 +5,8 @@ const lock=JSON.parse(fs.readFileSync(path.join(frontend,'family-ui.lock.json'),
 const folder=path.join(frontend,'family-ui',lock.version);
 const manifest=JSON.parse(fs.readFileSync(path.join(folder,'manifest.json'),'utf8'));
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
-assert.equal(lock.version,'1.2.2');
-assert.equal(lock.module,'./family-ui/1.2.2/family-ui.js');
+assert.equal(lock.version,'1.4.1');
+assert.equal(lock.module,'./family-ui/1.4.1/family-ui.js');
 assert.deepEqual(manifest.files,lock.files);
 for(const [file,digest] of Object.entries(lock.files))assert.equal(hash(fs.readFileSync(path.join(folder,file))),digest,file);
 assert.equal(hash(fs.readFileSync(path.join(folder,'LICENSE'))),lock.licenseSha256);
@@ -17,6 +17,8 @@ assert.ok(card.includes('programAddButton()'));
 assert.ok(card.includes('uiProgramRow({'));
 assert.ok(card.includes('uiProgramGroup({'));
 assert.ok(!card.includes('toggle-vacation-filter'));
+assert.ok(card.includes("uiIcon('media-alarm')"),'the alarm marker comes from the shared icon registry');
+assert.ok(!card.includes('<ha-icon'),'no separate icon renderer is required');
 assert.ok(card.includes('bindUI(this.shadowRoot'));
 assert.ok(card.includes('uiDialog({'));
 assert.ok(!card.includes('const paths={'),'icons come from the shared module');
@@ -28,4 +30,4 @@ assert.deepEqual([...classNames(localCSS)].filter(name=>shared.has(name)),[],'lo
 assert.ok(!/(?:font-(?:family|size|weight|style)|line-height|letter-spacing|text-indent)\s*:/.test(localCSS),'typography must come from the UI Kit');
 assert.ok(!/(?:^|[;{])\s*(?:color|background(?:-color)?|fill|stroke)\s*:/.test(localCSS),'colors and symbols must come from the UI Kit');
 assert.ok(!/Light Manager program typography/.test(card),'the local compatibility profile is removed');
-console.log('PASS: pinned UI 1.2.2 module, CSS, license, checksums and shared program controls.');
+console.log('PASS: pinned UI 1.4.1 module, CSS, license, checksums and shared program controls.');

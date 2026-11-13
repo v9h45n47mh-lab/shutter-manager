@@ -15,9 +15,9 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   });
   await page.goto('http://uikit.test');await page.waitForFunction(()=>customElements.get('rollladenplaner-card'));
   await page.evaluate(async()=>{
-   window.UI=await import('/family-ui/1.2.2/family-ui.js');
+   window.UI=await import('/family-ui/1.4.1/family-ui.js');
    const makeProgram=(id,name,time)=>({id,name,kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:false,rides:[{id:'ride-'+id,name:'Morgens',targets:['w'],enabled:true,event:'fixed',time,offset:0,earliest:'00:00',latest:'23:59',position:0,tilt:50}]});
-   const model={backend_version:'1.5.4',config_schema:7,admin:true,controls:{p:true,q:true},revision:1,time_zone:'Europe/Berlin',config:{enabled:true,vacation:false,sensors:['sensor.lux'],sensor_names:{},windows:[{id:'w',name:'Jalousie Wohnen mit längerem Namen',cover:'cover.wohnen',cover_type:'blind',enabled:true,contacts:[],sensor_rules:[]}],programs:[makeProgram('p','Wochentag','07:00'),makeProgram('q','Wochenende','08:00')]},pending:{},moving:[],planned:[],planned_date:'2026-11-10',sun_times:{date:'2026-11-10'},daily_history:[],cover_states:[{window:'w',position:50,tilt:25}]};
+   const model={backend_version:'1.6.0',config_schema:7,admin:true,controls:{p:true,q:true},revision:1,time_zone:'Europe/Berlin',config:{enabled:true,vacation:false,sensors:['sensor.lux'],sensor_names:{},windows:[{id:'w',name:'Jalousie Wohnen mit längerem Namen',cover:'cover.wohnen',cover_type:'blind',enabled:true,contacts:[],sensor_rules:[]}],programs:[makeProgram('p','Wochentag','07:00'),makeProgram('q','Wochenende','08:00')]},pending:{},moving:[],planned:[],planned_date:'2026-11-10',sun_times:{date:'2026-11-10'},daily_history:[],cover_states:[{window:'w',position:50,tilt:25}]};
    const host={user:{id:'ui-kit-admin'},states:{'cover.wohnen':{state:'open',attributes:{supported_features:140,device_class:'blind',friendly_name:'Wohnen'}},'sensor.lux':{state:'20300',attributes:{friendly_name:'Helligkeit',device_class:'illuminance',unit_of_measurement:'lx'}}},callWS:async()=>structuredClone(model)};
    const card=document.querySelector('rollladenplaner-card');window.card=card;card.setConfig({});card.hass=host;await card.refresh();
    const reference=document.createElement('div');reference.id='isolated-common-reference';reference.style.cssText='position:absolute;left:-10000px;width:800px';document.body.append(reference);window.commonReference=reference.attachShadow({mode:'open'});
@@ -56,7 +56,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
     const actual=await fold.evaluate(el=>({font:getComputedStyle(el.querySelector('span')).fontSize,gap:getComputedStyle(el).gap,arrow:getComputedStyle(el.querySelector('svg')).width}));
     assert.deepEqual(actual,{font:'14px',gap:'6px',arrow:'20px'});
    }
-   assert.match(await card.locator('.settings-version-info').textContent(),/UI 1\.2\.2/);
+   assert.match(await card.locator('.settings-version-info').textContent(),/UI 1\.4\.1/);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'settings fit the viewport');
    await page.screenshot({path:path.join(directory,`${theme}-${width}-settings.png`),fullPage:true});
    const common=await page.evaluate(()=>window.compareCommon([['[data-settings="covers"] .row-text strong','.setting-row .row-text strong'],['[data-settings="sensors"] .row-text small','.setting-row .row-text small']]));for(const pair of common)assert.deepEqual(pair.actual,pair.expected,'isolated UI Kit list: '+pair.selector);

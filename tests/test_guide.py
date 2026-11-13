@@ -51,5 +51,7 @@ class GuideTests(unittest.TestCase):
         self.assertIn('without local CSS overrides', SOURCE)
         self.assertIn('gemeinsamen Einrückung von 28 px', SOURCE)
         self.assertIn('shared 28 px indent', SOURCE)
+        self.assertIn('Weckerfahrten lassen sich in Shutter Manager weder überspringen', SOURCE)
+        self.assertIn('Alarm movements cannot be skipped, removed or edited', SOURCE)
         self.assertIn('A dedicated timer triggers this handoff', SOURCE)
         self.assertIn('Ein eigener Timer löst diesen Übergang', SOURCE)

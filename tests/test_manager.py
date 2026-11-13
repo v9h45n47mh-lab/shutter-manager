@@ -129,7 +129,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
         paths=hass.http.async_register_static_paths.call_args.args[0]
         self.assertEqual([row[0] for row in paths[2:]], ['/rollladenplaner/family-ui','/shutter-manager/family-ui'])
         for _, directory, cache in paths[2:]:
-            self.assertTrue((Path(directory)/'1.2.2/family-ui.js').is_file())
+            self.assertTrue((Path(directory)/'1.4.1/family-ui.js').is_file())
             self.assertFalse(cache)
         self.assertEqual(register_ws.call_count, 3)
 
@@ -326,6 +326,40 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.s['cover.wohnen']['attributes']['current_position']=0
         self.now+=timedelta(seconds=5);await self.m._pulse_locked()
         self.assertEqual(self.m.engine.planned_today(self.now,solar),[])
+    async def test_optional_wecker_rows_do_not_become_programs_or_executable_goals(self):
+        user=types.SimpleNamespace(is_admin=True)
+        row={'source':'wecker','time':(self.now+timedelta(minutes=1)).isoformat(),'targets':['w'],
+             'cover_entity':'cover.wohnen','position':75,'tilt':None,'occurrence':'wecker:read-only','can_control':False}
+        before=deepcopy(self.m.engine.config)
+        with patch.object(adapter,'async_planned_wecker',AsyncMock(return_value=[row])):
+            view=await self.m.async_snapshot(user)
+        self.assertEqual(view['external_planned'],[row])
+        self.assertEqual(self.m.engine.config,before)
+        self.hass.services.async_call.assert_not_called()
+        with self.assertRaises(ValueError):
+            await self.m.action(user,{'action':'skip_today','value':True,'occurrence':'wecker:read-only','entity_id':['cover.wohnen'],'revision':self.m.revision})
+        self.assertEqual(self.m.engine.config,before)
+
+    async def test_wecker_rows_recheck_current_cover_selection_after_io(self):
+        user=types.SimpleNamespace(is_admin=True)
+        row={'source':'wecker','time':(self.now+timedelta(minutes=1)).isoformat(),'targets':['w'],
+             'cover_entity':'cover.wohnen','position':75,'occurrence':'wecker:read-only'}
+        async def changed(*args):
+            self.m.engine.config['windows'][0]['cover']='cover.replaced'
+            return [row]
+        with patch.object(adapter,'async_planned_wecker',AsyncMock(side_effect=changed)):
+            view=await self.m.async_snapshot(user)
+        self.assertEqual(view['external_planned'],[])
+        self.hass.services.async_call.assert_not_called()
+
+    async def test_wecker_unavailable_keeps_the_native_planned_view(self):
+        user=types.SimpleNamespace(is_admin=True)
+        expected=self.m.snapshot(user)['planned']
+        with patch.object(adapter,'async_planned_wecker',AsyncMock(return_value=[])):
+            view=await self.m.async_snapshot(user)
+        self.assertEqual(view['external_planned'],[])
+        self.assertEqual(view['planned'],expected)
+
     async def test_height_timeout_after_tilt_and_pause(self):
         await self.m.advance('w',self.intent,self.now,self.s)
         await self.m.advance('w',self.intent,self.now+timedelta(seconds=2.0),self.s)
