@@ -19,7 +19,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    const card=document.querySelector('rollladenplaner-card');window.card=card;
    const make=(id,name,time)=>({id,name,kind:'time',enabled:id!=='q',days:[0,1,2,3,4],pause_in_vacation:id!=='p',rides:[{id:'r'+id,name:'Wohnen',targets:['w'],enabled:id!=='q',event:'fixed',time,offset:0,earliest:'00:00',latest:'23:59',position:0,tilt:50}]});
    const programs=[make('p','Wochentag','07:00'),make('q','Wochenende und Feiertage','08:00')];
-   window.model={backend_version:'1.6.0',config_schema:7,admin:true,controls:{p:true,q:false},revision:1,time_zone:'Europe/Berlin',config:{enabled:true,vacation:false,sensors:[],sensor_names:{},windows:[{id:'w',name:'Wohnen',cover:'cover.reference',cover_type:'blind',enabled:true,contacts:[],sensor_rules:[]}],programs},pending:{},moving:[],planned:[],sun_times:{},daily_history:[]};
+   window.model={backend_version:'1.6.1',config_schema:7,admin:true,controls:{p:true,q:false},revision:1,time_zone:'Europe/Berlin',config:{enabled:true,vacation:false,sensors:[],sensor_names:{},windows:[{id:'w',name:'Wohnen',cover:'cover.reference',cover_type:'blind',enabled:true,contacts:[],sensor_rules:[]}],programs},pending:{},moving:[],planned:[],sun_times:{},daily_history:[]};
    card.loaded=true;card.data=window.model;card._hass={states:{'cover.reference':{state:'open',attributes:{device_class:'blind',supported_features:140}}},user:{id:'isolated-ui-parity'},callWS:async()=>structuredClone(window.model)};card.setConfig({});card.showOverview=false;
    clearInterval(card.timer);
    window.renderReference=({expanded,admin})=>{

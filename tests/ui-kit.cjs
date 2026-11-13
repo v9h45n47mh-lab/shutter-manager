@@ -17,7 +17,7 @@ assert.ok(card.includes('programAddButton()'));
 assert.ok(card.includes('uiProgramRow({'));
 assert.ok(card.includes('uiProgramGroup({'));
 assert.ok(!card.includes('toggle-vacation-filter'));
-assert.ok(card.includes("uiIcon('media-alarm')"),'the alarm marker comes from the shared icon registry');
+assert.ok(card.includes("uiStatusBadge({label:'',icon:'media-alarm'})"),'the alarm marker comes from the shared status badge and icon registry');
 assert.ok(!card.includes('<ha-icon'),'no separate icon renderer is required');
 assert.ok(card.includes('bindUI(this.shadowRoot'));
 assert.ok(card.includes('uiDialog({'));

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.6.1
+
+- Matched Schedule to Light Manager using unmodified shared UI Kit action rows and a left-aligned one-time movement button.
+- Prefixed each time with its short weekday in the Home Assistant timezone and removed the redundant 24-hour heading.
+- Retained chronological 24-hour previews, pending movements, native controls and permissions, read-only alarm markers and the 2.0-second tilt-to-height delay.
+- Updated German/English Help and added weekday, timezone and desktop/mobile light/dark layout coverage.
+
 ## 1.6.0
 
 - Added optional, read-only Wecker cover movements to the chronological schedule, marked only by the shared alarm icon.

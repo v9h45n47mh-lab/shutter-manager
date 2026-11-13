@@ -1,10 +1,10 @@
 # Release status
 
-Implemented in 1.6.0 on 2026-11-13:
+Implemented in 1.6.1 on 2026-11-13:
 
-- Show native and Wecker cover movements for the next 24 elapsed hours chronologically without day headings; retain outstanding native movements and concrete skip controls.
-- Use only the shared Wecker/alarm icon as the source marker; no skipping, removal or editing in Shutter Manager.
-- Reuse real Wecker day/calendar/completed-run logic and retain alarm/device permissions without duplicate execution or saved programs.
-- Upgrade to the current HA UI Kit 1.4.1 without local shared-style overrides.
+- Short weekday before each Schedule time, using the Home Assistant timezone.
+- Removed the 24-hour heading and aligned the one-time movement button to the left.
+- Used the same unmodified UI Kit action rows, buttons and alarm badge as Light Manager.
+- Retained the 24-hour horizon, native controls, permissions and read-only Wecker rows.
 
 No additional requested changes are pending.

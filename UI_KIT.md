@@ -1,8 +1,8 @@
 # Shared UI provenance
 
-Shutter Manager 1.6.0 bundles unmodified HA UI Kit 1.4.1 from v9h45n47mh-lab/ha-ui-kit, pinned to commit 393474e75869ba79195d800624a5a793a51fe2c4. Original JS, CSS, manifest and MIT license live in frontend/family-ui/1.4.1/ and are verified by family-ui.lock.json. Prior fixed versions remain available for existing module URLs. No runtime CDN or main/latest request is used.
+Shutter Manager 1.6.1 bundles unmodified HA UI Kit 1.4.1 from v9h45n47mh-lab/ha-ui-kit, pinned to commit 393474e75869ba79195d800624a5a793a51fe2c4. Original JS, CSS, manifest and MIT license live in frontend/family-ui/1.4.1/ and are verified by family-ui.lock.json. Prior fixed versions remain available for existing module URLs. No runtime CDN or main/latest request is used.
 
-Shared navigation, program groups/rows, actions, fields, selection lists, weekday/season controls, buttons and native dialogs remain in use. UI_CSS owns common fonts, weights, colors, icon sizes, indentation, spacing and control geometry. No local shared-style overrides are added. Wecker rows use the kit's media-alarm icon in the standard icon size and a shared secondary-text hint. No separate icon path or HA icon dependency is introduced.
+Shared navigation, program groups/rows, actions, fields, selection lists, weekday/season controls, buttons and native dialogs remain in use. UI_CSS owns common fonts, weights, colors, icon sizes, indentation, spacing and control geometry. No local shared-style overrides are added. Schedule uses the same actionRow component as Light Manager, including its typography, indentation and spacing. The left toolbar uses the shared add button; Wecker rows use the kit's statusBadge with media-alarm at its unchanged 16 px badge size. No separate icon path or HA icon dependency is introduced.
 
 Wecker preview data is an optional, read-only backend view. Ownership, entity access, native program behavior and the Wecker scheduler remain outside the UI Kit. There are no skip, remove, edit or execute controls for external alarm rows. Existing native controls retain their behavior and permissions.
 

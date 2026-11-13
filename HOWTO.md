@@ -1,4 +1,4 @@
-# Howto – Shutter Manager 1.6.0
+# Howto – Shutter Manager 1.6.1
 
 Die Oberfläche verwendet das lokal mitgelieferte HA UI Kit 1.4.1 für Symbole, Farben, Schriften, Abstände, Programm-Aktionen und Dialoge. Sortierpfeile nutzen die HA-Akzentfarbe. Dialoge unterstützen Escape, begrenzte Tab-Navigation und die Rückkehr zum auslösenden Bedienelement. Die UI-Version steht in Einstellungen und Hilfe. Programmname, Zusatztexte und Fahrten sind mit der gemeinsamen Einrückung von 28 px bündig ausgerichtet. Allgemeine Symbolbuttons behalten ihren UI-Kit-Abstand.
 
@@ -33,7 +33,7 @@ Aussetzen, Urlaubspause oder Deaktivieren löst keine pauschale Rückfahrt aus. 
 
 Beim Update werden bisherige Schwellenwerte und Freigabeverzögerungen aus den Sensorregeln in die zugehörigen Programme übernommen. Sensoren, Fahrziele, Wochentage, Saison und Aktivierung bleiben erhalten. Verwendet ein altes Programm unterschiedliche Bedingungen oder Abschlussaktionen, entstehen getrennte Programme mit Namenszusatz. Unbenutzte alte Regeln mit Parametern werden als deaktivierte Programme übernommen. Mehrere Sensorzuordnungen bleiben erhalten.
 
-Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.6.0 anzeigen.
+Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.6.1 anzeigen.
 
 ## Einstellungen und Sensor-Auswahl
 
@@ -55,7 +55,7 @@ Die Historie bleibt nach Neuladen und Neustart erhalten und wechselt mit dem lok
 
 ## Zeitprogramme und Einzelfahrten
 
-Zeitprogramme unterstützen einzelne Wochentage, feste Uhrzeit, Sonnenaufgang/-untergang, Versatz und frühestens/spätestens. Die Liste zeigt die nächsten 24 Stunden über Mitternacht hinweg, chronologisch und ohne Tages- oder Datumsüberschrift. Bereits wartende Fahrten bleiben zusätzlich sichtbar. Eine zukünftige Programmfahrt kann einmal ausgelassen und wieder eingeplant werden. Bereits erledigte oder verworfene Fahrten werden nicht erneut nachgeholt. Eine ausdrücklich in die Zukunft verschobene Fahrt wird neu eingeplant.
+Zeitprogramme unterstützen einzelne Wochentage, feste Uhrzeit, Sonnenaufgang/-untergang, Versatz und frühestens/spätestens. Die Liste zeigt die nächsten 24 Stunden über Mitternacht hinweg, chronologisch mit Tageskürzel vor jeder Uhrzeit und ohne zusätzliche Überschrift. + Einzelfahrt steht links; die Zeilen verwenden dieselben gemeinsamen UI-Kit-Fahrtenbausteine wie im Light Manager. Bereits wartende Fahrten bleiben zusätzlich sichtbar. Eine zukünftige Programmfahrt kann einmal ausgelassen und wieder eingeplant werden. Bereits erledigte oder verworfene Fahrten werden nicht erneut nachgeholt. Eine ausdrücklich in die Zukunft verschobene Fahrt wird neu eingeplant.
 
 Im Zeitprogramm über + Einzelfahrt eine Fahrt für genau ein Gerät am heutigen Tag einplanen. Sie wird chronologisch einsortiert und erzeugt kein gespeichertes Programm. Nach erfolgreicher Ausführung verschwindet sie. Bei Blockierung oder Fehler bleibt sie sichtbar; abgelaufene Fahrten werden am Folgetag verworfen. Lamellen sind nur bei Jalousien verfügbar.
 
@@ -89,7 +89,7 @@ Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten
 
 ---
 
-# Shutter Manager 1.6.0
+# Shutter Manager 1.6.1
 
 The interface uses locally bundled HA UI Kit 1.4.1 components for icons, colors, typography, spacing, program controls and dialogs. Sorting arrows use the HA accent color. Dialogs support Escape, contained Tab navigation and focus return to the opener. Settings and Help show the UI version. Program names, metadata and actions align at the shared 28 px indent. General icon buttons retain their UI Kit spacing.
 
@@ -124,7 +124,7 @@ Pausing, disabling, or a vacation pause does not automatically return all covers
 
 Existing thresholds and release delays move from named cover rules to their programs. Sensor assignments, targets, weekdays, seasons, enabled flags, and pending work are preserved. A legacy program using different condition sets or end actions is split into separately named programs. Unused parameter rules become disabled programs. Multiple sensor associations are retained.
 
-The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.6.0. Older cards cannot overwrite the new protocol.
+The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.6.1. Older cards cannot overwrite the new protocol.
 
 ## Settings and sensor selection
 
@@ -146,7 +146,7 @@ History survives reloads and restarts and rolls over with the Home Assistant loc
 
 ## Schedules and one-time movements
 
-Schedules support individual weekdays, fixed times, sunrise/sunset, offsets, and earliest/latest bounds. Schedule shows the next 24 elapsed hours across midnight in chronological order without weekday or date headings. Outstanding movements remain visible as well. Upcoming recurring actions may be skipped once and rescheduled. Completed or discarded actions are not replayed. Moving an action explicitly into the future reschedules it.
+Schedules support individual weekdays, fixed times, sunrise/sunset, offsets, and earliest/latest bounds. Schedule shows the next 24 elapsed hours across midnight in chronological order with a short weekday before every time and without an extra heading. + One-time movement is aligned to the left; rows use the same shared UI Kit action component as Light Manager. Outstanding movements remain visible as well. Upcoming recurring actions may be skipped once and rescheduled. Completed or discarded actions are not replayed. Moving an action explicitly into the future reschedules it.
 
 In Schedule, use + One-time movement for one cover today. One-time movements are inserted chronologically. Each does not create a saved program and disappears after success. It stays visible while blocked or after an error and expires the next day; tilt is available only for blinds.
 
