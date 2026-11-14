@@ -16,7 +16,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
  const seed=fs.readFileSync(store,'utf8'),occurrence='2026-11-14:'+ride.id,once=initial.snapshot.planned.find(row=>row.one_time).occurrence;
  const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
  try{
-  const page=await browser.newPage({viewport:{width:1100,height:1000},timezoneId:'America/Los_Angeles'}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
+  const page=await browser.newPage({viewport:{width:1100,height:1000},timezoneId:'America/Los_Angeles',locale:'de-DE'}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
   await page.exposeFunction('backend',message=>{const reply=call(message);if(reply.ok)assert.equal(reply.motor_calls,0,'changing a future clock never drives a motor');return reply;});
   await page.route('http://reschedule.test/**',async route=>{
    if(await serveFamilyUI(route))return;
@@ -38,10 +38,12 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   const results=path.resolve(__dirname,'../.ci/ui-kit-results');fs.mkdirSync(results,{recursive:true});
   for(const theme of ['light','dark'])for(const width of [320,390,1100])for(const admin of [true,false]){
    fixtureNow='2026-11-14T06:10';readOnly=!admin;await page.setViewportSize({width,height:1000});await open();
-   await page.evaluate(theme=>{const dark=theme==='dark';for(const [key,value] of Object.entries({'--primary-color':dark?'#90caf9':'#81d2eb','--primary-text-color':dark?'#eee':'#212121','--secondary-text-color':dark?'#aaa':'#727272','--text-primary-color':dark?'#102030':'#18333e','--card-background-color':dark?'#202124':'#fff','--divider-color':dark?'#444':'#ddd'}))document.body.style.setProperty(key,value);document.body.style.background=dark?'#121212':'#f5f7fa';},theme);
+   await page.evaluate(theme=>{const dark=theme==='dark';for(const [key,value] of Object.entries({'--primary-color':dark?'#90caf9':'#81d2eb','--primary-text-color':dark?'#eee':'#212121','--secondary-text-color':dark?'#aaa':'#727272','--text-primary-color':dark?'#102030':'#18333e','--card-background-color':dark?'#202124':'#fff','--secondary-background-color':dark?'#303134':'#f5f5f5','--divider-color':dark?'#444':'#ddd'}))document.body.style.setProperty(key,value);document.body.style.background=dark?'#121212':'#f5f7fa';document.documentElement.style.colorScheme=theme;},theme);
    assert.equal(await row(occurrence).getByRole('button',{name:'Skip',exact:true}).locator('svg[data-icon="skip-once"]').count(),1);
    assert.equal(await shift(occurrence).locator('svg[data-icon="reschedule"]').count(),1);
    assert.equal(await shift(occurrence).isDisabled(),!admin);
+   const a=await row(occurrence).getByRole('button',{name:'Skip',exact:true}).boundingBox(),b=await shift(occurrence).boundingBox();
+   assert.ok(Math.abs(a.y+a.height/2-b.y-b.height/2)<1,'Skip and the clock remain side by side on mobile');
    assert.equal(await row(occurrence).getByRole('button',{name:'Skip',exact:true}).isDisabled(),!admin);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await page.screenshot({path:path.join(results,`reschedule-${theme}-${width}-${admin?'admin':'read'}.png`),fullPage:true});

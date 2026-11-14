@@ -10,11 +10,11 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   await page.route('http://program-layout.test/**',async route=>{
    if(await serveFamilyUI(route))return;
    if(new URL(route.request().url()).pathname==='/card.js')return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(frontend,'shutter-manager-card.js'))});
-   await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{margin:0;padding:8px;--ha-font-family-body:"Noto Sans",Arial,sans-serif;--primary-color:#03a9f4;--primary-text-color:#212121;--secondary-text-color:#727272;--divider-color:#ddd;--card-background-color:#fff;--text-primary-color:#fff}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.pair>div{min-width:0}h2{font:14px Arial;margin:0 0 8px}@media(max-width:600px){.pair{grid-template-columns:1fr}}</style><script type="module" src="/card.js"></script><div class="pair"><div><h2>Shutter Manager</h2><rollladenplaner-card></rollladenplaner-card></div><div><h2>HA UI Kit 1.5.0 reference</h2><ui-kit-reference></ui-kit-reference></div></div></html>'});
+   await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{margin:0;padding:8px;--ha-font-family-body:"Noto Sans",Arial,sans-serif;--primary-color:#03a9f4;--primary-text-color:#212121;--secondary-text-color:#727272;--divider-color:#ddd;--card-background-color:#fff;--text-primary-color:#fff}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.pair>div{min-width:0}h2{font:14px Arial;margin:0 0 8px}@media(max-width:600px){.pair{grid-template-columns:1fr}}</style><script type="module" src="/card.js"></script><div class="pair"><div><h2>Shutter Manager</h2><rollladenplaner-card></rollladenplaner-card></div><div><h2>HA UI Kit 1.5.1 reference</h2><ui-kit-reference></ui-kit-reference></div></div></html>'});
   });
   await page.goto('http://program-layout.test');await page.waitForFunction(()=>customElements.get('rollladenplaner-card'));
   await page.evaluate(async()=>{
-   const UI=await import('/family-ui/1.5.0/family-ui.js');window.UI=UI;
+   const UI=await import('/family-ui/1.5.1/family-ui.js');window.UI=UI;
    customElements.define('ui-kit-reference',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'});}});
    const card=document.querySelector('rollladenplaner-card');window.card=card;
    const make=(id,name,time)=>({id,name,kind:'time',enabled:id!=='q',days:[0,1,2,3,4],pause_in_vacation:id!=='p',rides:[{id:'r'+id,name:'Wohnen',targets:['w'],enabled:id!=='q',event:'fixed',time,offset:0,earliest:'00:00',latest:'23:59',position:0,tilt:50}]});
@@ -72,6 +72,6 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'both layouts fit the viewport');
   }
   assert.deepEqual(errors,[]);
-  console.log('PASS: isolated HA UI Kit 1.5.0 parity for program groups, rows, actions, typography, indentation, spacing, controls, geometry and 28 px text alignment; 24 desktop/mobile, light/dark, collapsed/expanded and admin/user variants.');
+  console.log('PASS: isolated HA UI Kit 1.5.1 parity for program groups, rows, actions, typography, indentation, spacing, controls, geometry and 28 px text alignment; 24 desktop/mobile, light/dark, collapsed/expanded and admin/user variants.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

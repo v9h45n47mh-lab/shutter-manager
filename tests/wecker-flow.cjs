@@ -20,10 +20,10 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   });
   const card=page.locator('rollladenplaner-card');await card.locator('[data-action="tab"][data-tab="1"]').click();
   await page.evaluate(async()=>{
-   const UI=await import('/family-ui/1.5.0/family-ui.js');
+   const UI=await import('/family-ui/1.5.1/family-ui.js');
    const host=document.createElement('div');host.id='schedule-kit-reference';host.style.cssText='position:fixed;left:-10000px;top:0;width:300px';
    const root=host.attachShadow({mode:'open'});
-   root.innerHTML='<style>'+UI.UI_CSS+'</style>'+UI.actionRow({title:'Fr 07:15 · Reference cover',description:'Höhe 75%',actions:UI.button({label:'Skip',icon:'skip-once',compact:true,action:'reference',variant:'primary'})+UI.statusBadge({label:'',icon:'media-alarm'})});
+   root.innerHTML='<style>'+UI.UI_CSS+'</style>'+UI.actionRow({title:'Fr 07:15 · Reference cover',description:'Höhe 75%',inlineActions:true,actions:UI.button({label:'Skip',icon:'skip-once',compact:true,action:'reference',variant:'primary'})+UI.statusBadge({label:'',icon:'media-alarm'})});
    document.body.append(host);
   });
   const measurements=[];
@@ -52,7 +52,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    const box=await marker.locator('svg').boundingBox();assert.equal(box.width,16);assert.equal(box.height,16);
    const parity=await page.evaluate(()=>{
     const production=window.card.shadowRoot,reference=document.getElementById('schedule-kit-reference').shadowRoot;
-    const properties=['fontFamily','fontSize','fontWeight','lineHeight','color','display','gap','alignItems','marginLeft','marginRight','paddingLeft','paddingRight','paddingTop','paddingBottom','borderTopColor'];
+    const properties=['fontFamily','fontSize','fontWeight','lineHeight','color','display','gap','alignItems','marginLeft','marginRight','paddingLeft','paddingRight','paddingTop','paddingBottom','borderTopColor','flexWrap','flexShrink'];
     const read=root=>Object.fromEntries(['.ride','.ride-info','.ride-info strong','.ride-info>span','.ride-actions','button.primary','.fui-status-tag','.fui-status-tag .ui-icon'].map(selector=>{const style=getComputedStyle(root.querySelector(selector));return [selector,Object.fromEntries(properties.map(property=>[property,style[property]]))];}));
     return {actual:read(production),reference:read(reference)};
    });

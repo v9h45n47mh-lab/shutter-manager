@@ -52,7 +52,7 @@ If you have manually added the old resource URL, it remains supported. New manua
 
 ## New in 1.7.0
 
-Schedule has a compact **Skip** button with the shared icon and an adjacent **Reschedule once** clock control for future native program and one-time movements. Choose a future time on the occurrence's own day, before or after the original event. The exception survives restarts and changes only that execution; stored programs and regular recurrence are unchanged. Explicit one-execution times may exceed normal earliest/latest bounds, while contacts, shading and permissions still apply. Alarm movements remain read-only. HA UI Kit 1.5.0 supplies both icons and compact styling.
+Schedule has a compact **Skip** button with the shared icon and an adjacent **Reschedule once** clock control for future native program and one-time movements. Choose a future time on the occurrence's own day, before or after the original event. The exception survives restarts and changes only that execution; stored programs and regular recurrence are unchanged. Explicit one-execution times may exceed normal earliest/latest bounds, while contacts, shading and permissions still apply. Alarm movements remain read-only. HA UI Kit 1.5.1 supplies both icons and compact styling.
 
 ## New in 1.6.1
 
@@ -82,7 +82,7 @@ Programs uses the shared HA UI Kit 1.2.1 program groups, program rows and action
 
 Updated the locally bundled HA UI Kit to 1.2.0 and adopted its program group, program row and action row components. Programs no longer contains a Vacation button/filter; vacation mode is controlled in Settings. Program typography and row spacing match the pinned Light Manager reference, including 14 px program names, desktop/mobile group headings, action text and metadata indentation.
 
-## Features retained from 1.5.0
+## Features retained from 1.5.1
 
 Adopted the locally bundled HA UI Kit 1.1.0 from the shared repository. Navigation, Settings rows/sections, icons, switches, filters, program controls, dialogs and version information now use the shared components and styles. Program sorting arrows use the HA accent color; + Program uses the shared text-plus button. Native dialogs contain keyboard focus and return focus to the opener. Both card aliases serve the pinned local UI modules. See [UI_KIT.md](UI_KIT.md) for provenance and verification.
 

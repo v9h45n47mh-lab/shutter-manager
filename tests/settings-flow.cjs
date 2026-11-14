@@ -26,7 +26,7 @@ const {execFileSync}=require('node:child_process');
   assert.equal(await card.getByRole('button',{name:/^(Anzeigen|Ausblenden)$/}).count(),0);
   for(const width of [1100,390]){
    await page.setViewportSize({width,height:1100});
-   // Shared geometry comes from HA UI Kit 1.5.0.
+   // Shared geometry comes from HA UI Kit 1.5.1.
    for(const section of ['covers','sensors','status','daily-history']){
     const spacing=await card.locator(`[data-settings="${section}"]`).evaluate(group=>{const fold=group.querySelector('.settings-fold'),style=getComputedStyle(group);return {top:style.paddingTop,bottom:style.paddingBottom,font:getComputedStyle(fold.querySelector('span')).fontSize,gap:getComputedStyle(fold).gap,arrow:getComputedStyle(fold.querySelector('svg')).width};});
     assert.deepEqual(spacing,{top:'10px',bottom:'10px',font:'14px',gap:'6px',arrow:'20px'},'collapsible Settings sections match UI Kit spacing');

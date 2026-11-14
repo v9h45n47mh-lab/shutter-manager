@@ -5,7 +5,7 @@
 - Replaced the full-label schedule skip action with a narrower Skip button using the shared skip-once icon.
 - Added one-execution time changes for future native and one-time movements, restricted to a valid future clock on the same occurrence date.
 - Persisted date-bound exceptions without changing saved programs or recurring times, suppressing execution at the original time and preserving contact/shading precedence, skips and permissions.
-- Added HA UI Kit 1.5.0 with canonical skip-once/reschedule icons and optional compact buttons; alarm movements remain read-only.
+- Added HA UI Kit 1.5.1 with canonical skip-once/reschedule icons and optional compact buttons; alarm movements remain read-only.
 - Added server, persistence, DST, browser, keyboard, error/retry, role and desktop/mobile light/dark coverage, and refreshed German/English Help. The 2.0-second tilt-to-height delay is retained.
 
 ## 1.6.1
@@ -54,7 +54,7 @@
 - Matched program typography and compact row spacing to Light Manager, including 14 px names, group headings, metadata indentation and expanded action text on desktop and mobile.
 - Updated the German/English guides and added a read-only comparison against the real Light Manager card in both themes.
 
-## 1.5.0
+## 1.5.1
 
 - Adopted pinned, locally bundled HA UI Kit 1.1.0 components and styles for navigation, Settings, icons, switches, filters, dialogs and version information.
 - Replaced custom program-add and ordering markup with the shared program controls. Sorting arrows use the HA accent color.
