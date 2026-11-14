@@ -397,6 +397,7 @@ class ShutterManagerCard extends HTMLElement {
       const shared=template.content.firstElementChild;
       for(const cls of original.classList)shared.classList.add(cls);
       if(original.title)shared.title=original.title;
+      if(original.hasAttribute('aria-pressed'))shared.setAttribute('aria-pressed',original.getAttribute('aria-pressed'));
       original.replaceWith(shared);
     }
   }
