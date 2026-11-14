@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.1
+
+- Matched Light Manager with icon-only Skip/restore controls and a disabled time-move icon for skipped occurrences.
+- Rendered skipped Schedule rows with the shared light-grey state and removed visible redundant skip text.
+- Replaced the restore text/clock with a distinct icon-only undo action, retaining accessible labels, permissions and keyboard behavior.
+- Updated to HA UI Kit 1.5.2 with the canonical undo icon and optional skipped action-row state; recurring and one-execution scheduling behavior is retained.
+
 ## 1.7.0
 
 - Replaced the full-label schedule skip action with a narrower Skip button using the shared skip-once icon.

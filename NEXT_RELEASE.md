@@ -1,11 +1,9 @@
 # Release status
 
-Implemented in 1.7.0 on 2026-11-14:
+Implemented in 1.7.1 on 2026-11-14:
 
-- Narrow Skip with the shared icon and a one-execution reschedule clock button.
-- Future same-date times before/after the original event, including one-time movements.
-- Persistent runtime exceptions, unchanged programs/recurrence and no duplicate original-time execution.
-- Preserved contacts, shading, skips, permissions and read-only Wecker rows.
-- Locally pinned HA UI Kit 1.5.1, English changelog and updated German/English Help.
+- Light-grey skipped rows without redundant visible skip text.
+- Icon-only restore with the distinct shared undo icon and accessible label.
+- HA UI Kit 1.5.2; time overrides, skips, control permissions and recurrence are retained.
 
 No additional requested changes are pending.

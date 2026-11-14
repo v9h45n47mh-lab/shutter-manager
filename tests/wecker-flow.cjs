@@ -15,15 +15,15 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   await page.goto('http://wecker-view.test');await page.waitForFunction(()=>customElements.get('rollladenplaner-card'));
   await page.evaluate(()=>{
    const row=(occurrence,time,extra={})=>({occurrence,time,targets:['w'],position:100,tilt:null,name:'Wochentag',kind:'time',program:'p',ride:'r',status:'planned',can_control:true,can_undo:true,skip:false,...extra});
-   window.model={backend_version:'1.7.0',config_schema:7,admin:true,controls:{p:true},revision:1,time_zone:'Europe/Berlin',planned_date:'2026-11-13',config:{enabled:true,vacation:false,sensors:[],sensor_names:{},windows:[{id:'w',name:'Rollladen Maximilian mit langem Namen',cover:'cover.one',enabled:true,contacts:[],sensor_rules:[],cover_type:'shutter'}],programs:[{id:'p',name:'Wochentag',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:false,rides:[{id:'r',targets:['w'],enabled:true,event:'fixed',time:'08:00',offset:0,earliest:'00:00',latest:'23:59',position:100,tilt:null}]}]},moving:[],pending:{},sun_times:{},daily_history:[],planned:[row('native','2026-11-13T07:00:00Z'),row('once','2026-11-13T08:00:00Z',{one_time:true}),row('tomorrow-native','2026-11-14T04:45:00Z')],external_planned:[row('wecker:read-only','2026-11-13T06:15:00Z',{source:'wecker',source_name:'Maximilian · Schultag',position:75,one_time:true,reschedulable:true}),row('wecker:tomorrow','2026-11-14T05:30:00Z',{source:'wecker',source_name:'Maximilian · Wochenende',position:75})]};
+   window.model={backend_version:'1.7.1',config_schema:7,admin:true,controls:{p:true},revision:1,time_zone:'Europe/Berlin',planned_date:'2026-11-13',config:{enabled:true,vacation:false,sensors:[],sensor_names:{},windows:[{id:'w',name:'Rollladen Maximilian mit langem Namen',cover:'cover.one',enabled:true,contacts:[],sensor_rules:[],cover_type:'shutter'}],programs:[{id:'p',name:'Wochentag',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:false,rides:[{id:'r',targets:['w'],enabled:true,event:'fixed',time:'08:00',offset:0,earliest:'00:00',latest:'23:59',position:100,tilt:null}]}]},moving:[],pending:{},sun_times:{},daily_history:[],planned:[row('native','2026-11-13T07:00:00Z'),row('once','2026-11-13T08:00:00Z',{one_time:true}),row('tomorrow-native','2026-11-14T04:45:00Z')],external_planned:[row('wecker:read-only','2026-11-13T06:15:00Z',{source:'wecker',source_name:'Maximilian · Schultag',position:75,one_time:true,reschedulable:true}),row('wecker:tomorrow','2026-11-14T05:30:00Z',{source:'wecker',source_name:'Maximilian · Wochenende',position:75})]};
    window.requests=[];const card=document.querySelector('rollladenplaner-card');window.card=card;card.setConfig({});card.hass={user:{id:'wecker-preview-user'},states:{'cover.one':{state:'open',attributes:{device_class:'shutter',supported_features:4}}},callWS:async message=>{window.requests.push(message);return structuredClone(window.model);}};
   });
   const card=page.locator('rollladenplaner-card');await card.locator('[data-action="tab"][data-tab="1"]').click();
   await page.evaluate(async()=>{
-   const UI=await import('/family-ui/1.5.1/family-ui.js');
+   const UI=await import('/family-ui/1.5.2/family-ui.js');
    const host=document.createElement('div');host.id='schedule-kit-reference';host.style.cssText='position:fixed;left:-10000px;top:0;width:300px';
    const root=host.attachShadow({mode:'open'});
-   root.innerHTML='<style>'+UI.UI_CSS+'</style>'+UI.actionRow({title:'Fr 07:15 · Reference cover',description:'Höhe 75%',inlineActions:true,actions:UI.button({label:'Skip',icon:'skip-once',compact:true,action:'reference',variant:'primary'})+UI.statusBadge({label:'',icon:'media-alarm'})});
+   root.innerHTML='<style>'+UI.UI_CSS+'</style>'+UI.actionRow({title:'Fr 07:15 · Reference cover',description:'Höhe 75%',inlineActions:true,actions:UI.iconButton({label:'Skip',icon:'skip-once',action:'skip-today'})+UI.statusBadge({label:'',icon:'media-alarm'})});
    document.body.append(host);
   });
   const measurements=[];
@@ -53,7 +53,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    const parity=await page.evaluate(()=>{
     const production=window.card.shadowRoot,reference=document.getElementById('schedule-kit-reference').shadowRoot;
     const properties=['fontFamily','fontSize','fontWeight','lineHeight','color','display','gap','alignItems','marginLeft','marginRight','paddingLeft','paddingRight','paddingTop','paddingBottom','borderTopColor','flexWrap','flexShrink'];
-    const read=root=>Object.fromEntries(['.ride','.ride-info','.ride-info strong','.ride-info>span','.ride-actions','button.primary','.fui-status-tag','.fui-status-tag .ui-icon'].map(selector=>{const style=getComputedStyle(root.querySelector(selector));return [selector,Object.fromEntries(properties.map(property=>[property,style[property]]))];}));
+    const read=root=>Object.fromEntries(['.ride','.ride-info','.ride-info strong','.ride-info>span','.ride-actions','[data-action="skip-today"]','.fui-status-tag','.fui-status-tag .ui-icon'].map(selector=>{const style=getComputedStyle(root.querySelector(selector));return [selector,Object.fromEntries(properties.map(property=>[property,style[property]]))];}));
     return {actual:read(production),reference:read(reference)};
    });
    assert.deepEqual(parity.actual,parity.reference,'timetable typography, spacing, controls and alarm marker match unmodified UI Kit action rows');

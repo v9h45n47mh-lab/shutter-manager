@@ -48,6 +48,15 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await page.screenshot({path:path.join(results,`reschedule-${theme}-${width}-${admin?'admin':'read'}.png`),fullPage:true});
    if(!admin)continue;
+   await row(occurrence).getByRole('button',{name:'Skip',exact:true}).click();
+   const undo=row(occurrence).getByRole('button',{name:'Wieder einplanen',exact:true});await undo.waitFor();
+   assert.equal(await undo.locator('svg[data-icon="restore-schedule"]').count(),1);assert.equal((await undo.innerText()).trim(),'');assert.equal(await undo.getAttribute('aria-pressed'),'true');assert.equal(await shift(occurrence).isDisabled(),true);
+   assert.equal(await row(occurrence).locator('.planned-reason').count(),0);assert.equal((await row(occurrence).innerText()).includes('Auslassen'),false);
+   const grey=await row(occurrence).locator('.ride-info').evaluate(el=>({color:getComputedStyle(el).color,opacity:getComputedStyle(el).opacity,decoration:getComputedStyle(el).textDecorationLine}));
+   assert.deepEqual(grey,{color:'rgb(158, 158, 158)',opacity:'1',decoration:'none'});
+   await page.screenshot({path:path.join(results,`skipped-${theme}-${width}.png`),fullPage:true});
+   await undo.focus();await undo.press('Enter');await row(occurrence).getByRole('button',{name:'Skip',exact:true}).waitFor();
+
    await shift(occurrence).click();assert.equal(await dialog.getByRole('heading',{name:'Einmalig verschieben'}).count(),1);assert.equal(await field.inputValue(),'07:00');
    assert.equal(await dialog.locator('input[type="date"]').count(),0,'the occurrence date is fixed');
    await field.fill('06:30');await page.screenshot({path:path.join(results,`reschedule-dialog-${theme}-${width}.png`),fullPage:true});

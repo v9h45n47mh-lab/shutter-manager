@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: v9h45n47mh-lab/ha-ui-kit
-          ref: df91dc1dc0f579176028281be612f8c9da628b0d
+          ref: fefbfd91e5a6e611efededee541342cc12c709e9
           path: .ci/ha-ui-kit
       - name: Verify shared UI build, tests and vendoring
         run: |
