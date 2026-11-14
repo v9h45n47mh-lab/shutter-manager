@@ -732,7 +732,7 @@ class Engine:
                 self.log(now, 'setting', f"{program['name']} / {ride['name']}: geänderte zukünftige Fahrt neu eingeplant", program=program['id'])
 
     def time_signature(self, ride):
-        """Names and skip flags may change without invalidating a time exception."""
+        """Names, skip flags and enable pauses do not invalidate a time exception."""
         program = next((p for p in self.config['programs'] if p['kind'] == 'time'
                         and any(r['id'] == ride['id'] for r in p['rides'])), None)
         if program is None:

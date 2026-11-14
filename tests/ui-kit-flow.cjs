@@ -56,7 +56,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
     const actual=await fold.evaluate(el=>({font:getComputedStyle(el.querySelector('span')).fontSize,gap:getComputedStyle(el).gap,arrow:getComputedStyle(el.querySelector('svg')).width}));
     assert.deepEqual(actual,{font:'14px',gap:'6px',arrow:'20px'});
    }
-   assert.match(await card.locator('.settings-version-info').textContent(),/UI 1\.4\.1/);
+   assert.match(await card.locator('.settings-version-info').textContent(),/UI 1\.5\.0/);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'settings fit the viewport');
    await page.screenshot({path:path.join(directory,`${theme}-${width}-settings.png`),fullPage:true});
    const common=await page.evaluate(()=>window.compareCommon([['[data-settings="covers"] .row-text strong','.setting-row .row-text strong'],['[data-settings="sensors"] .row-text small','.setting-row .row-text small']]));for(const pair of common)assert.deepEqual(pair.actual,pair.expected,'isolated UI Kit list: '+pair.selector);

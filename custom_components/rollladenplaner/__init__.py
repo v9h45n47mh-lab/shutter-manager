@@ -340,7 +340,7 @@ class Manager:
                 'scheduled_date': str(scheduled.astimezone(self.engine.zone).date()),
                 'original_time': item.get('original_scheduled', item['scheduled']),
                 'rescheduled': item.get('original_scheduled', item['scheduled']) != item['scheduled'],
-                'reschedulable': scheduled > now and item.get('status', 'planned') == 'planned',
+                'reschedulable': scheduled > now and item.get('status', 'planned') == 'planned' and self.engine.windows()[item['target']]['enabled'],
                 'can_control': self.permitted(user, self.engine.windows()[item['target']]['cover'], POLICY_CONTROL)})
         sensor_programs = []
         for row in self.engine.sensors_today(now):

@@ -215,3 +215,11 @@ class RescheduleManagerTests(IsolatedAsyncioTestCase):
         config['programs'][0]['name']='New display name'
         await self.m.save(config,self.m.revision)
         self.assertEqual(self.m.snapshot(self.admin)['planned'][0]['time'],at('2026-11-14T06:30').isoformat())
+
+    async def test_disabled_one_time_target_does_not_offer_a_nonfunctional_shift_control(self):
+        await self.m.action(self.admin,{'action':'add_once','value':True,'target':'w','time':'06:40','position':20,'tilt':None,'revision':self.m.revision})
+        self.m.engine.config['windows'][0]['enabled']=False
+        row=next(row for row in self.m.snapshot(self.admin)['planned'] if row.get('one_time'))
+        self.assertFalse(row['reschedulable'])
+        with self.assertRaises(ValueError):
+            await self.m.action(self.admin,{**self.message,'occurrence':row['occurrence'],'revision':self.m.revision})
