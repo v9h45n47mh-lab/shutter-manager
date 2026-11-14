@@ -526,7 +526,7 @@ class Engine:
         source, program_migration = migrate_program_conditions(source)
         self.config = validate_config(source)
         self.rt = deepcopy(runtime or {})
-        for k, v in {'pending': {}, 'history': [], 'climate': {}, 'edges': {}, 'opening_edges': {}, 'opening_holds': {}, 'claimed': [], 'skipped_occurrences': {}, 'contact_skips': {}, 'time_results': {}, 'shading': {}, 'sensor_pauses': {}, 'rule_states': {}, 'one_time': []}.items():
+        for k, v in {'pending': {}, 'history': [], 'climate': {}, 'edges': {}, 'opening_edges': {}, 'opening_holds': {}, 'claimed': [], 'skipped_occurrences': {}, 'contact_skips': {}, 'time_results': {}, 'shading': {}, 'sensor_pauses': {}, 'rule_states': {}, 'one_time': [], 'time_overrides': {}}.items():
             self.rt.setdefault(k, deepcopy(v))
         if 'command_results' not in self.rt:
             # Retain available results from older versions without inventing targets.
@@ -731,7 +731,79 @@ class Engine:
                                            if self.occurrence(value['intent']) != key}
                 self.log(now, 'setting', f"{program['name']} / {ride['name']}: geänderte zukünftige Fahrt neu eingeplant", program=program['id'])
 
+    def time_signature(self, ride):
+        """Names and skip flags may change without invalidating a time exception."""
+        program = next((p for p in self.config['programs'] if p['kind'] == 'time'
+                        and any(r['id'] == ride['id'] for r in p['rides'])), None)
+        if program is None:
+            return None
+        return {'program': program['id'], 'days': program['days'],
+                'ride': {key: ride.get(key) for key in ('id', 'event', 'time', 'offset', 'earliest', 'latest', 'targets', 'position', 'tilt')},
+                'covers': {target: self.windows()[target]['cover'] for target in ride['targets']},
+                'zone': self.zone.key}
+
+    def overridden_due(self, ride, day):
+        record = self.rt['time_overrides'].get(f"{day}:{ride['id']}")
+        try:
+            if not record or record['signature'] != self.time_signature(ride):
+                return None
+            at = datetime.fromisoformat(record['time'])
+            if at.tzinfo is None or at.astimezone(self.zone).date() != day:
+                return None
+            return at.astimezone(UTC)
+        except (KeyError, TypeError, ValueError):
+            return None
+
+    def expire_time_overrides(self, now):
+        rides = {r['id']: r for p in self.config['programs'] if p['kind'] == 'time' for r in p['rides']}
+        today = now.astimezone(self.zone).date()
+        valid = {}
+        for key, record in self.rt['time_overrides'].items():
+            try:
+                day = datetime.strptime(key[:10], '%Y-%m-%d').date()
+                ride = rides.get(key[11:])
+                if today-timedelta(days=8) <= day <= today+timedelta(days=2) and ride and self.overridden_due(ride, day):
+                    valid[key] = record
+            except (ValueError, TypeError):
+                continue
+        self.rt['time_overrides'] = valid
+
+    def future_clock(self, day, clock, now):
+        """Resolve an explicit local clock to the first valid future instant."""
+        if not isinstance(clock, str) or not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d', clock):
+            raise ValueError('Bitte eine gültige Uhrzeit eingeben.')
+        wall = datetime.combine(day, time.fromisoformat(clock))
+        candidates = set()
+        for fold in (0, 1):
+            at = wall.replace(tzinfo=self.zone, fold=fold).astimezone(UTC)
+            if at.astimezone(self.zone).replace(tzinfo=None) == wall:
+                candidates.add(at)
+        if not candidates:
+            raise ValueError('Diese Uhrzeit existiert wegen der Zeitumstellung nicht.')
+        future = [at for at in candidates if at > now.astimezone(UTC)]
+        if not future:
+            raise ValueError('Die neue Uhrzeit muss am selben Tag in der Zukunft liegen.')
+        return min(future)
+
+    def reschedule_time(self, now, solar, occurrence, clock):
+        row = next((r for r in self.planned_next24(now, solar) if r['occurrence'] == occurrence), None)
+        if not row or row['kind'] != 'time' or row['status'] not in ('planned', 'paused') or not row['can_undo'] or row['skip']:
+            raise ValueError('Nur eine noch eingeplante Fahrt kann einmalig verschoben werden.')
+        program = next(p for p in self.config['programs'] if p['id'] == row['program'])
+        ride = next(r for r in program['rides'] if r['id'] == row['ride'])
+        day = datetime.fromisoformat(row['time']).astimezone(self.zone).date()
+        at = self.future_clock(day, clock, now)
+        if at == self.original_due(ride, day, solar):
+            self.rt['time_overrides'].pop(occurrence, None)
+        else:
+            self.rt['time_overrides'][occurrence] = {'time': stamp(at), 'signature': deepcopy(self.time_signature(ride))}
+        self.log(now, 'setting', row['name']+': einmalig auf '+at.astimezone(self.zone).strftime('%H:%M')+' verschoben.', program=program['id'])
+        return at
+
     def due(self, ride, day, solar):
+        return self.overridden_due(ride, day) or self.original_due(ride, day, solar)
+
+    def original_due(self, ride, day, solar):
         # Round trips normalize the nonexistent spring-forward hour.
         # Ambiguous autumn times use the first occurrence (fold=0), once per date.
         def local_clock(value):
@@ -1026,6 +1098,7 @@ class Engine:
     def tick(self, now, states, solar):
         """Claim due events, update sensor transitions, and return permitted intents."""
         now = now.astimezone(UTC)
+        self.expire_time_overrides(now)
         self.expire_command_results(now)
         self.expire_sensor_pauses(now)
         windows = self.windows()
@@ -1287,12 +1360,17 @@ class Engine:
         programs = {p['id']: p for p in self.config['programs']}
 
         def base(p, r, key, due, targets, status='planned'):
+            day = due.astimezone(self.zone).date()
+            shifted = p['kind'] == 'time' and self.overridden_due(r, day) is not None
+            original = self.original_due(r, day, solar) if shifted else due
             return {'occurrence': key, 'program': p['id'], 'ride': r['id'],
                     'name': p['name'] + ' / ' + r['name'], 'kind': p['kind'],
                     'time': stamp(due), 'targets': targets, 'position': r['position'],
                     'tilt': r['tilt'], 'status': status, 'reason': '',
                     'skip': key in self.rt['skipped_occurrences'] or r['skip_next'],
-                    'can_undo': due > now, 'carried': False}
+                    'can_undo': due > now, 'carried': False,
+                    'scheduled_date': str(day), 'original_time': stamp(original or due),
+                    'rescheduled': shifted}
 
         last_day = until.astimezone(self.zone).date() if until else day
         next_triggers = set()

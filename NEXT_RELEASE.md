@@ -1,10 +1,11 @@
 # Release status
 
-Implemented in 1.6.1 on 2026-11-13:
+Implemented in 1.7.0 on 2026-11-14:
 
-- Short weekday before each Schedule time, using the Home Assistant timezone.
-- Removed the 24-hour heading and aligned the one-time movement button to the left.
-- Used the same unmodified UI Kit action rows, buttons and alarm badge as Light Manager.
-- Retained the 24-hour horizon, native controls, permissions and read-only Wecker rows.
+- Narrow Skip with the shared icon and a one-execution reschedule clock button.
+- Future same-date times before/after the original event, including one-time movements.
+- Persistent runtime exceptions, unchanged programs/recurrence and no duplicate original-time execution.
+- Preserved contacts, shading, skips, permissions and read-only Wecker rows.
+- Locally pinned HA UI Kit 1.5.0, English changelog and updated German/English Help.
 
 No additional requested changes are pending.

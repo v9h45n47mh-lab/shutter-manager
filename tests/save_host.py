@@ -35,13 +35,16 @@ async def main():
     await manager.load()
     if message.get('fixture_previous'):
         manager.engine.last=at(message['fixture_previous'])
+    read_only = message.get('fixture_read_only', False)
+    user = types.SimpleNamespace(is_admin=not read_only,
+        permissions=types.SimpleNamespace(check_entity=lambda entity, policy: policy == 'read'))
     try:
         if message['type'].endswith('/save'):await manager.save(message['config'],message['revision'])
-        elif message['type'].endswith('/action'):await manager.action(types.SimpleNamespace(is_admin=True),message)
+        elif message['type'].endswith('/action'):await manager.action(user,message)
         elif not message['type'].endswith('/get'):raise ValueError('Unexpected test message')
         for _ in range(message.get('fixture_pulses', 1 if message.get('fixture_pulse') else 0)):
             await manager._pulse_locked()
-        return {'ok':True,'snapshot':manager.snapshot(types.SimpleNamespace(is_admin=True)),'states':states,'motor_calls':hass.services.async_call.call_count}
+        return {'ok':True,'snapshot':manager.snapshot(user),'states':states,'motor_calls':hass.services.async_call.call_count}
     except (ValueError,KeyError,TypeError) as error:
         return {'ok':False,'error':str(error)}
 

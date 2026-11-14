@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: v9h45n47mh-lab/ha-ui-kit
-          ref: 393474e75869ba79195d800624a5a793a51fe2c4
+          ref: 4f82e4aecc84812b4f5de9504ade65202241fc7e
           path: .ci/ha-ui-kit
       - name: Verify shared UI build, tests and vendoring
         run: |
@@ -61,7 +61,7 @@ jobs:
         run: |
           python - <<'PYCODE'
           import subprocess
-          scripts = ['.ci/ha-ui-kit/tests/browser.cjs', '.ci/ha-ui-kit/tests/account-tiles.cjs', '.ci/ha-ui-kit/tests/music-player.cjs', '.ci/ha-ui-kit/tests/gallery.cjs', '.ci/ha-ui-kit/tests/program-rows.cjs', 'tests/ui-kit-flow.cjs', 'tests/wecker-flow.cjs', 'tests/program-layout.cjs', 'tests/ui-test.cjs', 'tests/save-flow.cjs', 'tests/settings-flow.cjs', 'tests/shading-flow.cjs', 'tests/release-131.cjs']
+          scripts = ['.ci/ha-ui-kit/tests/browser.cjs', '.ci/ha-ui-kit/tests/account-tiles.cjs', '.ci/ha-ui-kit/tests/music-player.cjs', '.ci/ha-ui-kit/tests/gallery.cjs', '.ci/ha-ui-kit/tests/program-rows.cjs', '.ci/ha-ui-kit/tests/schedule-controls.cjs', 'tests/ui-kit-flow.cjs', 'tests/wecker-flow.cjs', 'tests/reschedule-flow.cjs', 'tests/program-layout.cjs', 'tests/ui-test.cjs', 'tests/save-flow.cjs', 'tests/settings-flow.cjs', 'tests/shading-flow.cjs', 'tests/release-131.cjs']
           failed = []
           for script in scripts:
               if subprocess.run(['node', script]).returncode:

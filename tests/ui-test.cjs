@@ -458,7 +458,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  // A concrete planned occurrence, not an edit of skip_next.
  await page.evaluate(async()=>{model.planned=[{occurrence:'2026-10-30:r',program:'p',ride:'r',name:'Wohnbereich / Morgens',kind:'time',time:'2026-10-30T18:00:00Z',targets:['w'],position:0,tilt:100,status:'planned',reason:'',skip:false,can_undo:true,can_control:true,expires:null}];await document.querySelector('rollladenplaner-card').refresh();});
  await card.getByRole('button',{name:'Zeitprogramm',exact:true}).click();
- await card.getByRole('button',{name:'Auslassen',exact:true}).click();
+ await card.getByRole('button',{name:'Skip',exact:true}).click();
  assert.equal(await page.evaluate(()=>calls.at(-1).action),'skip_today');
  assert.equal(await page.evaluate(()=>calls.at(-1).occurrence),'2026-10-30:r');
  await card.getByRole('button',{name:'Wieder einplanen',exact:true}).click();
@@ -474,7 +474,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await page.screenshot({path:path.join(__dirname,'../../planner-contact-status-mobile.png'),fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  await page.evaluate(async()=>{model.planned=[{occurrence:'sensor-concrete',program:'@shade_w',ride:'active',name:'Wohnen / Beschattung',kind:'shade',time:'2026-10-30T08:00:00Z',targets:['w'],position:0,tilt:100,status:'pending',reason:'Fenster offen',skip:false,can_undo:false,can_control:true,expires:'2026-10-30T20:00:00Z'}];await document.querySelector('rollladenplaner-card').refresh();});
- await card.getByRole('button',{name:'Auslassen',exact:true}).click();
+ await card.getByRole('button',{name:'Skip',exact:true}).click();
  assert.equal(await page.evaluate(()=>model.planned.length),0);
  assert.deepEqual(await page.evaluate(()=>calls.at(-1).entity_id),['cover.wohnen']);
  await card.getByRole('button',{name:'Programme',exact:true}).click();

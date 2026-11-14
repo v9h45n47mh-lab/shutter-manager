@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.0
+
+- Replaced the full-label schedule skip action with a narrower Skip button using the shared skip-once icon.
+- Added one-execution time changes for future native and one-time movements, restricted to a valid future clock on the same occurrence date.
+- Persisted date-bound exceptions without changing saved programs or recurring times, suppressing execution at the original time and preserving contact/shading precedence, skips and permissions.
+- Added HA UI Kit 1.5.0 with canonical skip-once/reschedule icons and optional compact buttons; alarm movements remain read-only.
+- Added server, persistence, DST, browser, keyboard, error/retry, role and desktop/mobile light/dark coverage, and refreshed German/English Help. The 2.0-second tilt-to-height delay is retained.
+
 ## 1.6.1
 
 - Matched Schedule to Light Manager using unmodified shared UI Kit action rows and a left-aligned one-time movement button.

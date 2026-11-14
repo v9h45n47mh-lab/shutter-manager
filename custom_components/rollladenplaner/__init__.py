@@ -24,7 +24,7 @@ from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 from .wecker import async_planned_wecker
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.6.1'
+INTEGRATION_VERSION = '1.7.0'
 TILT_TO_HEIGHT_DELAY_SECONDS = 2.0
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 7
@@ -47,8 +47,8 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/family-ui', ui_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.6.1')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.6.1')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.7.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.7.0')
     async def set_vacation(call):
         m = manager(hass)
         admin = type('Automation', (), {'is_admin': True})()
@@ -319,6 +319,7 @@ class Manager:
             elif row['program'] not in allowed:
                 continue
             row['can_control'] = all(self.permitted(user, e, POLICY_CONTROL) for e in self.row_covers(row))
+            row['reschedulable'] = row['kind'] == 'time' and row['status'] in ('planned', 'paused') and row['can_undo'] and not row['skip']
             if row['status'] == 'pending':
                 moving = [motion for wid, motion in self.moving.items()
                           if wid in row['targets'] and self.engine.occurrence(motion['intent']) == row['occurrence']]
@@ -336,6 +337,10 @@ class Manager:
                 'targets': [item['target']], 'position': item['position'], 'tilt': item.get('tilt'),
                 'status': item.get('status', 'planned'), 'reason': item.get('reason', ''), 'skip': False,
                 'can_undo': scheduled > now, 'carried': False,
+                'scheduled_date': str(scheduled.astimezone(self.engine.zone).date()),
+                'original_time': item.get('original_scheduled', item['scheduled']),
+                'rescheduled': item.get('original_scheduled', item['scheduled']) != item['scheduled'],
+                'reschedulable': scheduled > now and item.get('status', 'planned') == 'planned',
                 'can_control': self.permitted(user, self.engine.windows()[item['target']]['cover'], POLICY_CONTROL)})
         sensor_programs = []
         for row in self.engine.sensors_today(now):
@@ -445,6 +450,33 @@ class Manager:
             if msg['revision'] != self.revision:
                 raise ValueError('Ansicht veraltet. Bitte neu laden und erneut versuchen.')
             action, value = msg['action'], msg['value']
+            if action == 'reschedule':
+                now = utcnow()
+                occurrence = msg.get('occurrence')
+                item = next((r for r in self.engine.rt['one_time'] if r['id'] == occurrence), None)
+                if item is not None:
+                    scheduled = datetime.fromisoformat(item['scheduled'])
+                    window = self.engine.windows().get(item['target'])
+                    covers = {window['cover']} if window else set()
+                    if not window or not window['enabled'] or scheduled <= now or item.get('status', 'planned') != 'planned':
+                        raise ValueError('Nur eine noch eingeplante Fahrt kann einmalig verschoben werden.')
+                else:
+                    row = next((r for r in self.engine.planned_next24(now, self.solar) if r['occurrence'] == occurrence), None)
+                    if row is None:
+                        raise ValueError('Diese Fahrt ist nicht mehr offen. Bitte aktualisieren.')
+                    covers = self.row_covers(row)
+                if covers != set(msg['entity_id']) or any(not self.permitted(user, entity, POLICY_CONTROL) for entity in covers):
+                    raise ValueError('Keine Steuerberechtigung für diese Rollläden.')
+                if item is not None:
+                    at = self.engine.future_clock(scheduled.astimezone(self.engine.zone).date(), msg.get('time'), now)
+                    item.setdefault('original_scheduled', item['scheduled'])
+                    item['scheduled'] = at.isoformat()
+                else:
+                    self.engine.reschedule_time(now, self.solar, occurrence, msg.get('time'))
+                self.revision += 1
+                await self.persist()
+                await self._pulse_locked()
+                return
             if action == 'add_once':
                 now = utcnow()
                 target = msg.get('target')
