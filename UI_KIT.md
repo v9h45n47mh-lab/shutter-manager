@@ -1,6 +1,6 @@
 # Shared UI provenance
 
-Shutter Manager 1.7.1 bundles unmodified HA UI Kit 1.5.2 from v9h45n47mh-lab/ha-ui-kit, pinned to commit fefbfd91e5a6e611efededee541342cc12c709e9. Original JS, CSS, manifest and MIT license live in frontend/family-ui/1.4.1/ and are verified by family-ui.lock.json. Prior fixed versions remain available for existing module URLs. No runtime CDN or main/latest request is used.
+Shutter Manager 1.7.2 bundles unmodified HA UI Kit 1.5.2 from v9h45n47mh-lab/ha-ui-kit, pinned to commit fefbfd91e5a6e611efededee541342cc12c709e9. Original JS, CSS, manifest and MIT license live in frontend/family-ui/1.5.2/ and are verified by family-ui.lock.json. Prior fixed versions remain available for existing module URLs. No runtime CDN or main/latest request is used.
 
 Shared navigation, program groups/rows, actions, fields, selection lists, weekday/season controls, buttons and native dialogs remain in use. UI_CSS owns common fonts, weights, colors, icon sizes, indentation, spacing and control geometry. No local shared-style overrides are added. Schedule uses the same actionRow component as Light Manager, including its typography, indentation and spacing. The left toolbar uses the shared add button; Wecker rows use the kit's statusBadge with media-alarm at its unchanged 16 px badge size. No separate icon path or HA icon dependency is introduced.
 
@@ -17,3 +17,5 @@ Schedule uses the optional actionRow({inlineActions:true}) group so compact Skip
 Skipped Schedule rows use actionRow({skipped:true}) for shared light-grey text; the card omits the redundant skip detail; iconButton({icon:'restore-schedule'}) restores the event with an accessible label. All state colors and symbols belong to the Kit.
 
 Skip and restore controls match Light Manager: icon-only skip-once/restore-schedule buttons, accessible labels and aria-pressed state. The adjacent time-move icon stays disabled while the occurrence is skipped.
+
+The failed-history dashboard view uses UI_CSS directly, the shared row heading, status icons and existing daily-history layout, without local typography, color, icon or spacing overrides.

@@ -36,8 +36,9 @@ async def main():
     if message.get('fixture_previous'):
         manager.engine.last=at(message['fixture_previous'])
     read_only = message.get('fixture_read_only', False)
+    denied_entities = set(message.get('fixture_denied_entities', []))
     user = types.SimpleNamespace(is_admin=not read_only,
-        permissions=types.SimpleNamespace(check_entity=lambda entity, policy: policy == 'read'))
+        permissions=types.SimpleNamespace(check_entity=lambda entity, policy: entity not in denied_entities and policy == 'read'))
     try:
         if message['type'].endswith('/save'):await manager.save(message['config'],message['revision'])
         elif message['type'].endswith('/action'):await manager.action(user,message)

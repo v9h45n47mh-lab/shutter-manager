@@ -1,0 +1,4 @@
+# Shutter Manager 1.7.2 or newer. Paste into a manual dashboard card.
+type: custom:shutter-manager-card
+view: failed-history
+title: Fehlgeschlagene Fahrten heute

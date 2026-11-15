@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.2
+
+- Added a read-only `view: failed-history` mode to the existing dashboard card, listing only failed movements from today's history with their time, cover, targets and recorded reason.
+- Kept the existing permission-aware history endpoint and HA-local date rollover. The view refreshes automatically, shows loading/connection/empty states, and exposes no editing or movement controls.
+- Added a ready-to-paste status-dashboard YAML example and updated the German/English in-card guide and HOWTO. Presentation uses the unmodified bundled HA UI Kit 1.5.2.
+
 ## 1.7.1
 
 - Matched Light Manager with icon-only Skip/restore controls and a disabled time-move icon for skipped occurrences.

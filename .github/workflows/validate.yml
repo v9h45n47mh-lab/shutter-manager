@@ -61,7 +61,7 @@ jobs:
         run: |
           python - <<'PYCODE'
           import subprocess
-          scripts = ['.ci/ha-ui-kit/tests/browser.cjs', '.ci/ha-ui-kit/tests/account-tiles.cjs', '.ci/ha-ui-kit/tests/music-player.cjs', '.ci/ha-ui-kit/tests/gallery.cjs', '.ci/ha-ui-kit/tests/program-rows.cjs', '.ci/ha-ui-kit/tests/schedule-controls.cjs', 'tests/ui-kit-flow.cjs', 'tests/wecker-flow.cjs', 'tests/reschedule-flow.cjs', 'tests/program-layout.cjs', 'tests/ui-test.cjs', 'tests/save-flow.cjs', 'tests/settings-flow.cjs', 'tests/shading-flow.cjs', 'tests/release-131.cjs']
+          scripts = ['.ci/ha-ui-kit/tests/browser.cjs', '.ci/ha-ui-kit/tests/account-tiles.cjs', '.ci/ha-ui-kit/tests/music-player.cjs', '.ci/ha-ui-kit/tests/gallery.cjs', '.ci/ha-ui-kit/tests/program-rows.cjs', '.ci/ha-ui-kit/tests/schedule-controls.cjs', 'tests/ui-kit-flow.cjs', 'tests/wecker-flow.cjs', 'tests/reschedule-flow.cjs', 'tests/failures-flow.cjs', 'tests/program-layout.cjs', 'tests/ui-test.cjs', 'tests/save-flow.cjs', 'tests/settings-flow.cjs', 'tests/shading-flow.cjs', 'tests/release-131.cjs']
           failed = []
           for script in scripts:
               if subprocess.run(['node', script]).returncode:

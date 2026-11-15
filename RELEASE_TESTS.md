@@ -1,12 +1,3 @@
-# Release verification: Shutter Manager 1.7.1
+# Release validation — 1.7.2
 
-Verified on 2026-11-14. Candidate 8360b2c7c1d4cbbc4b114e91702564652fa48bb1 passed the complete workflow: https://github.com/v9h45n47mh-lab/shutter-manager/actions/runs/43610359723. Publication repeats all checks on the exact release commit before release creation.
-
-- All 349 Python tests and seven real-provider Wecker interoperability tests passed. Scheduling, same-date runtime exceptions, recurrence, persistence, contact/shading precedence and permission logic are retained from 1.7.0.
-- All nine application browser suites passed. The actual card/Manager/store flow checks icon-only Skip and restoration, canonical restore-schedule SVG, light-grey skipped text with full opacity, no redundant skip detail, a disabled time-move control while skipped, preserved aria-pressed state, keyboard restore and the return to planned state. It also retains earlier/later time changes, tomorrow, one-time movements, reload, invalid/past clocks, due-event races, cancel, failure/retry and DE/EN.
-- The controls were compared directly with the current Light Manager implementation at 296f01763c615cf21915fddda1679a5052771c90. Presentation comes from unmodified shared HA UI Kit 1.5.2 at fefbfd91e5a6e611efededee541342cc12c709e9: actionRow({skipped:true}), iconButton skip-once/restore-schedule and shared inline action groups. Default rows and controls retain their styling. No local shared font/color/icon overrides are introduced.
-- The pinned Kit passed build, consistency/vendor checks, 26 unit tests and all six upstream browser suites. HACS and Hassfest passed. All app and Kit files are packaged locally; archive checks cover metadata, CRC, source bytes and the exclusive rollladenplaner integration path.
-
-Skipped states were explicitly inspected at 1100 px in light and dark themes, 320 px in light and 390 px in dark. They contain grey names/positions without additional visible skip labels; the restore icon remains available and the adjacent move icon is disabled. Long names wrap without horizontal overflow. The ui-kit-desktop-mobile artifact contains 86 screenshots and measurement data, including planned/skipped states and rescheduling dialogs.
-
-Protocol 7, device selection, permissions, read-only alarm rows and the 2.0-second tilt-to-height delay are unchanged. HA I/O is simulated; no physical actuator was operated. English changelog and German/English Help/HOWTO are updated. Restart Home Assistant Core and reload the browser/app after installation; Settings and Help show card/integration 1.7.1 and UI 1.5.2.
+Validation is pending. This release adds a read-only failed-history dashboard view using the existing permission-aware snapshot; scheduling, actuator commands, protocol 7 and the 2.0-second tilt-to-height delay are unchanged. The shared HA UI Kit remains 1.5.2 at fefbfd91e5a6e611efededee541342cc12c709e9.

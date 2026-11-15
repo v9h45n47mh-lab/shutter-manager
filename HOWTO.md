@@ -1,4 +1,4 @@
-# Howto – Shutter Manager 1.7.1
+# Howto – Shutter Manager 1.7.2
 
 Die Oberfläche verwendet das lokal mitgelieferte HA UI Kit 1.5.2 für Symbole, Farben, Schriften, Abstände, Programm-Aktionen und Dialoge. Sortierpfeile nutzen die HA-Akzentfarbe. Dialoge unterstützen Escape, begrenzte Tab-Navigation und die Rückkehr zum auslösenden Bedienelement. Die UI-Version steht in Einstellungen und Hilfe. Programmname, Zusatztexte und Fahrten sind mit der gemeinsamen Einrückung von 28 px bündig ausgerichtet. Allgemeine Symbolbuttons behalten ihren UI-Kit-Abstand.
 
@@ -33,7 +33,7 @@ Aussetzen, Urlaubspause oder Deaktivieren löst keine pauschale Rückfahrt aus. 
 
 Beim Update werden bisherige Schwellenwerte und Freigabeverzögerungen aus den Sensorregeln in die zugehörigen Programme übernommen. Sensoren, Fahrziele, Wochentage, Saison und Aktivierung bleiben erhalten. Verwendet ein altes Programm unterschiedliche Bedingungen oder Abschlussaktionen, entstehen getrennte Programme mit Namenszusatz. Unbenutzte alte Regeln mit Parametern werden als deaktivierte Programme übernommen. Mehrere Sensorzuordnungen bleiben erhalten.
 
-Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.7.1 anzeigen.
+Vor der ersten Speicherung des neuen Modells bleibt die ursprüngliche Konfiguration samt Laufzeitdaten als migration_backup im lokalen Integrationsspeicher erhalten. Zusätzlich vor dem Update eine Sicherung über Einstellungen erstellen. Wiederhergestellte Programme bleiben zunächst deaktiviert. Alte Karten können das neue Datenmodell nicht überschreiben: nach dem Update Home Assistant Core vollständig neu starten und Browser oder App neu laden. Oberfläche und Integration müssen beide 1.7.2 anzeigen.
 
 ## Einstellungen und Sensor-Auswahl
 
@@ -89,7 +89,7 @@ Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten
 
 ---
 
-# Shutter Manager 1.7.1
+# Shutter Manager 1.7.2
 
 The interface uses locally bundled HA UI Kit 1.5.2 components for icons, colors, typography, spacing, program controls and dialogs. Sorting arrows use the HA accent color. Dialogs support Escape, contained Tab navigation and focus return to the opener. Settings and Help show the UI version. Program names, metadata and actions align at the shared 28 px indent. General icon buttons retain their UI Kit spacing.
 
@@ -124,7 +124,7 @@ Pausing, disabling, or a vacation pause does not automatically return all covers
 
 Existing thresholds and release delays move from named cover rules to their programs. Sensor assignments, targets, weekdays, seasons, enabled flags, and pending work are preserved. A legacy program using different condition sets or end actions is split into separately named programs. Unused parameter rules become disabled programs. Multiple sensor associations are retained.
 
-The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.7.1. Older cards cannot overwrite the new protocol.
+The original configuration and runtime are retained as migration_backup in local integration storage before the migrated model is first persisted. Also export a configuration backup before updating. Restored programs start disabled. After updating, restart Home Assistant Core and reload the browser/app. Both card and integration should report 1.7.2. Older cards cannot overwrite the new protocol.
 
 ## Settings and sensor selection
 
@@ -143,6 +143,20 @@ Brightness is displayed as a full lx value with dots as thousands separators and
 A separate, independently collapsible Settings section shows today's completed and failed movement commands chronologically, with time, device, command/target, and result. Pending and planned movements remain in Schedule. Completed means the integration confirmed the target state; an accepted service call alone is insufficient. Detected failures show a reason.
 
 History survives reloads and restarts and rolls over with the Home Assistant local date. It is not limited to the last 20 messages. On the first update, available older log entries are retained without inventing missing target details. Only permitted devices are visible. Configuration backup still exports configuration; daily history belongs to local runtime data.
+
+## Failed movements on another dashboard
+
+Requires Shutter Manager 1.7.2 or newer. Restart Home Assistant Core after updating and reload the browser/app. In the destination dashboard, add a Manual card and paste:
+
+```yaml
+type: custom:shutter-manager-card
+view: failed-history
+title: Fehlgeschlagene Fahrten heute
+```
+
+This read-only view filters the same permission-aware daily history shown in Settings. It lists only failed completed attempts, including the time in the HA time zone, cover name, command targets and recorded reason. Successful, planned and waiting movements are excluded. The integration's local date determines today and resets the view at midnight. It refreshes every five seconds while the page is visible and displays an explicit no-failures message when empty. Loading and connection failures are shown separately and never reported as an empty successful result. Historical failures remain recorded even if a later attempt succeeds.
+
+The optional title is escaped as plain text; omit it to use the card's German/English default. The same installed frontend resource is reused, with no extra card, sensor, token or permissions configuration. Existing entity read permissions still apply. The dashboard view contains no navigation, editing, skip, retry or movement controls. A ready-to-paste copy is provided in [dashboard-failures.yaml](dashboard-failures.yaml).
 
 ## Schedules and one-time movements
 
