@@ -1,0 +1,14 @@
+# Shutter Manager 1.7.3 or newer. Paste into the section's code editor.
+# Adjust the entity ID if Home Assistant assigned or you chose another name.
+type: grid
+cards:
+  - type: heading
+    heading: Fehler Rollläden
+    heading_style: title
+  - type: custom:shutter-manager-card
+    view: failed-history
+    title: Fehlgeschlagene Fahrten heute
+visibility:
+  - condition: numeric_state
+    entity: sensor.shutter_manager_failed_movements_today
+    above: 0

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.3
+
+- Added an enabled diagnostic sensor, `sensor.shutter_manager_failed_movements_today`, for the number of recorded failed attempts today across currently configured covers. It uses the existing persisted daily history and HA-local date, updates without an open dashboard and resets at local midnight.
+- Added a native section-visibility YAML example to show the complete status-dashboard section, including its heading, only when the failure count is above zero. The existing card's rendering and behavior are unchanged.
+- Kept the original status entity and permission-aware history endpoint unchanged. The new entity exports only the aggregate count without cover names, targets or failure details. Updated the German/English guide and setup instructions.
+
 ## 1.7.2
 
 - Added a read-only `view: failed-history` mode to the existing dashboard card, listing only failed movements from today's history with their time, cover, targets and recorded reason.

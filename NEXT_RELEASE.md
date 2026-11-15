@@ -1,8 +1,8 @@
 # Release status
 
-Implemented in 1.7.2 on 2026-11-15:
+Implemented in 1.7.3 on 2026-11-15:
 
-- Read-only failed-history dashboard view with a ready-to-paste YAML card.
-- Existing daily-history source, entity read permissions, HA-local date and shared UI styling retained.
+- A diagnostic failure-count sensor for native whole-section dashboard visibility.
+- A complete section YAML example, including the heading and unchanged read-only failure card.
 
 No additional requested changes are pending.

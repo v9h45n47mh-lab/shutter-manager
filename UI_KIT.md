@@ -1,6 +1,6 @@
 # Shared UI provenance
 
-Shutter Manager 1.7.2 bundles unmodified HA UI Kit 1.5.2 from v9h45n47mh-lab/ha-ui-kit, pinned to commit fefbfd91e5a6e611efededee541342cc12c709e9. Original JS, CSS, manifest and MIT license live in frontend/family-ui/1.5.2/ and are verified by family-ui.lock.json. Prior fixed versions remain available for existing module URLs. No runtime CDN or main/latest request is used.
+Shutter Manager 1.7.3 bundles unmodified HA UI Kit 1.5.2 from v9h45n47mh-lab/ha-ui-kit, pinned to commit fefbfd91e5a6e611efededee541342cc12c709e9. Original JS, CSS, manifest and MIT license live in frontend/family-ui/1.5.2/ and are verified by family-ui.lock.json. Prior fixed versions remain available for existing module URLs. No runtime CDN or main/latest request is used.
 
 Shared navigation, program groups/rows, actions, fields, selection lists, weekday/season controls, buttons and native dialogs remain in use. UI_CSS owns common fonts, weights, colors, icon sizes, indentation, spacing and control geometry. No local shared-style overrides are added. Schedule uses the same actionRow component as Light Manager, including its typography, indentation and spacing. The left toolbar uses the shared add button; Wecker rows use the kit's statusBadge with media-alarm at its unchanged 16 px badge size. No separate icon path or HA icon dependency is introduced.
 

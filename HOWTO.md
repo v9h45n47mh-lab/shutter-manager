@@ -1,4 +1,4 @@
-# Howto – Shutter Manager 1.7.2
+# Howto – Shutter Manager 1.7.3
 
 Die Oberfläche verwendet das lokal mitgelieferte HA UI Kit 1.5.2 für Symbole, Farben, Schriften, Abstände, Programm-Aktionen und Dialoge. Sortierpfeile nutzen die HA-Akzentfarbe. Dialoge unterstützen Escape, begrenzte Tab-Navigation und die Rückkehr zum auslösenden Bedienelement. Die UI-Version steht in Einstellungen und Hilfe. Programmname, Zusatztexte und Fahrten sind mit der gemeinsamen Einrückung von 28 px bündig ausgerichtet. Allgemeine Symbolbuttons behalten ihren UI-Kit-Abstand.
 
@@ -93,6 +93,14 @@ title: Fehlgeschlagene Fahrten heute
 
 Die Karte zeigt nur fehlgeschlagene Fahrten aus der heutigen Historie mit Uhrzeit, Gerät, Fahrziel und Fehlergrund. Sie aktualisiert sich alle fünf Sekunden, solange die Seite sichtbar ist. Der heutige Tag und die Uhrzeiten richten sich nach der HA-Zeitzone; Leseberechtigungen bleiben erhalten. Ohne Fehler erscheint ein entsprechender Hinweis. Verbindungsfehler werden gesondert angezeigt. Ein später erfolgreicher Versuch entfernt einen zuvor protokollierten Fehler nicht aus der Historie. Schalt- und Bearbeitungsfunktionen sind in dieser Ansicht nicht verfügbar. Zusätzliche Sensoren, Zugangsdaten oder Dashboard-Erweiterungen sind nicht erforderlich. `title` ist optional.
 
+## Gesamten Fehler-Abschnitt einschließlich Überschrift ein- und ausblenden
+
+Ab 1.7.3 wird `sensor.shutter_manager_failed_movements_today` automatisch als zusätzliche Diagnoseentität angelegt. Nach dem Update Home Assistant Core neu starten. Falls HA wegen einer Namenskollision oder eigener Benennung eine andere Entitäts-ID vergibt, diese im folgenden YAML ersetzen.
+
+Im Dashboard den gesamten Abschnitt bearbeiten, den Code-Editor öffnen und [dashboard-failures-section.yaml](dashboard-failures-section.yaml) verwenden. Die Sichtbarkeit gehört auf Abschnittsebene neben `cards`, damit auch die Überschrift verschwindet. Bei einer Anzahl größer 0 wird der Abschnitt angezeigt, bei 0, unbekannt oder nicht verfügbar bleibt er ausgeblendet. Im Bearbeitungsmodus kann HA eine Vorschau ausgeblendeter Abschnitte zeigen; die gespeicherte Dashboard-Ansicht ist maßgeblich.
+
+Der Zähler zählt protokollierte Fehlversuche aller aktuell konfigurierten Geräte. Er nutzt denselben HA-Kalendertag und dieselbe vollständige Historie wie die Karte, aktualisiert sich ohne geöffnetes Dashboard im regulären Fünf-Sekunden-Takt und überlebt Neustarts. Nach dem Tageswechsel geht er beim nächsten regulären Update auf 0 zurück. Erfolgreiche, geplante oder wartende Fahrten sowie allgemeine Diagnosemeldungen zählen nicht. Ein erfolgreicher späterer Versuch entfernt einen früheren Fehler nicht aus der Historie. Entfernte Geräte werden nicht mehr gezählt. Die Entität enthält ausschließlich die Gesamtzahl; gerätebezogene Namen, Ziele und Fehlergründe werden nicht als Sensorattribute veröffentlicht. Die Karte behält ihre Leseberechtigungen je Gerät. Bei eingeschränkten Profilen kann die Gesamtzahl daher höher sein als die Anzahl sichtbarer Fehler in der Karte; die Lesezugriffe auf die Diagnoseentität und den Statusbereich entsprechend vergeben.
+
 ## Betrieb und Grenzen
 
 Die reguläre Auswertung erfolgt alle fünf Sekunden. Bei Jalousien wird zuerst die Lamellenposition gesetzt, nach erfolgreichem Serviceaufruf 2,0 Sekunden gewartet und danach die Höhe gefahren. Ein eigener Timer löst diesen Übergang unabhängig vom Fünf-Sekunden-Takt aus und prüft vorher Kontaktsperren und den aktuellen Auftrag erneut. Bei Stopp, Auftragswechsel oder Entladen der Integration wird der Timer verworfen. Ohne Zielbestätigung wird nach 150 Sekunden je Bewegungsphase ein Fehler gemeldet und nach Möglichkeit gestoppt. Geräte ohne Lamellenziel erhalten nur den Höhenbefehl. Positionslogik und Rückmeldung stammen aus der HA-Cover-Integration.
@@ -101,7 +109,7 @@ Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten
 
 ---
 
-# Shutter Manager 1.7.2
+# Shutter Manager 1.7.3
 
 The interface uses locally bundled HA UI Kit 1.5.2 components for icons, colors, typography, spacing, program controls and dialogs. Sorting arrows use the HA accent color. Dialogs support Escape, contained Tab navigation and focus return to the opener. Settings and Help show the UI version. Program names, metadata and actions align at the shared 28 px indent. General icon buttons retain their UI Kit spacing.
 
@@ -169,6 +177,31 @@ title: Fehlgeschlagene Fahrten heute
 This read-only view filters the same permission-aware daily history shown in Settings. It lists only failed completed attempts, including the time in the HA time zone, cover name, command targets and recorded reason. Successful, planned and waiting movements are excluded. The integration's local date determines today and resets the view at midnight. It refreshes every five seconds while the page is visible and displays an explicit no-failures message when empty. Loading and connection failures are shown separately and never reported as an empty successful result. Historical failures remain recorded even if a later attempt succeeds.
 
 The optional title is escaped as plain text; omit it to use the card's German/English default. The same installed frontend resource is reused, with no extra card, sensor, token or permissions configuration. Existing entity read permissions still apply. The dashboard view contains no navigation, editing, skip, retry or movement controls. A ready-to-paste copy is provided in [dashboard-failures.yaml](dashboard-failures.yaml).
+
+## Whole-section failure visibility
+
+Shutter Manager 1.7.3 automatically adds the diagnostic sensor `sensor.shutter_manager_failed_movements_today`. Restart HA Core after updating. If the entity registry assigns another ID, use that ID in the condition. Edit the entire dashboard section and paste [dashboard-failures-section.yaml](dashboard-failures-section.yaml) into its code editor. The `visibility` property belongs beside `cards`, so it applies to the heading and every card in the section. The section is visible only for a numeric state above 0; zero, unknown and unavailable are hidden. HA's dashboard editor can still show a preview of hidden sections; check the saved dashboard.
+
+The sensor counts recorded failed attempts across all currently configured covers using the same complete daily history and HA-local calendar date. It updates on the regular five-second cycle even when no dashboard is open, retains today's results after restart, and returns to zero on the first regular update after local midnight. Successes, waiting/planned work and generic diagnostic messages are excluded. A successful retry does not erase an earlier failed attempt. Removed covers no longer contribute. The new entity exports no names, targets or failure reasons. Existing per-cover card permissions are unchanged; restricted users may see fewer rows than the aggregate count, so grant access to the diagnostic entity and status section accordingly.
+
+The existing failed-history card does not change its visibility or styling. A directly usable section configuration is:
+
+```yaml
+# Shutter Manager 1.7.3 or newer. Paste into the section's code editor.
+# Adjust the entity ID if Home Assistant assigned or you chose another name.
+type: grid
+cards:
+  - type: heading
+    heading: Fehler Rollläden
+    heading_style: title
+  - type: custom:shutter-manager-card
+    view: failed-history
+    title: Fehlgeschlagene Fahrten heute
+visibility:
+  - condition: numeric_state
+    entity: sensor.shutter_manager_failed_movements_today
+    above: 0
+```
 
 ## Schedules and one-time movements
 
