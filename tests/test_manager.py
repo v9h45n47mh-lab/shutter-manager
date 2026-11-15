@@ -31,7 +31,7 @@ def websocket_command(definition):
         func.ws_schema=schema.Schema({schema.Required('id'):int,schema.Required('type'):str}).extend(definition)
         return func
     return decorate
-module('homeassistant.components.websocket_api',websocket_command=websocket_command,async_response=identity,require_admin=identity)
+module('homeassistant.components.websocket_api',websocket_command=websocket_command,async_response=identity,require_admin=identity,async_register_command=lambda *a:None)
 module('homeassistant.components.cover',CoverEntityFeature=types.SimpleNamespace(SET_POSITION=4,SET_TILT_POSITION=128,STOP=8))
 module('homeassistant.components.http',StaticPathConfig=lambda *a:None)
 module('homeassistant.const',Platform=types.SimpleNamespace(SENSOR='sensor'))
@@ -52,6 +52,21 @@ class FakeState:
     def __init__(self,state,**attrs):self.state=state;self.attributes=attrs
 
 class AdapterTests(IsolatedAsyncioTestCase):
+    async def test_central_roles_do_not_elevate_native_device_access(self):
+        grants={'view':True,'control':True,'manage':True}
+        self.hass.data={}
+        self.hass.data['family_access_manager']=types.SimpleNamespace(application_protocol=1,application_permissions=lambda u,a:dict(grants))
+        native=types.SimpleNamespace(allowed=False)
+        user=types.SimpleNamespace(is_admin=False,permissions=types.SimpleNamespace(check_entity=lambda *a:native.allowed))
+        self.assertTrue(self.m.snapshot(user)['admin'])
+        self.assertFalse(any(self.m.snapshot(user)['controls'].values()))
+        native.allowed=True
+        self.assertTrue(all(self.m.snapshot(user)['controls'].values()))
+        grants.clear()
+        self.assertFalse(self.m.snapshot(user)['admin'])
+        self.assertFalse(any(self.m.snapshot(user)['controls'].values()))
+        self.assertFalse(user.is_admin)
+
     async def test_opening_preempts_motion_holds_then_returns_to_time_goal(self):
         from test_opening import opening_fixture
         self.c,self.s=opening_fixture()
@@ -113,7 +128,7 @@ class AdapterTests(IsolatedAsyncioTestCase):
         # The WebSocket data schema version must never shadow that startup hook.
         if hasattr(adapter, 'CONFIG_SCHEMA'):
             self.assertTrue(callable(adapter.CONFIG_SCHEMA), 'CONFIG_SCHEMA is a reserved HA validator hook')
-        hass=types.SimpleNamespace(http=types.SimpleNamespace(async_register_static_paths=AsyncMock()))
+        hass=types.SimpleNamespace(http=types.SimpleNamespace(async_register_static_paths=AsyncMock()),services=types.SimpleNamespace(async_register=lambda *args,**kwargs:None))
         with patch.object(adapter, 'StaticPathConfig', side_effect=lambda *args:args), \
              patch.object(adapter.frontend, 'add_extra_js_url') as add_js, \
              patch.object(adapter.websocket_api, 'async_register_command', create=True) as register_ws:
