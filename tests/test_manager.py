@@ -152,10 +152,10 @@ class AdapterTests(IsolatedAsyncioTestCase):
         from unittest.mock import Mock
         for title in ('Rollladenplaner', 'Blind Planner', 'Beschattungsmanager', 'Meine Beschattung'):
             with self.subTest(title=title):
-                manager=types.SimpleNamespace(load=AsyncMock(), pulse=AsyncMock())
+                manager=types.SimpleNamespace(load=AsyncMock(), pulse=AsyncMock(),legacy_vacation=lambda:{'enabled':False,'started':None,'periods':[]})
                 entry=types.SimpleNamespace(title=title)
                 entries=types.SimpleNamespace(async_update_entry=Mock(), async_forward_entry_setups=AsyncMock())
-                hass=types.SimpleNamespace(data={}, config_entries=entries)
+                hass=types.SimpleNamespace(data={}, config_entries=entries,bus=types.SimpleNamespace(async_listen=lambda *a:lambda:None))
                 with patch.object(adapter, 'Manager', return_value=manager):
                     self.assertTrue(await adapter.async_setup_entry(hass, entry))
                 if title in ('Rollladenplaner', 'Blind Planner', 'Beschattungsmanager'):
@@ -537,7 +537,8 @@ class AdapterTests(IsolatedAsyncioTestCase):
         ready=self.m.engine.tick(self.now,self.s,solar)
         await self.m.advance('w',ready['w'],self.now,self.s)
         self.hass.services.async_call.reset_mock()
-        await self.m.action(types.SimpleNamespace(is_admin=True),{'action':'vacation','value':True,'revision':0})
+        self.hass.data={'family_access_manager':types.SimpleNamespace(vacation_protocol=1,vacation=types.SimpleNamespace(snapshot=lambda:{'enabled':True,'started':None,'periods':[],'imported':['rollladenplaner']}))}
+        async with self.m.lock:await self.m._pulse_locked()
         self.assertEqual(self.m.moving['w']['intent']['kind'],'sensor')
         self.assertNotIn('stop_cover',[c.args[1] for c in self.hass.services.async_call.call_args_list])
     async def test_sensor_pause_cancels_running_motion_but_keeps_programs_enabled(self):
