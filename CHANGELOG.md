@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.1
+
+Hilfe und Anleitung verwenden **Family Administration → Urlaubsmodus** als zentrale Steuerung. Die Zeitübersicht zeigt pausierte Fahrten weiterhin mit dem Grund „Urlaubspause“. Programmbezogene Urlaubspausen, Fahrten, Sensor- und Kontaktvorrang sowie Berechtigungen bleiben unverändert.
+
+
 ## 1.9.0
 
 Der Urlaubsmodus wird ausschließlich unter **Family Access → Einstellungen → Urlaubsmodus** bedient. Die eigenen Urlaubsmodus-Bereiche und Schalter entfallen aus Light Manager, Shutter Manager und Hausarbeiten. Die Option „Im Urlaub pausieren“ je Programm bleibt erhalten; Programme ohne diese Option laufen weiter. Hausarbeiten pausieren ohne Änderung ihres Wiederholungsrhythmus und laufen beim Ausschalten ab heute weiter.
