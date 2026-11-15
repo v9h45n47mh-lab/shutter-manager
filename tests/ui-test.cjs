@@ -532,7 +532,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   assert.equal(await layoutProgram.locator('[data-action="move-program"]').isVisible(),true,'mobile exposes the drag handle');
   assert.equal(await layoutProgram.locator('[data-action="copy-program"]').isVisible(),false,'mobile omits whole-program copying');
   const toolbar=layoutProgram.locator('.program-head>.toolbar');
-  assert.equal(await toolbar.locator('button:visible').count(),2,'mobile offers only the switch and Edit');
+  assert.equal(await toolbar.locator('button:visible').count(),3,'mobile offers the drag handle, switch and Edit');
   assert.equal(await toolbar.locator('[data-action="program"]').isVisible(),true);
   assert.equal(await toolbar.locator('[data-action="edit-program"]').isVisible(),true);
   const title=await layoutFold.boundingBox(),controls=await toolbar.boundingBox();
