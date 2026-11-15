@@ -81,6 +81,18 @@ Der Urlaubsmodus wird ausschließlich in den Einstellungen geschaltet. Die Progr
 
 Der Messwertebereich im Programme-Tab zeigt Sonnenzeiten, Kontakte, Temperatur und Helligkeit; Sensoren werden nach Anzeigename sortiert. Änderungen der Messwerte verwerfen keine offenen Eingaben. Unter Einstellungen → Sicherung die Konfiguration exportieren oder wiederherstellen. Administratoren konfigurieren; andere Benutzer benötigen HA-Lese- und Steuerrechte für die betroffenen Geräte.
 
+## Fehlgeschlagene Fahrten auf einem Status-Dashboard
+
+Ab Shutter Manager 1.7.2 lässt sich dieselbe Karte mit einer reinen Fehleransicht auf einem weiteren Dashboard hinzufügen. Nach dem Update Home Assistant Core neu starten, Browser/App neu laden und im gewünschten Dashboard eine manuelle Karte mit folgendem YAML anlegen:
+
+```yaml
+type: custom:shutter-manager-card
+view: failed-history
+title: Fehlgeschlagene Fahrten heute
+```
+
+Die Karte zeigt nur fehlgeschlagene Fahrten aus der heutigen Historie mit Uhrzeit, Gerät, Fahrziel und Fehlergrund. Sie aktualisiert sich alle fünf Sekunden, solange die Seite sichtbar ist. Der heutige Tag und die Uhrzeiten richten sich nach der HA-Zeitzone; Leseberechtigungen bleiben erhalten. Ohne Fehler erscheint ein entsprechender Hinweis. Verbindungsfehler werden gesondert angezeigt. Ein später erfolgreicher Versuch entfernt einen zuvor protokollierten Fehler nicht aus der Historie. Schalt- und Bearbeitungsfunktionen sind in dieser Ansicht nicht verfügbar. Zusätzliche Sensoren, Zugangsdaten oder Dashboard-Erweiterungen sind nicht erforderlich. `title` ist optional.
+
 ## Betrieb und Grenzen
 
 Die reguläre Auswertung erfolgt alle fünf Sekunden. Bei Jalousien wird zuerst die Lamellenposition gesetzt, nach erfolgreichem Serviceaufruf 2,0 Sekunden gewartet und danach die Höhe gefahren. Ein eigener Timer löst diesen Übergang unabhängig vom Fünf-Sekunden-Takt aus und prüft vorher Kontaktsperren und den aktuellen Auftrag erneut. Bei Stopp, Auftragswechsel oder Entladen der Integration wird der Timer verworfen. Ohne Zielbestätigung wird nach 150 Sekunden je Bewegungsphase ein Fehler gemeldet und nach Möglichkeit gestoppt. Geräte ohne Lamellenziel erhalten nur den Höhenbefehl. Positionslogik und Rückmeldung stammen aus der HA-Cover-Integration.

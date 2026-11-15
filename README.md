@@ -53,6 +53,10 @@ If you have manually added the old resource URL, it remains supported. New manua
 
 ## New in 1.7.2
 
+Add `view: failed-history` to another Shutter Manager dashboard card to display only today's failed movements with their time, cover, targets and reason. This read-only view reuses the existing history, local date and entity permissions, refreshes automatically, and shows explicit loading, error and empty states. Paste [dashboard-failures.yaml](dashboard-failures.yaml) into a Manual card after updating.
+
+## New in 1.7.1
+
 Schedule uses the same icon-only Skip/restore controls as Light Manager. Skipped rows use shared light-grey text, omit redundant skip text and expose the distinct restore-schedule icon with an accessible label. HA UI Kit 1.5.2 supplies the canonical undo icon and skipped-state presentation.
 
 ## New in 1.7.0
