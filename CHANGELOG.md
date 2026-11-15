@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.9.2
+
+Durch Urlaub pausierte Fahrten werden in der Zeitübersicht mit dem gleichen ausgegrauten UI-Kit-Zustand wie im Light Manager dargestellt. Alle Aktionsbuttons entfallen während der Urlaubspause, auch bei einmaligen und zusätzlich ausgelassenen Einträgen. Der Grund Urlaubspause bleibt sichtbar; nach Ende der Pause erscheinen die zulässigen Aktionen wieder. Deutsche und englische Hilfe angepasst. Steuerung, Kontaktschutz und Berechtigungen bleiben unverändert.
+
+
 ## 1.9.1
 
 Hilfe und Anleitung verwenden **Family Administration → Urlaubsmodus** als zentrale Steuerung. Die Zeitübersicht zeigt pausierte Fahrten weiterhin mit dem Grund „Urlaubspause“. Programmbezogene Urlaubspausen, Fahrten, Sensor- und Kontaktvorrang sowie Berechtigungen bleiben unverändert.

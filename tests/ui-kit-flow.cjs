@@ -100,6 +100,31 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    await page.screenshot({path:path.join(directory,theme+'-sensor-selection.png'),fullPage:true});
    await card.getByRole('button',{name:'Cancel',exact:true}).click();
   }
+  // Production schedule rows use the same muted Kit state as Light Manager.
+  await page.evaluate(()=>{
+   clearInterval(window.card.timer);
+   const row={program:'p',ride:'ride-p',name:'Urlaubsfahrt',kind:'time',time:'2026-11-15T07:00:00Z',targets:['w'],position:40,tilt:30,skip:false,can_undo:true,can_control:true,reschedulable:true};
+   window.card.data.planned=[{...row,occurrence:'vacation',status:'paused',reason:'Urlaubspause'},
+    {...row,occurrence:'once-vacation',name:'Einzelfahrt im Urlaub',one_time:true,skip:true,status:'paused',reason:'Urlaubspause'},
+    {...row,occurrence:'active',name:'Aktive Fahrt',status:'planned',reason:''}];
+  });
+  for(const language of ['de','en'])for(const theme of ['light','dark'])for(const width of [320,390,1100]){
+   await page.setViewportSize({width,height:1000});
+   await page.evaluate(({language,theme})=>{
+    const dark=theme==='dark';for(const [key,value] of Object.entries({'--primary-text-color':dark?'#eee':'#212121','--secondary-text-color':dark?'#aaa':'#727272','--card-background-color':dark?'#202124':'#fff','--divider-color':dark?'#444':'#e0e0e0'}))document.body.style.setProperty(key,value);
+    document.body.style.background=dark?'#121212':'#f5f7fa';window.card.setLanguage(language);window.card.tab=1;window.card.render();
+   },{language,theme});
+   assert.equal(await card.locator('.planned-row.muted').count(),2);
+   assert.equal(await card.locator('.planned-row.muted button').count(),0);
+   assert.equal(await card.locator('.planned-row.muted .ride-info').first().evaluate(el=>getComputedStyle(el).opacity),'0.55');
+   assert.equal(await card.locator('.planned-row:not(.muted) button').count(),2,'Active rows retain Skip and reschedule');
+   assert((await card.locator('.planned-row.muted').first().innerText()).includes(language==='de'?'Urlaubspause':'Vacation pause'));
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+   if(language==='de')await page.screenshot({path:path.join(directory,`vacation-${theme}-${width}.png`),fullPage:true});
+  }
+  await page.evaluate(()=>{for(const row of window.card.data.planned){row.status='planned';row.reason='';}window.card.render();});
+  assert.equal(await card.locator('.planned-row.muted').count(),0);
+  assert.equal(await card.locator('.planned-row').first().locator('button').count(),2,'Ending the pause restores permitted controls');
   assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith('http://uikit.test/')),'no runtime CDN requests');
   fs.writeFileSync(path.join(directory,'measurements.json'),JSON.stringify(measurements,null,2));
   console.log('PASS: real UI Kit parity, isolated list/field/dialog styles, accent arrows, add button, fixed local modules, native dialog/focus, DE/EN, light/dark and 320/375/390/430/1100px.');
