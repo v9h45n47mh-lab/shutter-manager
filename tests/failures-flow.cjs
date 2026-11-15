@@ -13,7 +13,6 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
  };
  call({type:'rollladenplaner/get'});
  const seed=JSON.parse(fs.readFileSync(store,'utf8'));
- seed.config.windows=seed.config.windows.filter(w=>w.id==='w');
  seed.config.windows[0].name='Jalousie EG West mit sehr langem Namen <img src=x>';
  seed.config.windows.push({...structuredClone(seed.config.windows[0]),id:'private',cover:'cover.private',name:'Privater Rollladen'});
  const failure=(id,time,message='Zeitüberschreitung: Zielwert für Höhe nicht bestätigt.',window='w')=>({id,time,window,kind:'error',command:'Wochenende',position:100,tilt:100,message,program:'p',source:'time'});
@@ -27,6 +26,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
  ];
  seed.runtime.history=[{time:'2026-11-15T06:00:00+00:00',kind:'error',window:'w',message:'Reiner Diagnosefehler'}];
  const writeSeed=()=>fs.writeFileSync(store,JSON.stringify(seed));writeSeed();
+ assert.equal(call({type:'rollladenplaner/get'}).ok,true,'the seeded production configuration is valid');
  const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
  try{
   const page=await browser.newPage({viewport:{width:1100,height:1000},timezoneId:'America/Los_Angeles',locale:'de-DE'}),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',error=>errors.push(error.message));
