@@ -166,7 +166,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await overview.getByText('Nicht verfügbar',{exact:true}).count(),1);
  await page.evaluate(()=>{host.states['sensor.temp'].state='22';document.querySelector('rollladenplaner-card').hass=host;});
  await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
- await card.getByRole('switch',{name:'Urlaubsmodus',exact:true}).click();
+ assert.equal(await card.getByRole('switch',{name:'Urlaubsmodus',exact:true}).count(),0);
+ await page.evaluate(async()=>{model.config.vacation=true;await document.querySelector('rollladenplaner-card').refresh();});
  assert.equal(await page.evaluate(()=>model.config.vacation),true);
  assert.equal(await card.getByRole('button',{name:'Sicherung erstellen',exact:true}).count(),1);
  await card.getByRole('button',{name:'Programme',exact:true}).click();
@@ -577,7 +578,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await page.evaluate(async()=>{model.config.enabled=true;model.config.vacation=false;model.sensor_programs=[];await document.querySelector('rollladenplaner-card').refresh();});
  assert.equal(await card.getByText(/Heute sind keine Sensorprogramme/).count(),1);
  await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
- assert.equal(await card.getByRole('switch',{name:'Urlaubsmodus',exact:true}).isDisabled(),true);
+ assert.equal(await card.getByRole('switch',{name:'Urlaubsmodus',exact:true}).count(),0);
  assert.equal(await card.getByRole('button',{name:'Sicherung erstellen',exact:true}).count(),0);
  assert.equal(await card.getByRole('button',{name:'Rollläden auswählen',exact:true}).count(),0);
  await card.getByRole('button',{name:'Howto',exact:true}).click();

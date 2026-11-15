@@ -21,12 +21,13 @@ from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.sun import get_astral_event_date
 
 from .family_access import allows, require, register
+from . import vacation_client
 
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 from .wecker import async_planned_wecker
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.8.0'
+INTEGRATION_VERSION = '1.9.0'
 TILT_TO_HEIGHT_DELAY_SECONDS = 2.0
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 7
@@ -49,13 +50,10 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/family-ui', ui_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.8.0')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.8.0')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.9.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.9.0')
     async def set_vacation(call):
-        m = manager(hass)
-        admin = await hass.auth.async_get_user(call.context.user_id) if call.context.user_id else type('Automation', (), {'is_admin': True})()
-        require(hass,admin,DOMAIN,'manage',getattr(admin,'is_admin',False))
-        await m.action(admin, {'action': 'vacation', 'value': call.data['enabled'], 'revision': m.revision})
+        await vacation_client.set_via_service(hass, call)
 
     hass.services.async_register(DOMAIN, 'set_vacation', set_vacation,
                                  vol.Schema({vol.Required('enabled'): bool}))
@@ -72,6 +70,7 @@ async def async_setup_entry(hass, entry):
     await manager.load()
     hass.data[DOMAIN] = manager
     entry.runtime_data = manager
+    await vacation_client.register(hass, DOMAIN, manager.legacy_vacation, lambda:hass.async_create_task(manager.pulse()), entry=entry)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     manager.unsub = async_track_time_interval(hass, manager.pulse, timedelta(seconds=5))
     await manager.pulse()
@@ -240,7 +239,28 @@ class Manager:
             await self.stop(wid)
             self.engine.finish(wid, intent, now, f'Befehl fehlgeschlagen: {err}')
 
+    def legacy_vacation(self):
+        return {'enabled':self.engine.config['vacation'],'started':None,'periods':[]}
+
+    def vacation_snapshot(self):
+        return vacation_client.snapshot(self.hass,self.legacy_vacation(),DOMAIN)
+
+    async def sync_vacation_locked(self):
+        enabled=self.vacation_snapshot()['enabled']
+        if self.engine.config['vacation']==enabled:return
+        self.engine.config['vacation']=enabled
+        paused={p['id'] for p in self.engine.config['programs'] if p['pause_in_vacation']}
+        for wid,motion in list(self.moving.items()):
+            if motion['intent']['program'] in paused:await self.stop(wid)
+        for slots in self.engine.rt['pending'].values():
+            for kind,intent in list(slots.items()):
+                if intent['program'] in paused:slots.pop(kind)
+        self.engine.last=utcnow()
+        self.engine.log(utcnow(),'setting','Urlaubsmodus zentral: '+('an' if enabled else 'aus'))
+        self.revision+=1
+
     async def _pulse_locked(self):
+        await self.sync_vacation_locked()
         now = utcnow()
         states = self.states()
         before = deepcopy(self.engine.config)
@@ -361,7 +381,7 @@ class Manager:
                 'moving': window['id'] in self.moving})
         history = [row for row in self.engine.rt.get('history', [])
                    if row.get('kind') in ('done', 'error') and row.get('window') in visible][:20]
-        return {'backend_version': INTEGRATION_VERSION, 'config_schema': CONFIG_SCHEMA_VERSION, 'config': config, 'sensor_programs': sensor_programs, 'revision': self.revision, 'admin': allows(self.hass,user,DOMAIN,'manage',user.is_admin), 'controls': controls,
+        return {'vacation':vacation_client.status(self.hass,self.legacy_vacation(),DOMAIN),'backend_version': INTEGRATION_VERSION, 'config_schema': CONFIG_SCHEMA_VERSION, 'config': config, 'sensor_programs': sensor_programs, 'revision': self.revision, 'admin': allows(self.hass,user,DOMAIN,'manage',user.is_admin), 'controls': controls,
                 'sun_times': sun_times, 'time_zone': self.hass.config.time_zone, 'sensor_entities': sensor_entities,
                 'planned': planned, 'planned_date': str(now.astimezone(self.engine.zone).date()),
                 'upcoming': [r for r in self.engine.upcoming(now, self.solar) if r['program'] in allowed],
@@ -384,6 +404,8 @@ class Manager:
         return view
 
     async def save(self, config, revision):
+        config=deepcopy(config)
+        config['vacation']=self.vacation_snapshot()['enabled']
         checked = validate_config(self.individual_controls(config))
         # Classification controls which axes a ride may set; the feature checks
         # below still require the underlying HA integration to support the action.
@@ -450,6 +472,7 @@ class Manager:
         return {self.engine.windows()[t]['cover'] for t in targets}
 
     async def action(self, user, msg):
+        if msg.get('action')=='vacation':raise ValueError('Urlaubsmodus bitte zentral in Family Access ändern.')
         if not allows(self.hass,user,DOMAIN,'manage',user.is_admin):require(self.hass,user,DOMAIN,'control',True)
         async with self.lock:
             if msg['revision'] != self.revision:
@@ -571,16 +594,13 @@ class Manager:
             config = self.engine.config
             target = config
             impacted = set()
-            if action in ('vacation', 'window'):
+            if action == 'window':
                 if not allows(self.hass,user,DOMAIN,'manage',user.is_admin):
                     raise ValueError('Diese Einstellung darf nur ein Administrator ändern.')
-                if action == 'window':
-                    target = next((w for w in config['windows'] if w['id'] == msg['target']), None)
-                    if target is None:
-                        raise ValueError('Fenster nicht gefunden.')
-                    impacted.add(target['id'])
-                else:
-                    impacted.update(w['id'] for w in config['windows'])
+                target = next((w for w in config['windows'] if w['id'] == msg['target']), None)
+                if target is None:
+                    raise ValueError('Fenster nicht gefunden.')
+                impacted.add(target['id'])
             elif action in ('program', 'ride', 'skip'):
                 p = next((p for p in config['programs'] if p['id'] == msg['program']), None)
                 if p is None:
@@ -594,7 +614,7 @@ class Manager:
                     raise ValueError('Keine Steuerberechtigung für diese Rollläden.')
             else:
                 raise ValueError('Unbekannte Aktion.')
-            key = 'vacation' if action == 'vacation' else 'skip_next' if action == 'skip' else 'enabled'
+            key = 'skip_next' if action == 'skip' else 'enabled'
             old_value = target.get(key)
             target[key] = value
             if action in ('program', 'ride'):
@@ -608,7 +628,6 @@ class Manager:
                 for wid in impacted:
                     motion = self.moving.get(wid)
                     stop_motion = (action == 'window' or
-                                   (action == 'vacation' and motion and any(p['id'] == motion['intent']['program'] and p['pause_in_vacation'] for p in config['programs'])) or
                                    (action in ('program', 'ride') and motion and motion['intent']['program'] == p['id']
                                     and (action == 'program' or motion['intent']['ride'] == target['id'])))
                     if stop_motion:
@@ -616,10 +635,6 @@ class Manager:
                     slots = self.engine.rt['pending'].get(wid, {})
                     if action == 'window':
                         slots.clear()
-                    elif action == 'vacation':
-                        for kind in list(slots):
-                            if any(p['id'] == slots[kind]['program'] and p['pause_in_vacation'] for p in config['programs']):
-                                slots.pop(kind)
                     else:
                         for kind, intent in list(slots.items()):
                             if intent['program'] == p['id'] and (action == 'program' or intent['ride'] == target['id']):

@@ -1,6 +1,6 @@
 set_vacation:
   name: Urlaubsmodus setzen
-  description: Schaltet den Urlaubsmodus ein oder aus. Markierte Programme pausieren. Wartende Fahrten werden verworfen.
+  description: Leitet an den zentralen Urlaubsmodus in Family Access 1.2.0 oder neuer weiter. HA-Administratoren und vertrauenswürdige Automationen dürfen schalten.
   fields:
     enabled:
       name: Urlaubsmodus
