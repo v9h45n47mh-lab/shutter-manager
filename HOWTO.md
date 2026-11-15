@@ -91,7 +91,7 @@ view: failed-history
 title: Fehlgeschlagene Fahrten heute
 ```
 
-Die Karte zeigt nur fehlgeschlagene Fahrten aus der heutigen Historie mit Uhrzeit, Gerät, Fahrziel und Fehlergrund. Sie aktualisiert sich alle fünf Sekunden, solange die Seite sichtbar ist. Der heutige Tag und die Uhrzeiten richten sich nach der HA-Zeitzone; Leseberechtigungen bleiben erhalten. Ohne Fehler erscheint ein entsprechender Hinweis. Verbindungsfehler werden gesondert angezeigt. Ein später erfolgreicher Versuch entfernt einen zuvor protokollierten Fehler nicht aus der Historie. Schalt- und Bearbeitungsfunktionen sind in dieser Ansicht nicht verfügbar. Zusätzliche Sensoren, Zugangsdaten oder Dashboard-Erweiterungen sind nicht erforderlich. `title` ist optional.
+Die separate Fehlerkarte zeigt nur fehlgeschlagene Fahrten aus der heutigen Historie mit Uhrzeit und Gerätename. Fahrziele und Fehlergründe bleiben unter Einstellungen → Heutige Historie im Shutter Manager verfügbar. Sie aktualisiert sich alle fünf Sekunden, solange die Seite sichtbar ist. Der heutige Tag und die Uhrzeiten richten sich nach der HA-Zeitzone; Leseberechtigungen bleiben erhalten. Ohne Fehler erscheint ein entsprechender Hinweis. Verbindungsfehler werden gesondert angezeigt. Ein später erfolgreicher Versuch entfernt einen zuvor protokollierten Fehler nicht aus der Historie. Schalt- und Bearbeitungsfunktionen sind in dieser Ansicht nicht verfügbar. Zusätzliche Sensoren, Zugangsdaten oder Dashboard-Erweiterungen sind nicht erforderlich. `title` ist optional.
 
 ## Gesamten Fehler-Abschnitt einschließlich Überschrift ein- und ausblenden
 
@@ -174,7 +174,7 @@ view: failed-history
 title: Fehlgeschlagene Fahrten heute
 ```
 
-This read-only view filters the same permission-aware daily history shown in Settings. It lists only failed completed attempts, including the time in the HA time zone, cover name, command targets and recorded reason. Successful, planned and waiting movements are excluded. The integration's local date determines today and resets the view at midnight. It refreshes every five seconds while the page is visible and displays an explicit no-failures message when empty. Loading and connection failures are shown separately and never reported as an empty successful result. Historical failures remain recorded even if a later attempt succeeds.
+This read-only view filters the same permission-aware daily history shown in Settings. It lists only failed completed attempts, showing the time in the HA time zone and cover name. Targets and recorded reasons remain available in Settings → Today's history. Successful, planned and waiting movements are excluded. The integration's local date determines today and resets the view at midnight. It refreshes every five seconds while the page is visible and displays an explicit no-failures message when empty. Loading and connection failures are shown separately and never reported as an empty successful result. Historical failures remain recorded even if a later attempt succeeds.
 
 The optional title is escaped as plain text; omit it to use the card's German/English default. The same installed frontend resource is reused, with no extra card, sensor, token or permissions configuration. Existing entity read permissions still apply. The dashboard view contains no navigation, editing, skip, retry or movement controls. A ready-to-paste copy is provided in [dashboard-failures.yaml](dashboard-failures.yaml).
 
@@ -184,7 +184,7 @@ Shutter Manager 1.7.3 automatically adds the diagnostic sensor `sensor.shutter_m
 
 The sensor counts recorded failed attempts across all currently configured covers using the same complete daily history and HA-local calendar date. It updates on the regular five-second cycle even when no dashboard is open, retains today's results after restart, and returns to zero on the first regular update after local midnight. Successes, waiting/planned work and generic diagnostic messages are excluded. A successful retry does not erase an earlier failed attempt. Removed covers no longer contribute. The new entity exports no names, targets or failure reasons. Existing per-cover card permissions are unchanged; restricted users may see fewer rows than the aggregate count, so grant access to the diagnostic entity and status section accordingly.
 
-The existing failed-history card does not change its visibility or styling. A directly usable section configuration is:
+The separate failure card shows only the time and cover name, using the shared UI Kit layout. Visibility is controlled by the dashboard section. A directly usable section configuration is:
 
 ```yaml
 # Shutter Manager 1.7.3 or newer. Paste into the section's code editor.

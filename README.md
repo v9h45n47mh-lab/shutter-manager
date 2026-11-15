@@ -53,7 +53,7 @@ If you have manually added the old resource URL, it remains supported. New manua
 
 ## New in 1.7.3
 
-The diagnostic sensor `sensor.shutter_manager_failed_movements_today` counts today's recorded failed attempts across currently configured covers. Use its numeric state above 0 in a dashboard section's visibility to show or hide the whole section, including the heading. Paste [dashboard-failures-section.yaml](dashboard-failures-section.yaml) into the section code editor. The existing card's presentation and behavior are unchanged. The counter uses the HA-local day, survives restarts, and updates on the regular five-second cycle without an open dashboard.
+The diagnostic sensor `sensor.shutter_manager_failed_movements_today` counts today's recorded failed attempts across currently configured covers. Use its numeric state above 0 in a dashboard section's visibility to show or hide the whole section, including the heading. Paste [dashboard-failures-section.yaml](dashboard-failures-section.yaml) into the section code editor. The separate failure card shows only each movement's time and cover name; the full history in Settings retains the targets and failure reasons. The counter uses the HA-local day, survives restarts, and updates on the regular five-second cycle without an open dashboard.
 
 ## New in 1.7.2
 

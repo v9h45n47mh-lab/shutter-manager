@@ -19,3 +19,5 @@ Skipped Schedule rows use actionRow({skipped:true}) for shared light-grey text; 
 Skip and restore controls match Light Manager: icon-only skip-once/restore-schedule buttons, accessible labels and aria-pressed state. The adjacent time-move icon stays disabled while the occurrence is skipped.
 
 The failed-history dashboard view uses UI_CSS directly, the shared row heading, status icons and existing daily-history layout, without local typography, color, icon or spacing overrides.
+
+The compact failed-history dashboard keeps the shared time/name history-row structure and UI_CSS unchanged. The original detailed Settings history retains its target and failure-reason fields. Native whole-section visibility is controlled by HA using the aggregate diagnostic sensor, outside the UI Kit.
