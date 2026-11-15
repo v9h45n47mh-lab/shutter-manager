@@ -55,7 +55,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    assert.equal(await card.locator('img,script').count(),0,'names are escaped');
    assert.equal(await rows.locator('.command-result,.failure-reason,small,svg').count(),0,'the status card contains only the time and cover name');
    const text=await card.locator('ha-card').innerText();assert.match(text,/Jalousie EG West/);assert.doesNotMatch(text,/Wochenende|Höhe|Lamellen|Zielwert|Fehler von gestern|Fehler von morgen|Reiner Diagnosefehler|Erfolgreich/);if(reader)assert.doesNotMatch(text,/Privater Rollladen/);
-   const matches=await page.evaluate(async()=>{const kit=await import('/family-ui/1.5.2/family-ui.js');return card.shadowRoot.querySelector('style').textContent===kit.UI_CSS;});assert.equal(matches,true,'the complete view uses the unmodified shared UI Kit stylesheet');
+   const matches=await page.evaluate(async()=>{const kit=await import('/family-ui/1.7.0/family-ui.js');return card.shadowRoot.querySelector('style').textContent===kit.UI_CSS;});assert.equal(matches,true,'the complete view uses the unmodified shared UI Kit stylesheet');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await page.screenshot({path:path.join(results,`failures-${theme}-${width}-${reader?'read':'admin'}.png`),fullPage:true});
   }
