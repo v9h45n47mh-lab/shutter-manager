@@ -1,4 +1,4 @@
-# Howto – Shutter Manager 1.7.3
+# Howto – Shutter Manager 1.8.0
 
 Die Oberfläche verwendet das lokal mitgelieferte HA UI Kit 1.5.2 für Symbole, Farben, Schriften, Abstände, Programm-Aktionen und Dialoge. Sortierpfeile nutzen die HA-Akzentfarbe. Dialoge unterstützen Escape, begrenzte Tab-Navigation und die Rückkehr zum auslösenden Bedienelement. Die UI-Version steht in Einstellungen und Hilfe. Programmname, Zusatztexte und Fahrten sind mit der gemeinsamen Einrückung von 28 px bündig ausgerichtet. Allgemeine Symbolbuttons behalten ihren UI-Kit-Abstand.
 
@@ -95,7 +95,7 @@ Die separate Fehlerkarte zeigt nur fehlgeschlagene Fahrten aus der heutigen Hist
 
 ## Gesamten Fehler-Abschnitt einschließlich Überschrift ein- und ausblenden
 
-Ab 1.7.3 wird `sensor.shutter_manager_failed_movements_today` automatisch als zusätzliche Diagnoseentität angelegt. Nach dem Update Home Assistant Core neu starten. Falls HA wegen einer Namenskollision oder eigener Benennung eine andere Entitäts-ID vergibt, diese im folgenden YAML ersetzen.
+Ab 1.8.0 wird `sensor.shutter_manager_failed_movements_today` automatisch als zusätzliche Diagnoseentität angelegt. Nach dem Update Home Assistant Core neu starten. Falls HA wegen einer Namenskollision oder eigener Benennung eine andere Entitäts-ID vergibt, diese im folgenden YAML ersetzen.
 
 Im Dashboard den gesamten Abschnitt bearbeiten, den Code-Editor öffnen und [dashboard-failures-section.yaml](dashboard-failures-section.yaml) verwenden. Die Sichtbarkeit gehört auf Abschnittsebene neben `cards`, damit auch die Überschrift verschwindet. Bei einer Anzahl größer 0 wird der Abschnitt angezeigt, bei 0, unbekannt oder nicht verfügbar bleibt er ausgeblendet. Im Bearbeitungsmodus kann HA eine Vorschau ausgeblendeter Abschnitte zeigen; die gespeicherte Dashboard-Ansicht ist maßgeblich.
 
@@ -109,7 +109,7 @@ Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten
 
 ---
 
-# Shutter Manager 1.7.3
+# Shutter Manager 1.8.0
 
 The interface uses locally bundled HA UI Kit 1.5.2 components for icons, colors, typography, spacing, program controls and dialogs. Sorting arrows use the HA accent color. Dialogs support Escape, contained Tab navigation and focus return to the opener. Settings and Help show the UI version. Program names, metadata and actions align at the shared 28 px indent. General icon buttons retain their UI Kit spacing.
 
@@ -180,14 +180,14 @@ The optional title is escaped as plain text; omit it to use the card's German/En
 
 ## Whole-section failure visibility
 
-Shutter Manager 1.7.3 automatically adds the diagnostic sensor `sensor.shutter_manager_failed_movements_today`. Restart HA Core after updating. If the entity registry assigns another ID, use that ID in the condition. Edit the entire dashboard section and paste [dashboard-failures-section.yaml](dashboard-failures-section.yaml) into its code editor. The `visibility` property belongs beside `cards`, so it applies to the heading and every card in the section. The section is visible only for a numeric state above 0; zero, unknown and unavailable are hidden. HA's dashboard editor can still show a preview of hidden sections; check the saved dashboard.
+Shutter Manager 1.8.0 automatically adds the diagnostic sensor `sensor.shutter_manager_failed_movements_today`. Restart HA Core after updating. If the entity registry assigns another ID, use that ID in the condition. Edit the entire dashboard section and paste [dashboard-failures-section.yaml](dashboard-failures-section.yaml) into its code editor. The `visibility` property belongs beside `cards`, so it applies to the heading and every card in the section. The section is visible only for a numeric state above 0; zero, unknown and unavailable are hidden. HA's dashboard editor can still show a preview of hidden sections; check the saved dashboard.
 
 The sensor counts recorded failed attempts across all currently configured covers using the same complete daily history and HA-local calendar date. It updates on the regular five-second cycle even when no dashboard is open, retains today's results after restart, and returns to zero on the first regular update after local midnight. Successes, waiting/planned work and generic diagnostic messages are excluded. A successful retry does not erase an earlier failed attempt. Removed covers no longer contribute. The new entity exports no names, targets or failure reasons. Existing per-cover card permissions are unchanged; restricted users may see fewer rows than the aggregate count, so grant access to the diagnostic entity and status section accordingly.
 
 The separate failure card shows only the time and cover name, using the shared UI Kit layout. Visibility is controlled by the dashboard section. A directly usable section configuration is:
 
 ```yaml
-# Shutter Manager 1.7.3 or newer. Paste into the section's code editor.
+# Shutter Manager 1.8.0 or newer. Paste into the section's code editor.
 # Adjust the entity ID if Home Assistant assigned or you chose another name.
 type: grid
 cards:

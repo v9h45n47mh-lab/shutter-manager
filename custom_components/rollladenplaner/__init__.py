@@ -20,11 +20,13 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.sun import get_astral_event_date
 
+from .family_access import allows, require, register
+
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 from .wecker import async_planned_wecker
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.7.3'
+INTEGRATION_VERSION = '1.8.0'
 TILT_TO_HEIGHT_DELAY_SECONDS = 2.0
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 7
@@ -47,14 +49,15 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/family-ui', ui_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.7.3')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.7.3')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.8.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.8.0')
     async def set_vacation(call):
         m = manager(hass)
-        admin = type('Automation', (), {'is_admin': True})()
+        admin = await hass.auth.async_get_user(call.context.user_id) if call.context.user_id else type('Automation', (), {'is_admin': True})()
+        require(hass,admin,DOMAIN,'manage',getattr(admin,'is_admin',False))
         await m.action(admin, {'action': 'vacation', 'value': call.data['enabled'], 'revision': m.revision})
 
-    async_register_admin_service(hass, DOMAIN, 'set_vacation', set_vacation,
+    hass.services.async_register(DOMAIN, 'set_vacation', set_vacation,
                                  vol.Schema({vol.Required('enabled'): bool}))
     for command in (ws_get, ws_save, ws_action):
         websocket_api.async_register_command(hass, command)
@@ -62,6 +65,7 @@ async def async_setup(hass, config):
 
 
 async def async_setup_entry(hass, entry):
+    await register(hass, DOMAIN, ('view','control','manage'), lambda user: {'view':True,'control':True,'manage':bool(user.is_admin)}, entry=entry)
     if entry.title in ('Rollladenplaner', 'Blind Planner', 'Beschattungsmanager'):
         hass.config_entries.async_update_entry(entry, title='Shutter Manager')
     manager = Manager(hass)
@@ -289,9 +293,9 @@ class Manager:
         sensor_entities = sorted(entity for entity in sensor_entities if self.permitted(user, entity, POLICY_READ))
         config['sensor_names'] = {entity: name for entity, name in config.get('sensor_names', {}).items()
                                   if user.is_admin or entity in sensor_entities}
-        controls = {p['id']: all(self.permitted(user, self.engine.windows()[t]['cover'], POLICY_CONTROL)
+        controls = {p['id']: (allows(self.hass,user,DOMAIN,'control',True) or allows(self.hass,user,DOMAIN,'manage',user.is_admin)) and all(self.permitted(user, self.engine.windows()[t]['cover'], POLICY_CONTROL)
                                for r in p['rides'] for t in r['targets']) for p in config['programs']}
-        if not user.is_admin:
+        if not allows(self.hass,user,DOMAIN,'manage',user.is_admin):
             for w in config['windows']:
                 w.pop('contacts', None); w.pop('climate', None)
         allowed = {p['id'] for p in config['programs']}
@@ -357,7 +361,7 @@ class Manager:
                 'moving': window['id'] in self.moving})
         history = [row for row in self.engine.rt.get('history', [])
                    if row.get('kind') in ('done', 'error') and row.get('window') in visible][:20]
-        return {'backend_version': INTEGRATION_VERSION, 'config_schema': CONFIG_SCHEMA_VERSION, 'config': config, 'sensor_programs': sensor_programs, 'revision': self.revision, 'admin': user.is_admin, 'controls': controls,
+        return {'backend_version': INTEGRATION_VERSION, 'config_schema': CONFIG_SCHEMA_VERSION, 'config': config, 'sensor_programs': sensor_programs, 'revision': self.revision, 'admin': allows(self.hass,user,DOMAIN,'manage',user.is_admin), 'controls': controls,
                 'sun_times': sun_times, 'time_zone': self.hass.config.time_zone, 'sensor_entities': sensor_entities,
                 'planned': planned, 'planned_date': str(now.astimezone(self.engine.zone).date()),
                 'upcoming': [r for r in self.engine.upcoming(now, self.solar) if r['program'] in allowed],
@@ -446,6 +450,7 @@ class Manager:
         return {self.engine.windows()[t]['cover'] for t in targets}
 
     async def action(self, user, msg):
+        if not allows(self.hass,user,DOMAIN,'manage',user.is_admin):require(self.hass,user,DOMAIN,'control',True)
         async with self.lock:
             if msg['revision'] != self.revision:
                 raise ValueError('Ansicht veraltet. Bitte neu laden und erneut versuchen.')
@@ -567,7 +572,7 @@ class Manager:
             target = config
             impacted = set()
             if action in ('vacation', 'window'):
-                if not user.is_admin:
+                if not allows(self.hass,user,DOMAIN,'manage',user.is_admin):
                     raise ValueError('Diese Einstellung darf nur ein Administrator ändern.')
                 if action == 'window':
                     target = next((w for w in config['windows'] if w['id'] == msg['target']), None)
@@ -636,23 +641,27 @@ def manager(hass):
 @websocket_api.async_response
 async def ws_get(hass, connection, msg):
     try:
+        require(hass,connection.user,DOMAIN,'view',True)
         connection.send_result(msg['id'], await manager(hass).async_snapshot(connection.user))
-    except (ValueError, KeyError) as err:
+    except (ValueError, KeyError, PermissionError) as err:
         connection.send_error(msg['id'], 'invalid_config', str(err))
 
 
 @websocket_api.websocket_command({vol.Required('type'): DOMAIN + '/save', vol.Required('config'): dict,
                                   vol.Required('revision'): int, vol.Required('config_schema'): int})
-@websocket_api.require_admin
 @websocket_api.async_response
 async def ws_save(hass, connection, msg):
     try:
         m = manager(hass)
         if msg.get('config_schema') != CONFIG_SCHEMA_VERSION:
             raise ValueError('Kartenoberfläche und Integration sind nicht kompatibel. Bitte Browser/App neu laden.')
+        require(hass,connection.user,DOMAIN,'manage',connection.user.is_admin)
+        for window in msg['config'].get('windows',[]):
+            if not m.permitted(connection.user,window.get('cover',''),POLICY_CONTROL):
+                raise PermissionError('Keine HA-Bedienberechtigung für diesen Rollladen.')
         await m.save(msg['config'], msg['revision'])
         connection.send_result(msg['id'], await m.async_snapshot(connection.user))
-    except (ValueError, KeyError, TypeError, StopIteration) as err:
+    except (ValueError, KeyError, TypeError, StopIteration, PermissionError) as err:
         connection.send_error(msg['id'], 'invalid_config', str(err))
 
 
@@ -671,5 +680,5 @@ async def ws_action(hass, connection, msg):
         m = manager(hass)
         await m.action(connection.user, msg)
         connection.send_result(msg['id'], await m.async_snapshot(connection.user))
-    except (ValueError, KeyError, TypeError, StopIteration) as err:
+    except (ValueError, KeyError, TypeError, StopIteration, PermissionError) as err:
         connection.send_error(msg['id'], 'not_allowed', str(err))
