@@ -20,7 +20,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   });
   const card=page.locator('rollladenplaner-card');await card.locator('[data-action="tab"][data-tab="1"]').click();
   await page.evaluate(async()=>{
-   const UI=await import('/family-ui/1.5.2/family-ui.js');
+   const UI=await import('/family-ui/1.7.0/family-ui.js');
    const host=document.createElement('div');host.id='schedule-kit-reference';host.style.cssText='position:fixed;left:-10000px;top:0;width:300px';
    const root=host.attachShadow({mode:'open'});
    root.innerHTML='<style>'+UI.UI_CSS+'</style>'+UI.actionRow({title:'Fr 07:15 · Reference cover',description:'Höhe 75%',inlineActions:true,actions:UI.iconButton({label:'Skip',icon:'skip-once',action:'skip-today'})+UI.statusBadge({label:'',icon:'media-alarm'})});

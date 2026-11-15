@@ -61,8 +61,12 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   const card=document.querySelector('rollladenplaner-card');card.vacationFilter=true;await card.refresh();
  });
  assert.equal(await card.locator('.program').count(),3,'old transient filter state never hides programs');
- await card.locator('[data-action="move-program"][data-program="holiday_b"][data-direction="up"]').click();
+ await card.locator('[data-action="move-program"][data-program="holiday_b"]').focus();await card.locator('[data-action="move-program"][data-program="holiday_b"]').press('ArrowUp');
  assert.deepEqual(await page.evaluate(()=>model.config.programs.map(p=>p.id)),['holiday_a','holiday_b','paused_time'],'sorting includes every program in the group');
+ const grip=card.locator('[data-action="move-program"][data-program="holiday_a"]'),destination=card.locator('[data-action="move-program"][data-program="paused_time"]');
+ const dragA=await grip.boundingBox(),dragB=await destination.boundingBox();await page.mouse.move(dragA.x+dragA.width/2,dragA.y+dragA.height/2);await page.mouse.down();await page.waitForTimeout(230);await page.mouse.move(dragB.x+dragB.width/2,dragB.y+dragB.height/2,{steps:8});await page.mouse.up();
+ await page.waitForFunction(()=>model.config.programs[2].id==='holiday_a');
+ await grip.press('Home');await page.waitForFunction(()=>model.config.programs[0].id==='holiday_a');
  await page.evaluate(async()=>{model.admin=false;await document.querySelector('rollladenplaner-card').refresh();});
  assert.equal(await card.locator('[data-action="new-program"]').count(),0);
  assert.equal(await card.locator('[data-action="toggle-vacation-filter"]').count(),0);
@@ -517,15 +521,15 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await card.locator('[data-action="fold-program-group"][data-group="sensor"]').click();
  await page.setViewportSize({width:1100,height:1000});
  assert.equal(await card.locator('[data-action="copy-program"][data-program="p"]').isVisible(),true,'desktop offers program copying');
- await card.locator('[data-action="move-program"][data-program="p"][data-direction="down"]').click();
+ await card.locator('[data-action="move-program"][data-program="p"]').focus();await card.locator('[data-action="move-program"][data-program="p"]').press('ArrowDown');
  assert.deepEqual(await page.evaluate(()=>model.config.programs.filter(p=>p.kind==='time').map(p=>p.id)),['p2','p'],'program order is saved within its group');
  const layoutProgram=card.locator('section.program').filter({has:page.locator('button[data-action="fold-program"][data-program="p"]')});
  const layoutFold=layoutProgram.locator('[data-action="fold-program"]');
  if(await layoutFold.getAttribute('aria-expanded')==='false')await layoutFold.click();
  for(const width of [320,390,600]){
   await page.setViewportSize({width,height:1000});
-  assert.equal(await layoutProgram.locator('[data-action="move-program"][data-direction="up"]').isVisible(),false,'mobile hides upward sorting');
-  assert.equal(await layoutProgram.locator('[data-action="move-program"][data-direction="down"]').isVisible(),false,'mobile hides downward sorting');
+  assert.equal(await layoutProgram.locator('[data-action="move-program"]').isVisible(),true,'mobile exposes the drag handle');
+  assert.equal(await layoutProgram.locator('[data-action="move-program"]').isVisible(),true,'mobile exposes the drag handle');
   assert.equal(await layoutProgram.locator('[data-action="copy-program"]').isVisible(),false,'mobile omits whole-program copying');
   const toolbar=layoutProgram.locator('.program-head>.toolbar');
   assert.equal(await toolbar.locator('button:visible').count(),2,'mobile offers only the switch and Edit');
@@ -547,7 +551,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await dialog.getByRole('button',{name:'Abbrechen',exact:true}).click();
  await page.setViewportSize({width:601,height:1000});
  assert.equal(await layoutProgram.locator('[data-action="copy-program"]').isVisible(),true,'copying returns above the mobile breakpoint');
- assert.equal(await layoutProgram.locator('[data-action="move-program"][data-direction="up"]').isVisible(),true,'desktop sorting returns after resizing');
+ assert.equal(await layoutProgram.locator('[data-action="move-program"]').isVisible(),true,'desktop sorting returns after resizing');
  // XSS-safe names and fold persistence across full element recreation.
  const expandedBeforeRecreate=await card.locator('[data-action="fold-program"][data-program="p"]').getAttribute('aria-expanded');
  await page.evaluate(async()=>{model.config.programs[0].name='<img src=x onerror="window.injected=true">';await document.querySelector('rollladenplaner-card').refresh();});

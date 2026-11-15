@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.10.0
+
+Manuell sortierbare Einträge werden am gemeinsamen Sortiergriff gedrückt gehalten und an die gewünschte Position gezogen. Die bisherigen Auf-/Ab-Pfeile entfallen. Maus, Touch und Tastatur am Griff werden unterstützt; Escape bricht den Vorgang ab. HA UI Kit 1.7.0 liefert Griff, Rückmeldung und Interaktion gemeinsam. Bestehende Rechte und gespeicherte Daten bleiben erhalten.
+
+Ziehen sortiert Programme innerhalb ihrer jeweiligen Gruppe. Urlaubsbedingt pausierte Fahrten bleiben ausgegraut und ohne Aktionsbuttons. Deutsche und englische Hilfe angepasst.
+
+
 ## 1.9.2
 
 Durch Urlaub pausierte Fahrten werden in der Zeitübersicht mit dem gleichen ausgegrauten UI-Kit-Zustand wie im Light Manager dargestellt. Alle Aktionsbuttons entfallen während der Urlaubspause, auch bei einmaligen und zusätzlich ausgelassenen Einträgen. Der Grund Urlaubspause bleibt sichtbar; nach Ende der Pause erscheinen die zulässigen Aktionen wieder. Deutsche und englische Hilfe angepasst. Steuerung, Kontaktschutz und Berechtigungen bleiben unverändert.
