@@ -389,7 +389,7 @@ class ShutterManagerCard extends HTMLElement {
     for(const original of card.querySelectorAll('button[data-action]')) {
       if(original.matches('.settings-button,.icon-tab') || original.textContent.trim())continue;
       const svg=original.querySelector('svg[data-icon]');
-      if(!svg || svg.dataset.icon==='chevron')continue;
+      if(original.matches('[data-ui="order"]') || !svg || svg.dataset.icon==='chevron')continue;
       const data={...original.dataset};delete data.action;
       const label=original.getAttribute('aria-label') || original.title;
       if(!label)continue;
