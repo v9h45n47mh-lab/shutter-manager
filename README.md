@@ -1,19 +1,23 @@
 # Shutter Manager
 
-## Zentraler Urlaubsmodus · 1.9.0
+## Neu in 1.9.1
+
+Hilfe und Anleitung verwenden **Family Administration → Urlaubsmodus** als zentrale Steuerung. Die Zeitübersicht zeigt pausierte Fahrten weiterhin mit dem Grund „Urlaubspause“. Programmbezogene Urlaubspausen, Fahrten, Sensor- und Kontaktvorrang sowie Berechtigungen bleiben unverändert.
+
+## Zentraler Urlaubsmodus · 1.9.1
 
 Der Urlaubsmodus wird ausschließlich unter **Family Access → Einstellungen → Urlaubsmodus** bedient. Die eigenen Urlaubsmodus-Bereiche und Schalter entfallen aus Light Manager, Shutter Manager und Hausarbeiten. Die Option „Im Urlaub pausieren“ je Programm bleibt erhalten; Programme ohne diese Option laufen weiter. Hausarbeiten pausieren ohne Änderung ihres Wiederholungsrhythmus und laufen beim Ausschalten ab heute weiter.
 
 Beim ersten Start wird ein bisher aktiver Urlaubsmodus einmalig zentral als aktiv übernommen. Vergangene Urlaubstage aus Hausarbeiten bleiben erhalten. Eine bewusste zentrale Änderung hat Vorrang vor später startenden Anwendungen. Bei vorübergehend fehlendem Family Access bleibt der zuletzt bestätigte Zustand erhalten.
 
-**Update:** zuerst Family Access Manager 1.2.0, danach Light Manager 1.5.0, Shutter Manager 1.9.0 und Hausarbeiten 0.5.0 installieren. Anschließend Home Assistant neu starten und Browser/App vollständig neu laden. Der zentrale Schalter speichert sofort, unabhängig von noch ungespeicherten Rollenänderungen. Bedienen dürfen echte HA-Administratoren und Eigentümer.
+**Update:** zuerst Family Access Manager 1.2.0, danach Light Manager 1.5.0, Shutter Manager 1.9.1 und Hausarbeiten 0.5.0 installieren. Anschließend Home Assistant neu starten und Browser/App vollständig neu laden. Der zentrale Schalter speichert sofort, unabhängig von noch ungespeicherten Rollenänderungen. Bedienen dürfen echte HA-Administratoren und Eigentümer.
 
 Automationen können `family_access_manager.set_vacation` mit `enabled: true/false` verwenden. Die bisherigen Light-/Shutter-Dienste leiten an diesen Dienst weiter und behalten den ursprünglichen HA-Benutzerkontext: echte Administratoren oder vertrauenswürdige HA-Automationen dürfen schalten. Ein reines Anwendungs-Verwaltungsrecht berechtigt nicht zum globalen Umschalten. Alte lokale WebSocket-Schreibzugriffe und Sicherungswerte können den zentralen Modus nicht überschreiben.
 
 
 A local Home Assistant integration and dashboard card for cover schedules, sensor shading, and window-contact opening programs.
 
-**Version 1.9.0 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
+**Version 1.9.1 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
 
 Shutter Manager controls existing `cover` entities. Manage covers, sensor assignments, and programs in one dashboard card. Choose German 🇩🇪 or English 🇬🇧 in Settings.
 
@@ -58,11 +62,11 @@ The Home Assistant integration domain and folder stay `rollladenplaner` to prese
 
 ## Existing installations
 
-Update the custom HACS repository, download the release, restart Home Assistant Core, and reload the browser or app. Check the card's Guide or Settings to confirm that the card and integration both report version 1.9.0.
+Update the custom HACS repository, download the release, restart Home Assistant Core, and reload the browser or app. Check the card's Guide or Settings to confirm that the card and integration both report version 1.9.1.
 
-If you have manually added the old resource URL, it remains supported. New manual resources can use `/shutter-manager/shutter-manager-card.js?v=1.9.0`. Do not load both URLs on the same dashboard.
+If you have manually added the old resource URL, it remains supported. New manual resources can use `/shutter-manager/shutter-manager-card.js?v=1.9.1`. Do not load both URLs on the same dashboard.
 
-## New in 1.9.0
+## New in 1.9.1
 
 The diagnostic sensor `sensor.shutter_manager_failed_movements_today` counts today's recorded failed attempts across currently configured covers. Use its numeric state above 0 in a dashboard section's visibility to show or hide the whole section, including the heading. Paste [dashboard-failures-section.yaml](dashboard-failures-section.yaml) into the section code editor. The separate failure card shows only each movement's time and cover name; the full history in Settings retains the targets and failure reasons. The counter uses the HA-local day, survives restarts, and updates on the regular five-second cycle without an open dashboard.
 
@@ -173,7 +177,7 @@ Frontend and backend use protocol 7. Older or missing save protocols are rejecte
 
 GitHub Releases provide:
 
-- `Shutter-Manager-1.9.0.zip`: complete package with the integration folder, documentation, and tests.
+- `Shutter-Manager-1.9.1.zip`: complete package with the integration folder, documentation, and tests.
 - `shutter-manager.zip`: integration folder only, for manual installation under `/config/custom_components/rollladenplaner/`.
 
 The release workflow runs the Python and browser checks, then builds and attaches both archives when a release is published. The version in the release tag must match `manifest.json`.
@@ -193,8 +197,8 @@ python3 -m pip install -r tests/requirements.txt
 python3 -m unittest discover -s tests -q
 node tests/sensor-selection.cjs
 node --check custom_components/rollladenplaner/frontend/shutter-manager-card.js
-python3 scripts/build_release.py --check-only --tag v1.9.0
-python3 scripts/build_release.py --tag v1.9.0
+python3 scripts/build_release.py --check-only --tag v1.9.1
+python3 scripts/build_release.py --tag v1.9.1
 ```
 
 Browser tests use Playwright and Chromium. GitHub Actions runs behavior tests plus HACS and Hassfest validation.
@@ -221,7 +225,7 @@ Tests simulate Home Assistant I/O and cover position feedback. They do not opera
 
 Copy this package into the `shutter-manager` checkout. Under `custom_components`, keep only `rollladenplaner`. Remove unrelated integration folders such as `custom_components/light_manager` from this repository checkout before committing; copying a ZIP over an existing folder does not remove extra files. Preserve the checkout's `.git` directory and include this package's `.github` directory. If an older upload left integration files at the repository root, remove those duplicates (`manifest.json`, `__init__.py`, `engine.py`, `config_flow.py`, `sensor.py`, `services.yaml`, `strings.json` and any root `translations/` folder). These integration files belong only under `custom_components/rollladenplaner/`; retain this package's root `hacs.json`, documentation, and workflows. This cleanup applies to the Shutter Manager GitHub checkout, not the separate Light Manager repository or the Home Assistant configuration directory.
 
-Commit and push the complete cleaned tree, then create the new tag `v1.9.0` from that commit. Verify that the tag contains only `custom_components/rollladenplaner` before downloading through HACS. HACS must show `/config/custom_components/rollladenplaner` as the Shutter Manager installation destination.
+Commit and push the complete cleaned tree, then create the new tag `v1.9.1` from that commit. Verify that the tag contains only `custom_components/rollladenplaner` before downloading through HACS. HACS must show `/config/custom_components/rollladenplaner` as the Shutter Manager installation destination.
 
 ## Sensor selection in Settings
 
