@@ -53,7 +53,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    assert.equal(await first.locator('[data-manual-device="bad"] .row-text strong').first().innerText(),'Bad unten');assert.equal(await second.locator('[data-manual-device="bad"] .row-text strong').first().innerText(),'Bad oben');
    assert.equal(request({type:'rollladenplaner/get'}).config.windows.find(window=>window.id==='bad').name,'Rollladen Bad','per-card display names do not rename the integration cover');
    await first.locator('[data-manual-device="bad"] [data-action="plan"]').click();assert.equal(await first.locator('#manual-plan-form .row-text strong').first().innerText(),'Bad unten');await first.locator('#manual-dialog footer').getByRole('button',{name:'Abbrechen',exact:true}).click();await first.locator('#manual-dialog').waitFor({state:'detached'});
-   assert.deepEqual(await first.locator('#height-bad-control .manual-values button').allTextContents(),['Unten','50 %','25 %','Oben']);assert.deepEqual(await second.locator('#height-bad-control .manual-values button').allTextContents(),['90 %','10 %']);
+   assert.deepEqual(await first.locator('#height-bad-control .manual-values button').allTextContents(),['Oben','50 %','25 %','Unten']);assert.deepEqual(await second.locator('#height-bad-control .manual-values button').allTextContents(),['90 %','10 %']);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await page.screenshot({path:path.join(results,`manual-instances-${appearance}-${width}.png`),fullPage:true});
   }

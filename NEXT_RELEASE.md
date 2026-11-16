@@ -1,5 +1,5 @@
 # Release status
 
-Included in 1.11.3: descending percentage controls, named height endpoints, per-card display names and transport visibility, bottom-right manual-card Settings, removal of success notices and removal of the legacy card type.
+Included in 1.11.4: corrected height endpoints and live slider labels, percentage-only tilt values, standard UI Kit Settings presentation and compatibility for existing rollladenplaner-card dashboards.
 
 No further changes from this request are queued.

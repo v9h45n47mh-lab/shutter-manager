@@ -1,7 +1,7 @@
 import {UI_CSS, UI_VERSION, row, button, iconButton, orderHandle, toggle, rangeControl, dialog, field, numberControl, selectField, multiSelect, filterButton, formError, feedback, loadingState, emptyState, bindUI, escapeHtml, versionInfo} from './family-ui/1.7.0/family-ui.js';
 
 /* Shutter Manager manual dashboard. All shared presentation belongs to HA UI Kit. */
-const MANUAL_CARD_VERSION = '1.11.3';
+const MANUAL_CARD_VERSION = '1.11.4';
 const copy = value => JSON.parse(JSON.stringify(value));
 const newCardId = () => 'manual_' + (crypto.randomUUID ? crypto.randomUUID().replaceAll('-','') : Array.from(crypto.getRandomValues(new Uint8Array(16)),value=>value.toString(16).padStart(2,'0')).join(''));
 const layout = `
@@ -81,6 +81,7 @@ class ShutterManualCard extends HTMLElement {
     this.shadowRoot.addEventListener('change',this.inputHandler);
     this.shadowRoot.addEventListener('input',this.inputHandler);
     this.shadowRoot.addEventListener('submit',this.submitHandler);
+    this.queueHeightLabels();
     clearInterval(this.timer);
     this.timer=setInterval(()=>{if(document.visibilityState==='visible'&&!this.editor&&!this.busy&&!this.interacting)this.refresh();},5000);
     if(this._hass&&this.config)this.refresh();
@@ -104,7 +105,20 @@ class ShutterManualCard extends HTMLElement {
   displayName(device,settings=this.settings) { const name=settings?.names?.[device.id];return typeof name==='string'&&name.trim()?name.trim():device.name; }
   safeNumber(value) { return typeof value==='number'&&Number.isFinite(value)?value:null; }
   clockNow() { const server=Date.parse(this.data?.now);return Number.isFinite(server)&&this.receivedAt?server+(Date.now()-this.receivedAt):Date.now(); }
-  label(value) { const number=this.safeNumber(value);return number===null?'—':number+' %'; }
+  label(value,height=false) { const number=this.safeNumber(value);return number===null?'—':height&&number===100?this.t('Oben'):height&&number===0?this.t('Unten'):number+' %'; }
+  rangeMarkup(options,height=false) {
+    return rangeControl({reverse:true,keepLabel:options.allowKeep===false?'—':this.t('Unverändert'),...options}).replace('data-ui-range','data-ui-range'+(height?' data-manual-height':''));
+  }
+  updateHeightRanges() {
+    for(const control of this.shadowRoot?.querySelectorAll('[data-manual-height]')||[]){
+      const input=control.querySelector('input'),keep=control.dataset.keep==='true';
+      const value=control.dataset.reverse==='true'?Number(input.max)+Number(input.min)-Number(input.value):Number(input.value);
+      const text=keep?control.dataset.keepLabel:this.label(value,true),output=control.querySelector('output');
+      if(output.textContent!==text)output.textContent=text;
+      if(input.getAttribute('aria-valuetext')!==text)input.setAttribute('aria-valuetext',text);
+    }
+  }
+  queueHeightLabels() { queueMicrotask(()=>this.updateHeightRanges()); }
   usable(device,feature,allowDisabled=false) { return Boolean(device.can_control&&(allowDisabled||device.enabled)&&!['unknown','unavailable',''].includes(device.state)&&(device.features&feature)); }
   usesPresets(device,axis) { return device.blind&&axis==='height'||this.settings.mode==='presets'; }
   axisValues(device,axis) { return device.blind&&axis==='height'?[0,100]:this.settings[axis==='tilt'?'tilt_values':'height_values']; }
@@ -135,11 +149,11 @@ class ShutterManualCard extends HTMLElement {
   }
   presetMarkup({id,label,value,values,action,data={},disabled=false,allowKeep=false,heightLabels=false}) {
     const valueButton=(number,text)=>button({label:text,action,compact:true,data:{...data,value:number===null?'keep':String(number)},disabled,variant:number===value?'primary':'text'}).replace('<button ',`<button aria-pressed="${number===value}" `);
-    return `<div id="${escapeHtml(id)}-control"><div>${row({title:label,trailing:`<output>${value===null?(allowKeep?this.t('Unverändert'):'—'):escapeHtml(this.label(value))}</output>`})}</div><div class="manual-values" role="group" aria-label="${escapeHtml(label)}" style="--manual-value-count:${values.length}">${[...values].sort((left,right)=>right-left).map(number=>valueButton(number,heightLabels&&number===100?this.t('Unten'):heightLabels&&number===0?this.t('Oben'):number+' %')).join('')}</div>${allowKeep?`<div class="toolbar">${valueButton(null,this.t('Unverändert'))}</div>`:''}</div>`;
+    return `<div id="${escapeHtml(id)}-control"><div>${row({title:label,trailing:`<output>${value===null?(allowKeep?this.t('Unverändert'):'—'):escapeHtml(this.label(value,heightLabels))}</output>`})}</div><div class="manual-values" role="group" aria-label="${escapeHtml(label)}" style="--manual-value-count:${values.length}">${[...values].sort((left,right)=>right-left).map(number=>valueButton(number,this.label(number,heightLabels))).join('')}</div>${allowKeep?`<div class="toolbar">${valueButton(null,this.t('Unverändert'))}</div>`:''}</div>`;
   }
   axisMarkup(device,axis) {
     const tilt=axis==='tilt',label=this.t(tilt?'Lamellen':'Höhe'),value=this.safeNumber(device[tilt?'tilt':'position']),disabled=!this.usable(device,tilt?128:4),id=axis+'-'+device.id;
-    return this.usesPresets(device,axis)?this.presetMarkup({id,label,value,values:this.axisValues(device,axis),action:'position-preset',data:{device:device.id,axis},disabled,heightLabels:!tilt}):rangeControl({id,label,value,allowKeep:false,action:'position-range',disabled,reverse:true}).replace('data-ui-range','data-device="'+escapeHtml(device.id)+'" data-axis="'+axis+'" data-ui-range');
+    return this.usesPresets(device,axis)?this.presetMarkup({id,label,value,values:this.axisValues(device,axis),action:'position-preset',data:{device:device.id,axis},disabled,heightLabels:!tilt}):this.rangeMarkup({id,label,value,allowKeep:false,action:'position-range',disabled},!tilt).replace('data-ui-range','data-device="'+escapeHtml(device.id)+'" data-axis="'+axis+'" data-ui-range');
   }
   deviceMarkup(device) {
     const name=this.displayName(device);
@@ -148,10 +162,11 @@ class ShutterManualCard extends HTMLElement {
   }
   render() {
     if(!this.shadowRoot||this.editor)return;
-    const tools=this.canConfigure?`<div class="toolbar manual-card-tools">${iconButton({icon:'settings',label:this.t('Einstellungen'),action:'navigate',data:{page:'settings'}})}</div>`:'';
+    const tools=this.canConfigure?`<div class="toolbar manual-card-tools">${iconButton({icon:'settings',label:this.t('Einstellungen'),action:'navigate',data:{page:'settings'}}).replace('class="edit-button"','class="settings-button"')}</div>`:'';
     const devices=this.settings?.selected.map(id=>this.find(id)).filter(Boolean)||[];
     const body=!this.loaded?loadingState():devices.length?`<div class="manual-devices ${this.settings.columns==='1'?'manual-one':this.settings.columns==='3'?'manual-three':''}">${devices.map(device=>this.deviceMarkup(device)).join('')}</div>`:emptyState(this.t(this.canConfigure?'Keine Geräte ausgewählt. Als Administrator unten rechts die Einstellungen öffnen.':'Keine freigegebenen Geräte in dieser Karte.'));
     this.shadowRoot.innerHTML=`<style data-ui-kit>${UI_CSS}</style><style data-manual-layout>${layout}</style><ha-card><main><div data-manual-error>${this.error?formError(this.t(this.error)):''}</div>${this.error?button({label:this.t('Neu laden'),action:'reload'}):''}${body}${tools}</main></ha-card>`;
+    this.queueHeightLabels();
   }
   closeValueDialog() { const node=this.get('manual-value-dialog');if(node?.open)node.close();node?.remove();this.valueEditor=null; }
   closeNameDialog() { const node=this.get('manual-name-dialog');if(node?.open)node.close();node?.remove();this.nameEditor=null; }
@@ -159,7 +174,7 @@ class ShutterManualCard extends HTMLElement {
   mountDialog(title,content,actions) {
     this.shadowRoot.querySelector('ha-card').insertAdjacentHTML('beforeend',dialog({id:'manual-dialog',title,content,actions,closeLabel:this.t('Schließen')}));
     const node=this.get('manual-dialog');if(this.editor.type==='plan')node.classList.add('manual-plan');
-    node.addEventListener('close',()=>{if(this.get('manual-dialog')===node){this.closeNameDialog();this.closeValueDialog();this.editor=null;if(this.opener?.isConnected)this.opener.focus();}node.remove();});node.showModal();
+    node.addEventListener('close',()=>{if(this.get('manual-dialog')===node){this.closeNameDialog();this.closeValueDialog();this.editor=null;if(this.opener?.isConnected)this.opener.focus();}node.remove();});node.showModal();this.queueHeightLabels();
   }
   presetEditorMarkup(axis) {
     const values=this.editor.settings[axis==='height'?'height_values':'tilt_values'];
@@ -205,7 +220,7 @@ class ShutterManualCard extends HTMLElement {
   }
   planMarkup() {
     const editor=this.editor,device=this.find(editor.target);
-    const axis=(key,label)=>this.usesPresets(device,key==='position'?'height':'tilt')?this.presetMarkup({id:'plan-'+key,label:this.t(label),value:editor[key],values:this.axisValues(device,key==='position'?'height':'tilt'),action:'plan-preset',data:{axis:key},allowKeep:true,heightLabels:key==='position'}):rangeControl({id:'plan-'+key,label:this.t(label),value:editor[key],action:'plan-range',allowKeep:true,reverse:true});
+    const axis=(key,label)=>this.usesPresets(device,key==='position'?'height':'tilt')?this.presetMarkup({id:'plan-'+key,label:this.t(label),value:editor[key],values:this.axisValues(device,key==='position'?'height':'tilt'),action:'plan-preset',data:{axis:key},allowKeep:true,heightLabels:key==='position'}):this.rangeMarkup({id:'plan-'+key,label:this.t(label),value:editor[key],action:'plan-range',allowKeep:true},key==='position');
     return `<form id="manual-plan-form"><div class="grid"><div class="full">${row({title:this.displayName(device)})}</div><div class="toolbar full">${filterButton({label:this.t('Timer'),action:'timer-mode',selected:editor.mode==='timer'})}${filterButton({label:this.t('Uhrzeit'),action:'clock-mode',selected:editor.mode==='clock'})}</div><div class="full">${editor.mode==='timer'?numberControl({id:'manual-minutes',label:this.t('Start in Minuten'),value:editor.minutes,min:1,max:1440,step:1,required:true,presets:[5,15,30,60],action:'minutes-change'}):field({id:'manual-clock',label:this.t('Start um'),type:'time',value:editor.time,required:true,step:60})}</div><div class="full">${axis('position','Zielhöhe')}</div>${device.blind?`<div class="full">${axis('tilt','Lamellen')}</div>`:''}<div class="full" data-manual-start aria-live="polite"></div><div class="full" data-manual-dialog-error></div></div></form>`;
   }
   startSummary() {
@@ -225,7 +240,8 @@ class ShutterManualCard extends HTMLElement {
   updatePlanControls() {
     for(const key of ['position','tilt']){
       const control=this.get('plan-'+key+'-control');if(!control)continue;
-      const value=this.editor[key];control.querySelector('output').textContent=value===null?this.t('Unverändert'):this.label(value);
+      const value=this.editor[key],text=value===null?this.t('Unverändert'):this.label(value,key==='position');control.querySelector('output').textContent=text;
+      control.querySelector('input[type="range"]')?.setAttribute('aria-valuetext',text);
       control.querySelectorAll('button[data-value]').forEach(element=>{const selected=value===null?element.dataset.value==='keep':element.dataset.value!=='keep'&&Number(element.dataset.value)===value;element.classList.toggle('primary',selected);element.setAttribute('aria-pressed',String(selected));});
     }
   }
@@ -237,6 +253,7 @@ class ShutterManualCard extends HTMLElement {
     this.startSummary();
   }
   async onAction({action,data={},value,phase,element,checked}) {
+    if(action==='position-range'&&data.axis==='height'||action==='plan-range'&&element?.id==='plan-position-control')this.updateHeightRanges();
     const setupActions=['save-settings','select-devices','reorder-devices','show-manual-controls','edit-name','save-name','cancel-name','add-value','edit-value','remove-value','save-value','cancel-value'];
     if((setupActions.includes(action)||action==='navigate'&&data.page==='settings')&&!this.canConfigure)return;
     if(this.busy)return;
@@ -280,7 +297,7 @@ class ShutterManualCard extends HTMLElement {
       if(index===null)values.push(number);else values[index]=number;this.closeValueDialog();this.refreshPresetEditors();return;
     }
     if(action==='plan'){this.openPlan(data.device,element);return;}
-    if((action==='timer-mode'||action==='clock-mode')&&this.editor?.type==='plan'){this.editor.mode=action==='timer-mode'?'timer':'clock';this.get('manual-dialog').querySelector('.modal-body').innerHTML=this.planMarkup();this.startSummary();return;}
+    if((action==='timer-mode'||action==='clock-mode')&&this.editor?.type==='plan'){this.editor.mode=action==='timer-mode'?'timer':'clock';this.get('manual-dialog').querySelector('.modal-body').innerHTML=this.planMarkup();this.startSummary();this.queueHeightLabels();return;}
     if(action==='minutes-change'&&this.editor?.type==='plan'){this.editor.minutes=value;this.startSummary();return;}
     if(action==='plan-preset'&&this.editor?.type==='plan'&&['position','tilt'].includes(data.axis)){const number=data.value==='keep'?null:Number(data.value),device=this.find(this.editor.target),axis=data.axis==='position'?'height':'tilt';if(!this.usesPresets(device,axis)||number!==null&&!this.axisValues(device,axis).includes(number))return;this.editor[data.axis]=number;this.updatePlanControls();return;}
     if(action==='plan-range'&&this.editor?.type==='plan'){const axis=element.id==='plan-position-control'?'position':'tilt';if(this.usesPresets(this.find(this.editor.target),axis==='position'?'height':'tilt'))return;this.editor[axis]=value;return;}

@@ -1,9 +1,9 @@
-# Release validation — 1.11.3
+# Release validation — 1.11.4
 
-- 394 local Python tests passed, including per-card names and transport visibility across persistence/restart, strict input validation, older payload compatibility, native-read filtering and denial of setup changes by non-admin application managers.
-- Production-component checks cover descending preset rendering without source mutation, escaped aliases, endpoint labels, reverse Kit ranges, hidden transport controls and existing independent card IDs, ordering and access guards.
-- Required browser regressions cover 320/390/1100 px in light/dark themes: bottom-right Settings, independent staged/saved/reset aliases, per-card transport toggles, reversed native slider input and unchanged submitted values, endpoint labels in DE/EN, reload persistence and removal of legacy element/picker registration. Existing main-card navigation and all other application flows are retained.
-- Publication requires the full backend, real Wecker interoperability, upstream UI Kit build/unit/browser, all application browser suites, HACS and Hassfest checks for the exact release commit. Browser results are collected by GitHub Actions; local Chromium is unavailable in this workspace. Actuator I/O is simulated throughout.
-- The unchanged UI Kit 1.7.0, protocol 7, native/central permissions, timer scheduling and two-second tilt-to-height sequence remain effective.
+- The full local Python suite contains 394 tests for the production adapter, scheduling, persistence, permissions and per-card settings. Component checks cover Up=100/Down=0, numeric tilt endpoints, height-only range formatting, raw targets, independent profiles and admin guards.
+- Required browser checks compare the actual bottom-right Settings gear with an independent unchanged UI Kit navigation reference: icon markup, dimensions, color, padding and typography, on desktop/mobile and in both themes.
+- The manual browser suite verifies current/preset height labels, live height slider output and accessible text at 0/100/intermediate values, the same behavior during planning and after mode changes/Kit initialization, Unchanged/null handling, numeric tilt endpoints and unchanged commands. Planning slider movement itself performs no actuator I/O.
+- Existing rollladenplaner-card dashboard YAML is exercised through the current production card by the complete real-Manager save-flow suite. Registration inheritance and the absence of a duplicate old picker entry are checked separately.
+- Publication requires all backend, real Wecker interoperability, unchanged upstream UI Kit build/unit/browser, application browser suites, HACS and Hassfest checks on the exact commit. Responsive checks cover 320/390/1100 px and light/dark themes. Chromium runs in GitHub Actions; actuator I/O is simulated.
 
-Restart HA Core and reload the browser/app. Existing manual-card IDs and default profiles are retained. Change the removed legacy YAML type custom:rollladenplaner-card to custom:shutter-manager-card.
+Restart HA Core and reload the browser/app. Existing card IDs, stored configurations and native/central permissions are retained.

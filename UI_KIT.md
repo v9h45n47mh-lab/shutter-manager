@@ -47,3 +47,8 @@ All instances use the same unchanged pinned module and isolated ShadowRoot bindi
 ## Manual-card presentation in 1.11.3
 
 The unchanged Kit 1.7.0 owns reverse range presentation and event conversion through rangeControl({reverse:true}). The host renders descending preset values and height endpoint text without changing target values. Shared row, pencil iconButton, toggle, field and dialog components provide card-local aliases and transport visibility. The Settings toolbar uses layout-only end alignment after the device grid. No shared font, color, spacing, icon or control overrides are introduced. Main-card navigation stays unchanged; the obsolete legacy element and picker entry are removed.
+
+
+## Manual-card endpoints and Settings in 1.11.4
+
+The unchanged 1.7.0 Settings-button class and shared settings icon provide the bottom-right gear. The host selects that existing presentation variant without overriding shared styles. Browser tests compare it directly with a separately rendered Kit navigation Settings button in both themes and all responsive widths. Height-specific Up/Down text is application content applied to existing Kit outputs and aria-valuetext after initialization and on range events; range geometry, reversed input conversion and numeric targets remain owned by the original component. Tilt stays numeric. Existing dashboard names delegate to the current main component without another picker entry.

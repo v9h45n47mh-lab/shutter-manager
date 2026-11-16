@@ -42,13 +42,16 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
   assert.equal(card.axisMarkup(blind,'tilt').includes('type="range"'),mode==='sliders');
   assert.equal(card.axisMarkup(shutter,'height').includes('type="range"'),mode==='sliders');
   assert.deepEqual(orderOf(card.axisMarkup(blind,'height')),[100,0]);
-  assert.match(card.axisMarkup(blind,'height'),/data-value="100"[^>]*><span>Unten<\/span>/);assert.match(card.axisMarkup(blind,'height'),/data-value="0"[^>]*><span>Oben<\/span>/);
+  assert.match(card.axisMarkup(blind,'height'),/data-value="100"[^>]*><span>Oben<\/span>/);assert.match(card.axisMarkup(blind,'height'),/data-value="0"[^>]*><span>Unten<\/span>/);
   if(mode==='sliders'){assert.ok(card.axisMarkup(blind,'tilt').includes('data-reverse="true"'));assert.ok(card.axisMarkup(shutter,'height').includes('data-reverse="true"'));}
   assert.ok(!card.deviceMarkup(shutter).includes('Lamellen'));
   card.editor={type:'plan',target:'blind',mode:'timer',minutes:15,position:null,tilt:null};
   const plan=card.planMarkup();assert.ok(plan.includes('id="plan-position-control"'));assert.ok(!plan.includes('id="plan-position" type="range"'));
   assert.ok(plan.includes('Essbereich &lt;img src=x&gt;'));if(mode==='sliders')assert.ok(plan.includes('data-reverse="true"'));
  }
+ for(const [value,height,expected] of [[100,true,'Oben'],[0,true,'Unten'],[50,true,'50 %'],[null,true,'—'],[100,false,'100 %'],[0,false,'0 %']])assert.equal(card.label(value,height),expected);
+ card.config.language='en';assert.equal(card.label(100,true),'Up');assert.equal(card.label(0,true),'Down');card.config.language='de';
+ card.settings.mode='sliders';assert.ok(card.axisMarkup(shutter,'height').includes('data-manual-height'));assert.ok(!card.axisMarkup(blind,'tilt').includes('data-manual-height'));
  card.render=()=>{};card.updatePlanControls=()=>{};card.updateSelectedDevices=()=>{};
  const calls=[];card.request=async(kind,message)=>{calls.push({kind,...message});return true;};
  card.settings.mode='sliders';card.editor=null;

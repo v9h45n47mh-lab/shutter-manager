@@ -12,7 +12,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{font-family:Arial;background:#f5f7fa;padding:24px;--primary-text-color:#243449;--secondary-text-color:#63748b;--primary-color:#087eaa;--card-background-color:white;--divider-color:#dce3eb}shutter-manager-card{max-width:920px;display:block;margin:auto}ha-card{display:block}</style><script type="module" src="/card.js"></script><shutter-manager-card></shutter-manager-card></html>'});
  });
  await page.goto('http://planner.test');await page.waitForFunction(()=>customElements.get('shutter-manager-card'));
- assert.equal(await page.evaluate(()=>Boolean(customElements.get('rollladenplaner-card'))),false,'the old legacy card type is removed');
+ assert.equal(await page.evaluate(()=>Object.getPrototypeOf(customElements.get('rollladenplaner-card').prototype)===customElements.get('shutter-manager-card').prototype),true,'the old dashboard type delegates to the current main card');
  assert.equal(await page.evaluate(()=>window.customCards.some(card=>card.type==='rollladenplaner-card')),false,'the picker contains no legacy card');
  // HA's real ha-card renders its shadow slot asynchronously. Recreating that
  // host briefly makes all modal dimensions zero and defeats synchronous restore.

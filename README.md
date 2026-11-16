@@ -1,10 +1,16 @@
 # Shutter Manager
 
+## New in 1.11.4: endpoint labels and existing dashboards
+
+Height uses **Oben/Up at 100%** and **Unten/Down at 0%**, including current values, live sliders and one-time planning. Intermediate height values and every tilt value remain percentages. The bottom-right manual-card gear now matches the shared UI Kit Settings presentation.
+
+Existing `custom:rollladenplaner-card` dashboards work again through an alias of the current main card, fixing the missing-custom-element error. No YAML change is required, and the card picker has no extra old entry. Existing permissions and stored configurations are preserved.
+
 ## New in 1.11.3: manual-card controls and names
 
-Height endpoint buttons read **Unten/Down** at 100% on the left and **Oben/Up** at 0% on the right. Presets and sliders descend left to right, including one-time planning. Configure card-local cover names with the pencil beside each selected cover; clear the name to restore its original. Each card can show or hide its direction/Stop icons. The admin-only Settings gear is at the bottom right of the manual card, and bottom success notices are removed.
+Height endpoint buttons read **Oben/Up** at 100% on the left and **Unten/Down** at 0% on the right. Presets and sliders descend left to right, including one-time planning. Configure card-local cover names with the pencil beside each selected cover; clear the name to restore its original. Each card can show or hide its direction/Stop icons. The admin-only Settings gear is at the bottom right of the manual card, and bottom success notices are removed.
 
-The legacy `custom:rollladenplaner-card` type is removed. Replace it with `custom:shutter-manager-card` in existing dashboard YAML. The integration folder/domain stays `rollladenplaner`; `custom:shutter-manual-card` remains the separate manual card.
+The old picker entry is removed. Existing `custom:rollladenplaner-card` dashboard YAML is supported by the current main card. The integration folder/domain stays `rollladenplaner`; `custom:shutter-manual-card` remains the separate manual card.
 
 ## New in 1.11.2: independent manual cards
 
@@ -52,7 +58,7 @@ Automationen können `family_access_manager.set_vacation` mit `enabled: true/fal
 
 A local Home Assistant integration and dashboard card for cover schedules, sensor shading, and window-contact opening programs.
 
-**Version 1.11.3 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
+**Version 1.11.4 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
 
 Shutter Manager controls existing `cover` entities. Manage covers, sensor assignments, and programs in one dashboard card. Choose German 🇩🇪 or English 🇬🇧 in Settings.
 
@@ -91,7 +97,7 @@ grid_options:
   rows: auto
 ```
 
-The integration registers the card resource automatically. A separate dashboard resource is normally unnecessary. The old resource URL remains supported. The removed legacy type `custom:rollladenplaner-card` must be replaced by `custom:shutter-manager-card` in existing dashboard YAML.
+The integration registers the card resource automatically. A separate dashboard resource is normally unnecessary. The old resource URL remains supported. Existing `custom:rollladenplaner-card` YAML loads the current main card through a compatibility alias.
 
 The Home Assistant integration domain and folder stay `rollladenplaner` to preserve existing installations and stored configuration. The visible product name, card type, new resource URL, and release file names use **Shutter Manager**.
 

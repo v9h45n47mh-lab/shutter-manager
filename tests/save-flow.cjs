@@ -1,3 +1,4 @@
+/* Existing dashboard YAML must use the current card through its compatibility alias. */
 const {serveFamilyUI}=require('./frontend.cjs');
 /* Real card + real Python Manager validation/persistence; all HA I/O is simulated. */
 const {chromium}=require('playwright');
@@ -18,10 +19,10 @@ const {execFileSync}=require('node:child_process');
   await page.route('http://save.test/**',async route=>{
    if(await serveFamilyUI(route))return;
    if(route.request().url().endsWith('/card.js'))await route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(__dirname,'../custom_components/rollladenplaner/frontend/shutter-manager-card.js'),'utf8')});
-   else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{font-family:Arial;background:#f5f7fa;padding:24px;--primary-text-color:#243449;--secondary-text-color:#63748b;--primary-color:#087eaa;--card-background-color:white;--divider-color:#dce3eb}shutter-manager-card{display:block;max-width:920px;margin:auto}</style><script type="module" src="/card.js"></script><shutter-manager-card></shutter-manager-card></html>'});
+   else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{font-family:Arial;background:#f5f7fa;padding:24px;--primary-text-color:#243449;--secondary-text-color:#63748b;--primary-color:#087eaa;--card-background-color:white;--divider-color:#dce3eb}rollladenplaner-card{display:block;max-width:920px;margin:auto}</style><script type="module" src="/card.js"></script><rollladenplaner-card></rollladenplaner-card></html>'});
   });
   async function open(){
-   await page.goto('http://save.test');await page.waitForFunction(()=>customElements.get('shutter-manager-card'));
+   await page.goto('http://save.test');await page.waitForFunction(()=>customElements.get('rollladenplaner-card'));
    await page.evaluate(async()=>{
     const initial=await window.plannerBackend({type:'rollladenplaner/get'});
     if(!initial.ok)throw new Error(initial.error);
@@ -34,11 +35,11 @@ const {execFileSync}=require('node:child_process');
      if(window.dropRulesNextSave && message.type.endsWith('/save')){window.dropRulesNextSave=false;result.snapshot.config.windows[0].sensor_rules=[];}
      return result.snapshot;
     }};
-    const c=document.querySelector('shutter-manager-card');c.setConfig({type:'custom:shutter-manager-card'});c.settingsSections={covers:true,sensors:true,status:false,'daily-history':true};c.hass=host;
+    const c=document.querySelector('rollladenplaner-card');c.setConfig({type:'custom:rollladenplaner-card'});c.settingsSections={covers:true,sensors:true,status:false,'daily-history':true};c.hass=host;
    });
-   await page.locator('shutter-manager-card').getByRole('button',{name:'Einstellungen',exact:true}).waitFor();
+   await page.locator('rollladenplaner-card').getByRole('button',{name:'Einstellungen',exact:true}).waitFor();
   }
-  const card=page.locator('shutter-manager-card'),dialog=card.getByRole('dialog');
+  const card=page.locator('rollladenplaner-card'),dialog=card.getByRole('dialog');
   async function edit(){await card.getByRole('button',{name:'Einstellungen',exact:true}).click();await card.locator('.window').filter({hasText:'cover.wohnen'}).getByRole('button',{name:'Bearbeiten',exact:true}).click();await dialog.waitFor();}
   await open();await edit();
   await dialog.getByRole('button',{name:'+ Sensorzuordnung',exact:true}).click();
@@ -68,8 +69,8 @@ const {execFileSync}=require('node:child_process');
   data=JSON.parse(fs.readFileSync(store,'utf8'));
   assert.equal(data.config.windows[0].sensor_rules[1].id,id);assert.equal(data.config.windows[0].sensor_rules[1].temp_entity,'sensor.temp');
   // A legacy backend snapshot must never receive a save with unsupported rule data.
-  await page.evaluate(async()=>{window.oldServer=true;await document.querySelector('shutter-manager-card').refresh();});
-  await page.waitForFunction(()=>!document.querySelector('shutter-manager-card').data?.config_schema);
+  await page.evaluate(async()=>{window.oldServer=true;await document.querySelector('rollladenplaner-card').refresh();});
+  await page.waitForFunction(()=>!document.querySelector('rollladenplaner-card').data?.config_schema);
   await edit();
   await dialog.locator('[data-key="sensor_rules.1.name"]').fill('Büro West 1');
   await dialog.locator('[data-key="sensor_rules.1.lux_entity"]').selectOption('sensor.lux');
@@ -82,7 +83,7 @@ const {execFileSync}=require('node:child_process');
   await page.screenshot({path:path.join(__dirname,'../../planner-backend-version-error.png'),fullPage:true});
   await page.evaluate(()=>window.oldServer=false);
   await dialog.getByRole('button',{name:'Abbrechen',exact:true}).click();
-  await page.waitForFunction(()=>document.querySelector('shutter-manager-card').compatible);
+  await page.waitForFunction(()=>document.querySelector('rollladenplaner-card').compatible);
   await edit();
   await dialog.locator('[data-key="sensor_rules.1.name"]').fill('Büro West 1');
   // Even with a schema handshake, a missing rule in the save reply is not success.
@@ -99,8 +100,8 @@ const {execFileSync}=require('node:child_process');
   legacy.windows[0].climate={...legacy.windows[0].sensor_rules[0],auto_shade:true,shade_position:0,shade_tilt:100};
   delete legacy.windows[0].sensor_rules;
   page.once('dialog',d=>d.accept());
-  await page.evaluate(async legacy=>{const c=document.querySelector('shutter-manager-card');await c.importFile({size:100,text:async()=>JSON.stringify(legacy)});},legacy);
-  assert.equal(await page.evaluate(()=>document.querySelector('shutter-manager-card').error),'','legacy backup migration remains a confirmed save');
+  await page.evaluate(async legacy=>{const c=document.querySelector('rollladenplaner-card');await c.importFile({size:100,text:async()=>JSON.stringify(legacy)});},legacy);
+  assert.equal(await page.evaluate(()=>document.querySelector('rollladenplaner-card').error),'','legacy backup migration remains a confirmed save');
   assert.equal(JSON.parse(fs.readFileSync(store,'utf8')).config.windows[0].sensor_rules.length,1);
   await card.locator('[data-selected-sensor="sensor.temp"] [data-action="edit-sensor-name"]').click();
   await dialog.locator('label').filter({hasText:'sensor.temp'}).locator('input').fill('Außentemperatur');
@@ -123,7 +124,7 @@ const {execFileSync}=require('node:child_process');
   assert.equal(sorted.snapshot.config.programs.find(p=>p.id===timeProgram.id).rides[0].id,'appended_morning','save response sorts a morning ride appended after evening rides');
   assert.equal(sorted.motor_calls,0,'display sorting does not drive motors');
   await open();
-  assert.equal(await page.evaluate(()=>document.querySelector('shutter-manager-card').data.config.programs.find(p=>p.kind==='time').rides[0].id),'appended_morning','sorted program survives page reload');
+  assert.equal(await page.evaluate(()=>document.querySelector('rollladenplaner-card').data.config.programs.find(p=>p.kind==='time').rides[0].id),'appended_morning','sorted program survives page reload');
   const setup=call({type:'rollladenplaner/get'}).snapshot;
   setup.config.programs.find(p=>p.id===timeProgram.id).enabled=true;
   setup.config.programs.push({id:'transfer_target',name:'Wochenende',kind:'time',enabled:true,days:[5,6],pause_in_vacation:false,rides:[]});
@@ -140,12 +141,12 @@ const {execFileSync}=require('node:child_process');
   }
   await openProgram(timeProgram.id);
   await stageRide('appended_morning','copy',timeProgram.id);
-  const localCopy=await page.evaluate(()=>document.querySelector('shutter-manager-card').editor.item.rides.at(-1));
+  const localCopy=await page.evaluate(()=>document.querySelector('rollladenplaner-card').editor.item.rides.at(-1));
   assert.notEqual(localCopy.id,'appended_morning','same-program copy has an independent identity');
   await dialog.getByRole('button',{name:'Letzte Übernahme rückgängig',exact:true}).click();
   assert.equal(await dialog.locator(`[data-ride-id="${localCopy.id}"]`).count(),0,'undo removes only the local copy');
   await stageRide('appended_morning','copy',timeProgram.id);
-  const localId=await page.evaluate(()=>document.querySelector('shutter-manager-card').editor.item.rides.at(-1).id);
+  const localId=await page.evaluate(()=>document.querySelector('rollladenplaner-card').editor.item.rides.at(-1).id);
   await dialog.getByRole('button',{name:'Speichern',exact:true}).click();
   assert.match(await dialog.locator('footer').getByRole('alert').innerText(),/gleichzeitige Fahrten/,'copied time must be adjusted before saving a conflicting duplicate');
   const localPanel=dialog.locator(`[data-ride-id="${localId}"]`);
@@ -158,7 +159,7 @@ const {execFileSync}=require('node:child_process');
   await openProgram(timeProgram.id);
   const sourcePanel=()=>dialog.locator('[data-ride-id="appended_morning"]');
   assert.equal(await sourcePanel().locator('.ride-fold').getAttribute('aria-expanded'),'false');
-  const beforePicker=await page.evaluate(()=>JSON.stringify(document.querySelector('shutter-manager-card').editor.item));
+  const beforePicker=await page.evaluate(()=>JSON.stringify(document.querySelector('rollladenplaner-card').editor.item));
   await sourcePanel().getByRole('button',{name:'Kopieren',exact:true}).click();
   assert.equal(await dialog.locator('select').count(),1);
   assert.equal(await dialog.locator('input,.ride-editor').count(),0);
@@ -167,7 +168,7 @@ const {execFileSync}=require('node:child_process');
   await sourcePanel().getByRole('button',{name:'Verschieben',exact:true}).click();
   await page.keyboard.press('Escape');
   assert.equal(await sourcePanel().locator('.ride-fold').getAttribute('aria-expanded'),'false','Escape closes only the picker');
-  assert.equal(await page.evaluate(()=>JSON.stringify(document.querySelector('shutter-manager-card').editor.item)),beforePicker,'destination selection does not edit source fields');
+  assert.equal(await page.evaluate(()=>JSON.stringify(document.querySelector('rollladenplaner-card').editor.item)),beforePicker,'destination selection does not edit source fields');
   await stageRide('appended_morning','copy','transfer_target');
   assert.equal(await sourcePanel().locator('.ride-fold').getAttribute('aria-expanded'),'false','copy keeps the source ride collapsed');
   assert.equal(await dialog.locator('.transfer-notice').count(),1);
@@ -239,7 +240,7 @@ const {execFileSync}=require('node:child_process');
   const suspended=call({type:'rollladenplaner/get',...fixtureOptions,fixture_previous:'2026-10-30T06:59:55',fixture_pulse:true});
   assert.equal(suspended.ok,true,suspended.error);assert.equal(suspended.motor_calls,0);
   assert.equal(suspended.snapshot.planned.find(r=>r.ride==='fixture_morning').status,'pending');
-  await page.evaluate(()=>document.querySelector('shutter-manager-card').refresh());
+  await page.evaluate(()=>document.querySelector('rollladenplaner-card').refresh());
   assert.equal(await card.locator('.planned-row').count(),2);
   assert.match(await card.locator('.planned-row').first().innerText(),/Ausgesetzt bis Tür geschlossen.*wird nachgeholt/s);
   await page.screenshot({path:path.join(__dirname,'../../planner-day-plan-mobile.png'),fullPage:true});
@@ -295,7 +296,7 @@ const {execFileSync}=require('node:child_process');
   assert.equal(opened.ok,true,opened.error);assert.equal(opened.motor_calls,1);
   assert.equal(opened.snapshot.pending.w.opening.position,100);
   fixtureOptions={fixture_now:'2026-10-30T21:00',fixture_states:openingStates};
-  await page.evaluate(()=>document.querySelector('shutter-manager-card').refresh());
+  await page.evaluate(()=>document.querySelector('rollladenplaner-card').refresh());
   await card.getByRole('button',{name:'Sensorprogramme',exact:true}).click();
   assert.match(await card.locator('.sensor-row').filter({hasText:'Lüften Terrasse'}).innerText(),/Position bis zum Schließen geschützt/);
   await page.screenshot({path:path.join(__dirname,'../../planner-opening-held-mobile.png'),fullPage:true});
