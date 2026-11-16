@@ -15,7 +15,7 @@ async def main():
     now=at(message.pop('fixture_now','2026-11-16T12:00'))
     role=message.pop('fixture_role','admin');denied=set(message.pop('fixture_denied',[]));fail=message.pop('fixture_fail',False)
     states={'cover.wohnen':{'state':'open','attributes':{'device_class':'blind','supported_features':140,'current_position':35,'current_tilt_position':50}},
-            'cover.bad':{'state':'open','attributes':{'device_class':'shutter','supported_features':12,'current_position':65}}}
+            'cover.bad':{'state':'open','attributes':{'device_class':'shutter','supported_features':15,'current_position':65}}}
     if not path.exists():
         config,_=fixture();config['programs']=[]
         config['windows'][0].update(name='Jalousie Essen',contacts=[],sensor_rules=[],climate=None,cover_type='blind')
@@ -29,6 +29,8 @@ async def main():
         attrs=states[data['entity_id']]['attributes']
         if service=='set_cover_position':attrs['current_position']=data['position']
         if service=='set_cover_tilt_position':attrs['current_tilt_position']=data['tilt_position']
+        if service=='open_cover':attrs['current_position']=100
+        if service=='close_cover':attrs['current_position']=0
     grants={'view':True,'control':role in ('operator','manager','admin'),'manage':role in ('manager','admin')}
     hass=types.SimpleNamespace(config=types.SimpleNamespace(time_zone='Europe/Berlin'),
         states=types.SimpleNamespace(get=lambda key:FakeState(states[key]['state'],**states[key]['attributes']) if key in states else None),

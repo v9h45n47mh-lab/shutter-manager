@@ -32,7 +32,7 @@ def websocket_command(definition):
         return func
     return decorate
 module('homeassistant.components.websocket_api',websocket_command=websocket_command,async_response=identity,require_admin=identity,async_register_command=lambda *a:None)
-module('homeassistant.components.cover',CoverEntityFeature=types.SimpleNamespace(SET_POSITION=4,SET_TILT_POSITION=128,STOP=8))
+module('homeassistant.components.cover',CoverEntityFeature=types.SimpleNamespace(OPEN=1,CLOSE=2,SET_POSITION=4,SET_TILT_POSITION=128,STOP=8))
 module('homeassistant.components.http',StaticPathConfig=lambda *a:None)
 module('homeassistant.const',Platform=types.SimpleNamespace(SENSOR='sensor'))
 module('homeassistant.core',callback=identity)

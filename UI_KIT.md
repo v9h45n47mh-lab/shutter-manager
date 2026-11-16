@@ -28,3 +28,5 @@ The compact failed-history dashboard keeps the shared time/name history-row stru
 The separate card imports the same pinned, released 1.7.0 module. Navigation, rows, buttons, icons, ranges, numeric/time/select fields, multi-selection, dialogs, feedback and version information use upstream components and unchanged UI_CSS. Local CSS owns only the device grid, equal preset columns, the value/delete layout and the requested narrower planning/value dialogs. Axis label rows are the last child of their wrapper, using the Kit's existing border-free final-row rule instead of overriding shared CSS.
 
 Preset setup matches alarm quick-time maintenance: one centered shared value button and one shared trash icon per row, followed by a shared plus/add button. Authorization, numeric validation, persisted card settings and scheduling are enforced by the application.
+
+Native HA open/close services are used for direction icons where supported, avoiding an assumed device percentage convention. Plan summaries use the backend clock and HA timezone. Service acknowledgements are not recorded as confirmed positions.

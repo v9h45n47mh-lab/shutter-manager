@@ -112,6 +112,26 @@ def scheduled_time(message, now, engine):
     raise ValueError('Bitte Timer oder Uhrzeit auswählen.')
 
 
+async def replace_immediate(manager, window, now):
+    """Check interlocks before replacing a current goal; preserve future timers."""
+    target = window['id']
+    _, reason = manager.engine.guard(window, {'kind':'time'}, manager.states(), {target:False})
+    if reason:
+        raise ValueError(reason)
+    if any(item['target'] == target and not item.get('manual_immediate') and datetime.fromisoformat(item['scheduled']) <= now and item.get('status') != 'error'
+           for item in manager.engine.rt['one_time']):
+        raise ValueError('Für diesen Rollladen wird bereits eine Einzelfahrt ausgeführt.')
+    if manager.moving.get(target):
+        try:
+            await manager.stop(target, raise_errors=True)
+        except Exception as error:
+            raise ValueError('Vorherige Fahrt konnte nicht gestoppt werden: ' + str(error)) from error
+    for intent in list(manager.engine.rt['pending'].get(target, {}).values()):
+        manager.engine.finish(target, intent, now, 'Durch manuellen Fahrbefehl ersetzt')
+    manager.engine.rt['one_time'] = [item for item in manager.engine.rt['one_time']
+        if not (item['target'] == target and item.get('manual_immediate'))]
+
+
 async def action(manager, user, message, now):
     require(manager.hass, user, DOMAIN, 'view', True)
     if not can_control(manager, user):
@@ -160,6 +180,25 @@ async def action(manager, user, message, now):
             return 'Gestoppt.'
         if not window['enabled']:
             raise ValueError('Der Rollladen ist deaktiviert.')
+        # Native directions work with device-specific percentage conventions.
+        # Their service acknowledgement is not a confirmed positional result.
+        direction_feature = CoverEntityFeature.OPEN if operation == 'up' else CoverEntityFeature.CLOSE if operation == 'down' else 0
+        if direction_feature and features & direction_feature:
+            await replace_immediate(manager, window, now)
+            manager.revision += 1
+            await manager.persist()
+            service = 'open_cover' if operation == 'up' else 'close_cover'
+            try:
+                await manager.command(window, service)
+            except Exception as error:
+                failed = {'id':'manual_direction_' + uuid4().hex, 'program':'__manual__', 'kind':'manual',
+                          'name':service, 'position':None, 'tilt':None}
+                manager.engine.finish(target, failed, now, 'Fahrbefehl fehlgeschlagen: ' + str(error))
+                await manager.persist()
+                raise ValueError('Fahrbefehl fehlgeschlagen: ' + str(error)) from error
+            manager.engine.log(now, 'command', window['name'] + ': ' + service + ' übergeben', window=target)
+            await manager.persist()
+            return 'Fahrbefehl übergeben.'
         position = 100 if operation == 'up' else 0 if operation == 'down' else percentage(message.get('position'), optional=True)
         tilt = percentage(message.get('tilt'), optional=True) if operation in ('position', 'plan') else None
         if position is None and tilt is None:
@@ -172,25 +211,7 @@ async def action(manager, user, message, now):
         if operation == 'plan' and any(item['target'] == target and item.get('status') != 'error' for item in manager.engine.rt['one_time']):
             raise ValueError('Für diesen Rollladen ist bereits eine Einzelfahrt vorgemerkt.')
         if operation != 'plan':
-            # Refuse blocked clicks instead of queuing an unexpected later motion.
-            _, reason = manager.engine.guard(window, {'kind': 'time'}, manager.states(), {target: False})
-            if reason:
-                raise ValueError(reason)
-            if any(item['target'] == target and not item.get('manual_immediate') and datetime.fromisoformat(item['scheduled']) <= now and item.get('status') != 'error'
-                   for item in manager.engine.rt['one_time']):
-                raise ValueError('Für diesen Rollladen wird bereits eine Einzelfahrt ausgeführt.')
-            motion = manager.moving.get(target)
-            if motion:
-                try:
-                    await manager.stop(target, raise_errors=True)
-                except Exception as error:
-                    raise ValueError('Vorherige Fahrt konnte nicht gestoppt werden: ' + str(error)) from error
-            pending = list(manager.engine.rt['pending'].get(target, {}).values())
-            for intent in pending:
-                manager.engine.finish(target, intent, now, 'Durch manuellen Fahrbefehl ersetzt')
-            # A new immediate goal replaces only earlier immediate goals, never a future timer.
-            manager.engine.rt['one_time'] = [item for item in manager.engine.rt['one_time']
-                if not (item['target'] == target and item.get('manual_immediate'))]
+            await replace_immediate(manager, window, now)
         item = {'id': 'once_' + uuid4().hex, 'target': target, 'created': now.isoformat(),
                 'scheduled': scheduled.astimezone(timezone.utc).isoformat(), 'position': position, 'tilt': tilt,
                 'status': 'planned', 'reason': '', 'manual_immediate': operation != 'plan'}

@@ -87,12 +87,13 @@ class ShutterManualCard extends HTMLElement {
   get(id) { return this.shadowRoot?.getElementById(id); }
   find(id) { return this.available.find(device=>device.id===id); }
   safeNumber(value) { return typeof value==='number'&&Number.isFinite(value)?value:null; }
+  clockNow() { const server=Date.parse(this.data?.now);return Number.isFinite(server)&&this.receivedAt?server+(Date.now()-this.receivedAt):Date.now(); }
   label(value) { const number=this.safeNumber(value);return number===null?'—':number+' %'; }
   usable(device,feature,allowDisabled=false) { return Boolean(device.can_control&&(allowDisabled||device.enabled)&&!['unknown','unavailable',''].includes(device.state)&&(device.features&feature)); }
   async refresh() {
     if(!this._hass||!this.config||this.loading||this.busy||this.editor)return;
     this.loading=true;
-    try { const result=await this._hass.callWS({type:'rollladenplaner/manual/get',card_id:this.config.card_id});if(!this.isConnected)return;this.data=result;this.loaded=true;this.error='';this.render(); }
+    try { const result=await this._hass.callWS({type:'rollladenplaner/manual/get',card_id:this.config.card_id});if(!this.isConnected)return;this.data=result;this.receivedAt=Date.now();this.loaded=true;this.error='';this.render(); }
     catch(error) { this.error=error.message||String(error);this.render(); }
     finally { this.loading=false; }
   }
@@ -103,7 +104,7 @@ class ShutterManualCard extends HTMLElement {
     buttons.forEach(({element})=>element.disabled=true);
     try {
       const result=await this._hass.callWS({type:'rollladenplaner/manual/'+kind,card_id:this.config.card_id,...payload});
-      this.data=result;this.loaded=true;this.error='';this.message=result.result||'';return true;
+      this.data=result;this.receivedAt=Date.now();this.loaded=true;this.error='';this.message=result.result||'';return true;
     } catch(error) { this.error=error.message||String(error);return false; }
     finally { this.busy=false;buttons.forEach(({element,disabled})=>{if(element.isConnected)element.disabled=disabled;});this.updateError(); }
   }
@@ -120,7 +121,7 @@ class ShutterManualCard extends HTMLElement {
     return this.settings.mode==='presets'?this.presetMarkup({id,label,value,values:this.settings[tilt?'tilt_values':'height_values'],action:'position-preset',data:{device:device.id,axis},disabled}):rangeControl({id,label,value,allowKeep:false,action:'position-range',disabled}).replace('data-ui-range','data-device="'+escapeHtml(device.id)+'" data-axis="'+axis+'" data-ui-range');
   }
   deviceMarkup(device) {
-    return `<article class="subpanel manual-device" data-manual-device="${escapeHtml(device.id)}">${row({title:device.name,trailing:iconButton({icon:'schedule',label:this.t('Einzelfahrt planen')+' · '+device.name,action:'plan',data:{device:device.id},disabled:!this.usable(device,4)})})}<div class="toolbar manual-transport" role="group" aria-label="${escapeHtml(device.name)}">${[['up','Hoch',4],['media-stop','Stopp',8],['down','Runter',4]].map(([icon,text,feature])=>iconButton({icon,label:this.t(text)+' · '+device.name,action:text==='Hoch'?'up':text==='Runter'?'down':'stop',data:{device:device.id},disabled:!this.usable(device,feature,text==='Stopp')})).join('')}</div>${this.axisMarkup(device,'height')}${device.blind?this.axisMarkup(device,'tilt'):''}</article>`;
+    return `<article class="subpanel manual-device" data-manual-device="${escapeHtml(device.id)}">${row({title:device.name,trailing:iconButton({icon:'schedule',label:this.t('Einzelfahrt planen')+' · '+device.name,action:'plan',data:{device:device.id},disabled:!this.usable(device,4)})})}<div class="toolbar manual-transport" role="group" aria-label="${escapeHtml(device.name)}">${[['up','Hoch',5],['media-stop','Stopp',8],['down','Runter',6]].map(([icon,text,feature])=>iconButton({icon,label:this.t(text)+' · '+device.name,action:text==='Hoch'?'up':text==='Runter'?'down':'stop',data:{device:device.id},disabled:!this.usable(device,feature,text==='Stopp')})).join('')}</div>${this.axisMarkup(device,'height')}${device.blind?this.axisMarkup(device,'tilt'):''}</article>`;
   }
   render() {
     if(!this.shadowRoot||this.editor)return;
@@ -168,13 +169,13 @@ class ShutterManualCard extends HTMLElement {
   startSummary() {
     if(this.editor?.type!=='plan')return;
     const editor=this.editor,node=this.shadowRoot.querySelector('[data-manual-start]');if(!node)return;
-    const timeZone=this.data.time_zone,now=Date.now(),format=new Intl.DateTimeFormat(this.english?'en-GB':'de-DE',{timeZone,weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+    const timeZone=this.data.time_zone,now=this.clockNow(),format=new Intl.DateTimeFormat(this.english?'en-GB':'de-DE',{timeZone,weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
     node.innerHTML=feedback(this.t('Start:')+' '+(editor.mode==='timer'&&Number.isFinite(Number(editor.minutes))?format.format(new Date(now+Number(editor.minutes)*60000)):editor.time||'—'));
   }
   openPlan(id,element) {
     const device=this.find(id);if(!device||!this.usable(device,4))return;
     this.closeDialog();this.opener=element;this.error='';
-    const time=new Intl.DateTimeFormat('en-GB',{timeZone:this.data.time_zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(Date.now()+30*60000));
+    const time=new Intl.DateTimeFormat('en-GB',{timeZone:this.data.time_zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(this.clockNow()+30*60000));
     this.editor={type:'plan',target:id,mode:'timer',minutes:15,time,position:this.safeNumber(device.position)??100,tilt:null};
     this.mountDialog(this.t('Einzelfahrt planen'),this.planMarkup(),button({label:this.t('Abbrechen'),action:'cancel-dialog'})+button({label:this.t('Einplanen'),action:'save-plan',variant:'primary'}));this.startSummary();
   }
@@ -230,7 +231,7 @@ class ShutterManualCard extends HTMLElement {
     const device=this.find(data.device);
     if(!device||!this.settings?.selected.includes(device.id))return;
     if(['up','down','stop'].includes(action)){
-      if(!this.usable(device,action==='stop'?8:4,action==='stop'))return;
+      if(!this.usable(device,action==='stop'?8:action==='up'?5:6,action==='stop'))return;
       await this.request('action',{action,target:device.id});this.render();return;
     }
     if(action==='position-preset'){

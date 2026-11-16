@@ -162,6 +162,23 @@ class ManualTests(IsolatedAsyncioTestCase):
         self.assertEqual(self.m.engine.rt['command_results'][-1]['kind'],'error')
         self.assertIn('Stopp fehlgeschlagen',self.m.engine.rt['command_results'][-1]['message'])
 
+    async def test_directions_use_native_services_with_inverted_device_positions(self):
+        self.s['cover.wohnen']['attributes']['supported_features']=143
+        self.s['cover.wohnen']['attributes']['current_position']=0
+        await self.action(action='up')
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'open_cover')
+        self.assertNotIn('position',self.hass.services.async_call.call_args.args[2])
+        self.assertEqual(self.m.engine.rt['one_time'],[])
+        self.assertEqual(self.m.engine.rt['command_results'],[],'service acknowledgement does not claim a confirmed target')
+        await self.action(action='down')
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'close_cover')
+
+    async def test_native_direction_failures_are_recorded(self):
+        self.s['cover.wohnen']['attributes']['supported_features']=143
+        self.hass.services.async_call.side_effect=RuntimeError('fixture direction failure')
+        with self.assertRaisesRegex(ValueError,'Fahrbefehl fehlgeschlagen'):await self.action(action='up')
+        self.assertEqual(self.m.engine.rt['command_results'][-1]['kind'],'error')
+
     async def test_card_ids_are_validated_and_independent(self):
         for invalid in ('','../other','with space','x'*81):
             with self.assertRaises(ValueError):manual.snapshot(self.m,self.user,invalid,self.now)
