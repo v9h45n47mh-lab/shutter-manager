@@ -1,8 +1,9 @@
 import {UI_CSS, UI_VERSION, navigation, row, button, iconButton, orderHandle, rangeControl, dialog, field, numberControl, selectField, multiSelect, filterButton, formError, feedback, loadingState, emptyState, bindUI, escapeHtml, versionInfo} from './family-ui/1.7.0/family-ui.js';
 
 /* Shutter Manager manual dashboard. All shared presentation belongs to HA UI Kit. */
-const MANUAL_CARD_VERSION = '1.11.1';
+const MANUAL_CARD_VERSION = '1.11.2';
 const copy = value => JSON.parse(JSON.stringify(value));
+const newCardId = () => 'manual_' + (crypto.randomUUID ? crypto.randomUUID().replaceAll('-','') : Array.from(crypto.getRandomValues(new Uint8Array(16)),value=>value.toString(16).padStart(2,'0')).join(''));
 const layout = `
 .manual-devices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--fui-section-padding);align-items:start}
 .manual-devices.manual-one{grid-template-columns:minmax(0,1fr)}
@@ -53,12 +54,12 @@ Object.assign(translations,{
 });
 
 class ShutterManualCard extends HTMLElement {
-  static getStubConfig() { return {type:'custom:shutter-manual-card',card_id:'default'}; }
+  static getStubConfig() { return {type:'custom:shutter-manual-card',card_id:newCardId()}; }
   static getConfigElement() { return document.createElement('shutter-manual-card-editor'); }
   setConfig(config) {
     const key = config.card_id || 'default';
-    if (!/^[a-zA-Z0-9_-]{1,80}$/.test(key)) throw new Error('Invalid card_id (letters, numbers, _ or -, up to 80 characters).');
-    if (this.config?.card_id !== key) { this.data=null;this.loaded=false; }
+    if (typeof key!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(key)) throw new Error('Invalid card_id (letters, numbers, _ or -, up to 80 characters).');
+    if (this.config?.card_id !== key) { this.closeDialog();this.data=null;this.loaded=false;this.error='';this.message='';this.interacting=false; }
     this.config={...config,card_id:key};
     if (!this.shadowRoot) this.attachShadow({mode:'open'});
     this.render();
@@ -101,21 +102,24 @@ class ShutterManualCard extends HTMLElement {
   axisValues(device,axis) { return device.blind&&axis==='height'?[0,100]:this.settings[axis==='tilt'?'tilt_values':'height_values']; }
   async refresh() {
     if(!this._hass||!this.config||this.loading||this.busy||this.editor)return;
+    const cardId=this.config.card_id;
     this.loading=true;
-    try { const result=await this._hass.callWS({type:'rollladenplaner/manual/get',card_id:this.config.card_id});if(!this.isConnected)return;this.data=result;this.receivedAt=Date.now();this.loaded=true;this.error='';this.render(); }
-    catch(error) { this.error=error.message||String(error);this.render(); }
-    finally { this.loading=false; }
+    try { const result=await this._hass.callWS({type:'rollladenplaner/manual/get',card_id:cardId});if(!this.isConnected||this.config.card_id!==cardId)return;this.data=result;this.receivedAt=Date.now();this.loaded=true;this.error='';this.render(); }
+    catch(error) { if(this.config.card_id===cardId){this.error=error.message||String(error);this.render();} }
+    finally { this.loading=false;if(this.isConnected&&this.config.card_id!==cardId)this.refresh(); }
   }
   async request(kind,payload) {
     if(this.busy)return false;
+    const cardId=this.config.card_id;
     this.busy=true;
     const buttons=[...this.shadowRoot.querySelectorAll('button')].map(element=>({element,disabled:element.disabled}));
     buttons.forEach(({element})=>element.disabled=true);
     try {
-      const result=await this._hass.callWS({type:'rollladenplaner/manual/'+kind,card_id:this.config.card_id,...payload});
+      const result=await this._hass.callWS({type:'rollladenplaner/manual/'+kind,card_id:cardId,...payload});
+      if(this.config.card_id!==cardId)return false;
       this.data=result;this.receivedAt=Date.now();this.loaded=true;this.error='';this.message=result.result||'';return true;
-    } catch(error) { this.error=error.message||String(error);return false; }
-    finally { this.busy=false;buttons.forEach(({element,disabled})=>{if(element.isConnected)element.disabled=disabled;});this.updateError(); }
+    } catch(error) { if(this.config.card_id===cardId)this.error=error.message||String(error);return false; }
+    finally { this.busy=false;buttons.forEach(({element,disabled})=>{if(element.isConnected)element.disabled=disabled;});this.updateError();if(this.isConnected&&this.config.card_id!==cardId)this.refresh(); }
   }
   updateError() {
     const node=this.shadowRoot.querySelector(this.editor?'[data-manual-dialog-error]':'[data-manual-error]');
@@ -286,8 +290,11 @@ class ShutterManualCardEditor extends HTMLElement {
   render() {
     if(!this.shadowRoot||!this._hass)return;
     const admin=this._hass.user?.is_admin;
-    this.shadowRoot.innerHTML=`<style>${UI_CSS}</style>${admin?field({id:'manual-card-id',label:'Karten-ID',value:this.config.card_id||'default',required:true,hint:'Gleiche ID verwendet dieselben Einstellungen. Für eine weitere Karte eine andere ID wählen.'}):feedback('Nur HA-Administratoren dürfen die Karte einrichten.')}`;
-    this.shadowRoot.getElementById('manual-card-id')?.addEventListener('change',event=>{if(!admin||!/^[a-zA-Z0-9_-]{1,80}$/.test(event.target.value))return;this.config={...this.config,card_id:event.target.value};this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:this.config},bubbles:true,composed:true}));});
+    const english=(this._hass.locale?.language||this._hass.language||'de').startsWith('en');
+    this.shadowRoot.innerHTML=`<style>${UI_CSS}</style>${admin?field({id:'manual-card-id',label:english?'Card ID':'Karten-ID',value:this.config.card_id||'default',required:true,hint:english?'Use a different ID for each independent card. Identical IDs share the same settings.':'Jede unabhängige Karte benötigt eine eigene ID. Gleiche IDs teilen dieselben Einstellungen.'})+button({label:english?'New configuration':'Neue Konfiguration',icon:'add',action:'new-card-configuration'})+feedback(english?'Creates a new empty configuration for this card. Existing configurations are retained.':'Erzeugt eine neue, leere Konfiguration für diese Karte. Bisherige Konfigurationen bleiben erhalten.'):feedback(english?'Only HA administrators can configure the card.':'Nur HA-Administratoren dürfen die Karte einrichten.')}`;
+    const commit=id=>{if(!this._hass.user?.is_admin)return;this.config={...this.config,card_id:id};this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:this.config},bubbles:true,composed:true}));};
+    this.shadowRoot.getElementById('manual-card-id')?.addEventListener('change',event=>{if(!/^[a-zA-Z0-9_-]{1,80}$/.test(event.target.value))return;commit(event.target.value);});
+    this.shadowRoot.querySelector('[data-action="new-card-configuration"]')?.addEventListener('click',()=>{if(!this._hass.user?.is_admin)return;commit(newCardId());this.render();});
   }
 }
 if(!customElements.get('shutter-manual-card'))customElements.define('shutter-manual-card',ShutterManualCard);

@@ -37,3 +37,8 @@ Native HA open/close services are used for direction icons where supported, avoi
 Selected covers render shared rows and `orderHandle` with a dedicated group. `bindUI` owns pointer, touch, keyboard, focus and drag feedback. The host updates a setup draft and persists only on Apply. No local ordering icons, typography, theme colors or spacing overrides are introduced.
 
 The host selects shared buttons or rangeControl according to device type: blind height is always 0/100, blind tilt follows the chosen mode, and shutter height follows the chosen mode. Blind-only setup omits configurable shutter height values.
+
+
+## Multiple manual instances in 1.11.2
+
+All instances use the same unchanged pinned module and isolated ShadowRoot bindings. The visual editor uses shared field, button, add icon and feedback components for ID selection and fresh independent configurations. No shared presentation overrides are introduced. Dashboard-stored IDs, profile persistence and stale-reply guards are application responsibilities.

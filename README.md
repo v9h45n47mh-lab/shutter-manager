@@ -1,5 +1,9 @@
 # Shutter Manager
 
+## New in 1.11.2: independent manual cards
+
+Add multiple manual cards on any dashboards. Newly added cards receive independent persistent IDs automatically. For a copied card, choose **New configuration** in the visual card editor or assign a different `card_id`. Each ID stores its own cover selection, order, control mode, columns and presets. Existing cards retain their setup; identical IDs intentionally share it. See [dashboard-manual-multiple.yaml](dashboard-manual-multiple.yaml).
+
 ## New in 1.11.1
 
 Reorder the manual card’s selected covers in Settings by holding and dragging the shared handle. Apply persists the order across reloads and restarts. Blinds always use 0%/100% height buttons and configure only tilt; shutters retain height presets or a height slider. This also applies to one-time planning. Existing card IDs and permissions remain unchanged.

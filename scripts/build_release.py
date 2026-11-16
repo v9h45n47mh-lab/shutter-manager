@@ -109,7 +109,7 @@ def main():
     integration_files = source_files(COMPONENT)
     integration_zip = args.output_dir / 'shutter-manager.zip'
     write_zip(integration_zip, integration_files, COMPONENT)
-    allowed = {'README.md','HOWTO.md','LICENSE','CHANGELOG.md','hacs.json','dashboard.yaml','dashboard-manual.yaml','dashboard-failures.yaml','dashboard-failures-section.yaml',
+    allowed = {'README.md','HOWTO.md','LICENSE','CHANGELOG.md','hacs.json','dashboard.yaml','dashboard-manual.yaml','dashboard-manual-multiple.yaml','dashboard-failures.yaml','dashboard-failures-section.yaml',
                '.gitignore','NEXT_RELEASE.md','RELEASE_TESTS.md','UI_KIT.md'}
     files = [p for p in ROOT.iterdir() if p.is_file() and p.name in allowed]
     for directory in ('custom_components','tests','scripts','.github'):

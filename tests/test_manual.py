@@ -195,3 +195,27 @@ class ManualTests(IsolatedAsyncioTestCase):
         fresh.store.async_load.return_value=deepcopy(self.m.store.async_save.call_args.args[0]);await fresh.load()
         self.assertEqual(manual.snapshot(fresh,self.user,'test',self.now)['settings']['selected'],['third','w','second'])
         self.hass.services.async_call.assert_not_called()
+
+    async def test_multiple_cards_keep_independent_settings_revisions_and_selections(self):
+        self.m.engine.config['windows'].append({**deepcopy(self.m.engine.config['windows'][0]),'id':'second','cover':'cover.second','name':'Second'})
+        other={**deepcopy(self.setup),'selected':['second'],'mode':'sliders','columns':'1','height_values':[10,90],'tilt_values':[25,75]}
+        await manual.save(self.m,self.user,{'card_id':'other','card_revision':0,'settings':other})
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':{**self.setup,'height_values':[0,100],'columns':'2'}})
+        first=manual.snapshot(self.m,self.user,'test',self.now);second=manual.snapshot(self.m,self.user,'other',self.now)
+        self.assertEqual(first['card_revision'],2);self.assertEqual(second['card_revision'],1)
+        self.assertEqual(first['settings']['selected'],['w']);self.assertEqual(second['settings'],other)
+        self.assertEqual(first['settings']['mode'],'presets');self.assertEqual(second['settings']['mode'],'sliders')
+        first['settings']['height_values'].append(50)
+        self.assertEqual(manual.snapshot(self.m,self.user,'other',self.now)['settings'],other)
+        fresh=adapter.Manager(self.hass);fresh.solar=self.m.solar;fresh.store.async_load.return_value=deepcopy(self.m.store.async_save.call_args.args[0]);await fresh.load()
+        self.assertEqual(manual.snapshot(fresh,self.user,'test',self.now)['settings']['height_values'],[0,100])
+        self.assertEqual(manual.snapshot(fresh,self.user,'other',self.now)['settings'],other)
+        self.hass.services.async_call.assert_not_called()
+
+    async def test_a_card_cannot_operate_a_cover_selected_only_on_another_card(self):
+        self.m.engine.config['windows'].append({**deepcopy(self.m.engine.config['windows'][0]),'id':'second','cover':'cover.second','name':'Second'})
+        await manual.save(self.m,self.user,{'card_id':'other','card_revision':0,'settings':{**self.setup,'selected':['second']}})
+        for key,target in [('test','second'),('other','w')]:
+            with self.assertRaises(PermissionError):
+                await manual.action(self.m,self.user,{'card_id':key,'target':target,'action':'position','position':100},self.now)
+        self.hass.services.async_call.assert_not_called()

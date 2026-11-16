@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.2
+
+- New manual cards added through the dashboard card picker now receive unique persistent IDs, allowing independent device selections, order, control modes, columns and presets on the same or different dashboards.
+- Added New configuration to the HA-admin-only visual card editor for detaching copied cards into a fresh independent configuration. Existing configurations, explicit shared IDs and the legacy default profile are retained.
+- Isolated late read/write replies when an existing element switches configuration IDs, preventing old-profile data from populating the new card. Added production storage, cross-card selection authorization and simultaneous multi-card browser regressions across desktop/mobile and light/dark themes. Updated both guides and packaged a two-card YAML example.
+
 ## 1.11.1
 
 - Added drag-and-drop ordering for selected covers in the manual card Settings using the unchanged HA UI Kit 1.7.0 order handle. Mouse, touch, keyboard movement and cancellation are supported. Apply saves the card order; Cancel discards it. Adding or removing covers preserves the relative order of the retained selection.

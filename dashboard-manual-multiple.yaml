@@ -1,0 +1,10 @@
+# Each ID stores its own device selection, order, control mode and presets.
+# Identical IDs intentionally share settings, including across dashboards.
+type: grid
+columns: 1
+square: false
+cards:
+  - type: custom:shutter-manual-card
+    card_id: erdgeschoss
+  - type: custom:shutter-manual-card
+    card_id: obergeschoss

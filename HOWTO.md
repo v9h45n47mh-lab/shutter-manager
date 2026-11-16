@@ -1,4 +1,4 @@
-# Howto – Shutter Manager 1.11.1
+# Howto – Shutter Manager 1.11.2
 
 Die Oberfläche verwendet das lokal mitgelieferte HA UI Kit 1.7.0 für Symbole, Farben, Schriften, Abstände, Programm-Aktionen und Dialoge. Sortiergriffe nutzen die HA-Akzentfarbe. Dialoge unterstützen Escape, begrenzte Tab-Navigation und die Rückkehr zum auslösenden Bedienelement. Die UI-Version steht in Einstellungen und Hilfe. Programmname, Zusatztexte und Fahrten sind mit der gemeinsamen Einrückung von 28 px bündig ausgerichtet. Allgemeine Symbolbuttons behalten ihren UI-Kit-Abstand.
 
@@ -95,7 +95,7 @@ Die separate Fehlerkarte zeigt nur fehlgeschlagene Fahrten aus der heutigen Hist
 
 ## Gesamten Fehler-Abschnitt einschließlich Überschrift ein- und ausblenden
 
-Ab 1.11.1 wird `sensor.shutter_manager_failed_movements_today` automatisch als zusätzliche Diagnoseentität angelegt. Nach dem Update Home Assistant Core neu starten. Falls HA wegen einer Namenskollision oder eigener Benennung eine andere Entitäts-ID vergibt, diese im folgenden YAML ersetzen.
+Ab 1.11.2 wird `sensor.shutter_manager_failed_movements_today` automatisch als zusätzliche Diagnoseentität angelegt. Nach dem Update Home Assistant Core neu starten. Falls HA wegen einer Namenskollision oder eigener Benennung eine andere Entitäts-ID vergibt, diese im folgenden YAML ersetzen.
 
 Im Dashboard den gesamten Abschnitt bearbeiten, den Code-Editor öffnen und [dashboard-failures-section.yaml](dashboard-failures-section.yaml) verwenden. Die Sichtbarkeit gehört auf Abschnittsebene neben `cards`, damit auch die Überschrift verschwindet. Bei einer Anzahl größer 0 wird der Abschnitt angezeigt, bei 0, unbekannt oder nicht verfügbar bleibt er ausgeblendet. Im Bearbeitungsmodus kann HA eine Vorschau ausgeblendeter Abschnitte zeigen; die gespeicherte Dashboard-Ansicht ist maßgeblich.
 
@@ -109,7 +109,7 @@ Gespeicherte Warteaufträge überleben Neustarts; verpasste vergangene Uhrzeiten
 
 ---
 
-# Shutter Manager 1.11.1
+# Shutter Manager 1.11.2
 
 The interface uses locally bundled HA UI Kit 1.7.0 components for icons, colors, typography, spacing, program controls and dialogs. The shared drag handle follows the HA theme. Dialogs support Escape, contained Tab navigation and focus return to the opener. Settings and Help show the UI version. Program names, metadata and actions align at the shared 28 px indent. General icon buttons retain their UI Kit spacing.
 
@@ -180,14 +180,14 @@ The optional title is escaped as plain text; omit it to use the card's German/En
 
 ## Whole-section failure visibility
 
-Shutter Manager 1.11.1 automatically adds the diagnostic sensor `sensor.shutter_manager_failed_movements_today`. Restart HA Core after updating. If the entity registry assigns another ID, use that ID in the condition. Edit the entire dashboard section and paste [dashboard-failures-section.yaml](dashboard-failures-section.yaml) into its code editor. The `visibility` property belongs beside `cards`, so it applies to the heading and every card in the section. The section is visible only for a numeric state above 0; zero, unknown and unavailable are hidden. HA's dashboard editor can still show a preview of hidden sections; check the saved dashboard.
+Shutter Manager 1.11.2 automatically adds the diagnostic sensor `sensor.shutter_manager_failed_movements_today`. Restart HA Core after updating. If the entity registry assigns another ID, use that ID in the condition. Edit the entire dashboard section and paste [dashboard-failures-section.yaml](dashboard-failures-section.yaml) into its code editor. The `visibility` property belongs beside `cards`, so it applies to the heading and every card in the section. The section is visible only for a numeric state above 0; zero, unknown and unavailable are hidden. HA's dashboard editor can still show a preview of hidden sections; check the saved dashboard.
 
 The sensor counts recorded failed attempts across all currently configured covers using the same complete daily history and HA-local calendar date. It updates on the regular five-second cycle even when no dashboard is open, retains today's results after restart, and returns to zero on the first regular update after local midnight. Successes, waiting/planned work and generic diagnostic messages are excluded. A successful retry does not erase an earlier failed attempt. Removed covers no longer contribute. The new entity exports no names, targets or failure reasons. Existing per-cover card permissions are unchanged; restricted users may see fewer rows than the aggregate count, so grant access to the diagnostic entity and status section accordingly.
 
 The separate failure card shows only the time and cover name, using the shared UI Kit layout. Visibility is controlled by the dashboard section. A directly usable section configuration is:
 
 ```yaml
-# Shutter Manager 1.11.1 or newer. Paste into the section's code editor.
+# Shutter Manager 1.11.2 or newer. Paste into the section's code editor.
 # Adjust the entity ID if Home Assistant assigned or you chose another name.
 type: grid
 cards:
@@ -271,3 +271,12 @@ card_id: default
 <h3>Reihenfolge der Bedienkarte</h3><p>In den Karteneinstellungen unter Reihenfolge den gemeinsamen Sortiergriff neben einem ausgewählten Gerät kurz gedrückt halten und an die gewünschte Position ziehen. Maus und Touch werden unterstützt. Am fokussierten Griff funktionieren außerdem Pfeil auf/ab und Pos1/Ende; Escape bricht eine laufende Ziehbewegung ab. Übernehmen speichert die Reihenfolge für diese Karte und ihre Geräteanordnung, auch nach Neuladen und Neustart. Abbrechen verwirft die Änderung. Neu ausgewählte Geräte werden am Ende ergänzt; die Reihenfolge der weiterhin ausgewählten Geräte bleibt erhalten. Sortieren ist nur für HA-Administratoren verfügbar und löst keine Fahrt aus.</p>
 
 <h3>Manual card order</h3><p>In card Settings, hold the shared handle beside a selected cover in Order, then drag it to the desired position. Mouse and touch are supported. The focused handle also supports Arrow Up/Down and Home/End; Escape cancels an active drag. Apply saves the order for this card and its device layout across reloads and restarts. Cancel discards the change. Newly selected devices are appended; the relative order of retained devices is preserved. Sorting is available only to HA administrators and does not move a cover.</p>
+
+
+## Mehrere Bedienkarten / Multiple manual cards
+
+<h3>Mehrere unabhängige Bedienkarten</h3><p>Die Bedienkarte lässt sich mehrfach auf demselben oder auf verschiedenen Dashboards einbinden. Jede neue Karte aus der Kartenauswahl erhält automatisch eine eigene, dauerhaft im Dashboard gespeicherte Karten-ID. Geräteauswahl, Reihenfolge, Bedienmodus, Spalten und Vorgabewerte werden pro ID unabhängig gespeichert.</p><p>Wird eine vorhandene Karte kopiert, enthält die Kopie zunächst dieselbe ID. Für eine unabhängige Kopie im Dashboard-Karteneditor Neue Konfiguration wählen oder eine eigene Karten-ID eintragen. Neue Konfiguration erzeugt eine leere Konfiguration für diese Karte; die bisherige bleibt erhalten. Anschließend über das Zahnrad Geräte und Bedienung auswählen. Gleiche IDs teilen bewusst dieselben Einstellungen, auch über Dashboardgrenzen hinweg. Bei YAML für unterschiedliche Karten beispielsweise card_id: erdgeschoss und card_id: obergeschoss verwenden.</p><p>Bestehende Karten ohne ID behalten die bisherige Konfiguration default. Neue IDs werden ausschließlich beim Hinzufügen einer Karte oder durch Neue Konfiguration erzeugt, nicht bei jedem Laden. Berechtigungen bleiben unverändert: Einrichtung und Profilwechsel im Karteneditor sind HA-Administratoren vorbehalten; Ansehen und Bedienen benötigen weiterhin die zentralen Rechte und HA-Gerätefreigaben. Fahrten, Timer und Historie gehören weiterhin zum gemeinsamen Shutter Manager.</p>
+
+<h3>Multiple independent manual cards</h3><p>The manual card can be added repeatedly on the same or different dashboards. Each new card from the card picker receives its own ID, persisted in dashboard configuration. Device selection, order, control mode, columns and preset values are stored independently per ID.</p><p>Copying an existing card initially copies its ID. For an independent copy, use New configuration in the dashboard card editor or enter a different Card ID. New configuration creates an empty configuration for this card and retains the previous one. Then select devices and controls using the gear. Identical IDs intentionally share settings, including across dashboards. YAML cards can use separate values such as card_id: erdgeschoss and card_id: obergeschoss.</p><p>Existing cards without an ID retain the legacy default configuration. New IDs are generated only when adding a card or choosing New configuration, never on each reload. Permissions are unchanged: setup and profile changes in the visual editor require an actual HA administrator; viewing and operation still require central grants and native device access. Movements, timers and history remain part of the shared Shutter Manager.</p>
+
+See dashboard-manual-multiple.yaml for two independent cards.
