@@ -49,6 +49,9 @@ async def main():
         handler=endpoints[message['type']];validated=handler.ws_schema({'id':1,**message})
         await handler(hass,connection,validated)
         await manager.persist()
+        # Physical state is owned by HA, independently of the integration store.
+        saved=json.loads(path.read_text());saved['_test_states']=states
+        path.write_text(json.dumps(saved))
     except Exception as error:result.update(ok=False,error=str(error))
     return {**result,'calls':calls}
 
