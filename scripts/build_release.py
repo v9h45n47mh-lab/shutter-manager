@@ -37,6 +37,9 @@ def validate_layout(tag=None):
                      'custom_components/rollladenplaner/frontend/shutter-manager-card.js'):
         if not (ROOT / relative).is_file():
             raise ValueError(f'Datei fehlt: {relative}')
+    manual = (COMPONENT / 'frontend/shutter-manual-card.js').read_text()
+    if f"const MANUAL_CARD_VERSION = '{version}'" not in manual:
+        raise ValueError('Manual card and integration versions differ.')
     frontend = (COMPONENT / 'frontend/shutter-manager-card.js').read_text()
     adapter = (COMPONENT / '__init__.py').read_text()
     if f"const CARD_VERSION = '{version}'" not in frontend or f"INTEGRATION_VERSION = '{version}'" not in adapter:
@@ -65,6 +68,8 @@ def validate_layout(tag=None):
         raise ValueError('UI Kit license checksum mismatch')
     if f"from '{lock['module']}'" not in frontend:
         raise ValueError('The card must import the pinned UI Kit module')
+    if f"from '{lock['module']}'" not in manual:
+        raise ValueError('The manual card must import the pinned UI Kit module')
     for alias in ('rollladenplaner', 'shutter-manager'):
         if f'/{alias}/family-ui' not in adapter:
             raise ValueError(f'UI Kit static route missing: {alias}')
@@ -104,7 +109,7 @@ def main():
     integration_files = source_files(COMPONENT)
     integration_zip = args.output_dir / 'shutter-manager.zip'
     write_zip(integration_zip, integration_files, COMPONENT)
-    allowed = {'README.md','HOWTO.md','LICENSE','CHANGELOG.md','hacs.json','dashboard.yaml','dashboard-failures.yaml','dashboard-failures-section.yaml',
+    allowed = {'README.md','HOWTO.md','LICENSE','CHANGELOG.md','hacs.json','dashboard.yaml','dashboard-manual.yaml','dashboard-failures.yaml','dashboard-failures-section.yaml',
                '.gitignore','NEXT_RELEASE.md','RELEASE_TESTS.md','UI_KIT.md'}
     files = [p for p in ROOT.iterdir() if p.is_file() and p.name in allowed]
     for directory in ('custom_components','tests','scripts','.github'):

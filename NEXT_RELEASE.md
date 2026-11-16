@@ -1,8 +1,5 @@
 # Release status
 
-Implemented in 1.7.3 on 2026-11-15:
+Included in 1.11.0: the first production manual-control card with shared UI Kit 1.7.0, alarm-style percentage preset editing, timer/clock one-time movements and server-side permission checks.
 
-- A diagnostic failure-count sensor for native whole-section dashboard visibility.
-- A complete section YAML example, including the heading and compact time/name-only failure card.
-
-No additional requested changes are pending.
+No further changes from this request are queued.

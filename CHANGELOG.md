@@ -1,43 +1,36 @@
 # Changelog
 
+## 1.11.0
+
+- Added the separate `custom:shutter-manual-card` with any number of selected covers, responsive columns, no heading, shared up/stop/down icons and a top-right planning icon per device.
+- Added server-stored, HA-admin-only setup for fixed positions or sliders. Percentage presets follow the alarm quick-time layout: individual editable entries with a trash icon and an add-value action, limited to four distinct integer values per axis. Fixed-position buttons occupy equal-width columns without height/tilt separator lines.
+- Added immediate position/tilt commands and production-engine one-time actions using either a 1–1440-minute timer or a future clock on the current HA-local day. Timers may cross midnight. Scheduled actions appear in the existing timetable, survive restarts and create no saved program. The existing one-open-action-per-cover limit is retained.
+- Reused the existing central view/control/manage grants and native HA device permissions, with admin-only card setup enforced separately on the server. Contacts, opening priority, shading, confirmed-result history and the 2.0-second tilt-to-height sequence remain effective. Failed movement/stop requests report errors; Stop prevents current goals from restarting and preserves future timers.
+- Used the unmodified current released HA UI Kit 1.7.0 for all shared components, icons, typography and colors. Added production-endpoint, persistence, native-permission and desktop/mobile light/dark browser regression checks; refreshed both in-card guides and setup documentation.
+
 ## 1.10.0
 
-Manuell sortierbare Einträge werden am gemeinsamen Sortiergriff gedrückt gehalten und an die gewünschte Position gezogen. Die bisherigen Auf-/Ab-Pfeile entfallen. Maus, Touch und Tastatur am Griff werden unterstützt; Escape bricht den Vorgang ab. HA UI Kit 1.7.0 liefert Griff, Rückmeldung und Interaktion gemeinsam. Bestehende Rechte und gespeicherte Daten bleiben erhalten.
-
-Ziehen sortiert Programme innerhalb ihrer jeweiligen Gruppe. Urlaubsbedingt pausierte Fahrten bleiben ausgegraut und ohne Aktionsbuttons. Deutsche und englische Hilfe angepasst.
-
+Programs can be reordered within their group by holding and dragging the shared HA UI Kit 1.7.0 handle. Mouse, touch and keyboard are supported; Escape cancels. Up/down sorting arrows were removed. Vacation-paused actions remain grey and have no action buttons. Existing permissions and stored data are preserved. Updated both guides.
 
 ## 1.9.2
 
-Durch Urlaub pausierte Fahrten werden in der Zeitübersicht mit dem gleichen ausgegrauten UI-Kit-Zustand wie im Light Manager dargestellt. Alle Aktionsbuttons entfallen während der Urlaubspause, auch bei einmaligen und zusätzlich ausgelassenen Einträgen. Der Grund Urlaubspause bleibt sichtbar; nach Ende der Pause erscheinen die zulässigen Aktionen wieder. Deutsche und englische Hilfe angepasst. Steuerung, Kontaktschutz und Berechtigungen bleiben unverändert.
-
+Vacation-paused timetable actions use the shared grey UI Kit state matching Light Manager. Action buttons are hidden during the pause, including for one-time and skipped entries. The vacation reason remains visible and permitted actions return after the pause ends. Execution, contact protection and permissions are unchanged. Updated both guides.
 
 ## 1.9.1
 
-Hilfe und Anleitung verwenden **Family Administration → Urlaubsmodus** als zentrale Steuerung. Die Zeitübersicht zeigt pausierte Fahrten weiterhin mit dem Grund „Urlaubspause“. Programmbezogene Urlaubspausen, Fahrten, Sensor- und Kontaktvorrang sowie Berechtigungen bleiben unverändert.
-
+Help and setup instructions identify Family Administration → Vacation mode as the central control. The timetable still identifies vacation-paused actions. Per-program vacation settings, movements, sensor/contact priorities and permissions are unchanged.
 
 ## 1.9.0
 
-Der Urlaubsmodus wird ausschließlich unter **Family Access → Einstellungen → Urlaubsmodus** bedient. Die eigenen Urlaubsmodus-Bereiche und Schalter entfallen aus Light Manager, Shutter Manager und Hausarbeiten. Die Option „Im Urlaub pausieren“ je Programm bleibt erhalten; Programme ohne diese Option laufen weiter. Hausarbeiten pausieren ohne Änderung ihres Wiederholungsrhythmus und laufen beim Ausschalten ab heute weiter.
+Vacation mode is controlled centrally in Family Access settings; local application switches were removed while per-program vacation-pause options remain. An existing active mode and household vacation periods are imported once. Explicit central changes take precedence; temporarily unavailable clients retain the last confirmed state.
 
-Beim ersten Start wird ein bisher aktiver Urlaubsmodus einmalig zentral als aktiv übernommen. Vergangene Urlaubstage aus Hausarbeiten bleiben erhalten. Eine bewusste zentrale Änderung hat Vorrang vor später startenden Anwendungen. Bei vorübergehend fehlendem Family Access bleibt der zuletzt bestätigte Zustand erhalten.
-
-**Update:** zuerst Family Access Manager 1.2.0, danach Light Manager 1.5.0, Shutter Manager 1.9.0 und Hausarbeiten 0.5.0 installieren. Anschließend Home Assistant neu starten und Browser/App vollständig neu laden. Der zentrale Schalter speichert sofort, unabhängig von noch ungespeicherten Rollenänderungen. Bedienen dürfen echte HA-Administratoren und Eigentümer.
-
-Automationen können `family_access_manager.set_vacation` mit `enabled: true/false` verwenden. Die bisherigen Light-/Shutter-Dienste leiten an diesen Dienst weiter und behalten den ursprünglichen HA-Benutzerkontext: echte Administratoren oder vertrauenswürdige HA-Automationen dürfen schalten. Ein reines Anwendungs-Verwaltungsrecht berechtigt nicht zum globalen Umschalten. Alte lokale WebSocket-Schreibzugriffe und Sicherungswerte können den zentralen Modus nicht überschreiben.
-
+Update Family Access Manager to 1.2.0 before the participating applications, then restart HA and reload the browser. The central toggle saves immediately and requires an actual HA administrator/owner. The central set_vacation service and forwarding legacy services retain the original user context. Application management grants, old WebSocket writes and configuration imports cannot override the global vacation mode.
 
 ## 1.8.0
 
-Rollenrechte: Programme ansehen, Programme bedienen/Fahrten ändern und Programme/Einstellungen verwalten. Native Geräteberechtigungen bleiben zusätzlich wirksam.
+Centralized view, control and management grants in Family Access application roles, preserving native device checks and imported grants. Role grants combine across assigned roles. Dashboard visibility and navigation remain independent; no role creates HA administrator privileges.
 
-Berechtigungen werden jetzt in **Family Access → Anwendung → Rolle** verwaltet. Benutzer können mehrere Rollen erhalten; ihre Freigaben ergänzen sich. Vorhandene Anwendungsrechte werden einmalig in Rollen mit dem Zusatz „übernommen“ importiert und den bisherigen Benutzern zugeordnet. Dashboardfreigaben und die Aktivierung der Dashboardnavigation werden dadurch nicht verändert.
-
-Zum Entziehen eines Rechts alle zugewiesenen Rollen einschließlich übernommener Rollen prüfen. Neue Benutzer erhalten nach der Übernahme keine automatischen Anwendungsrechte. Echte HA-Administratoren behalten Vollzugriff zur Wiederherstellung. Geräte-, Eigentümer- und externe Kontoberechtigungen gelten zusätzlich; eine Rolle erzeugt keine HA-Administratorrechte.
-
-**Aktualisierung:** zuerst Family Access Manager 1.1.0 oder neuer, danach die beteiligten Anwendungen aktualisieren und Home Assistant neu starten. Solange Family Access nicht eingerichtet ist, bleibt die bisherige Rechtevergabe erhalten. Ist Family Access eingerichtet, aber nicht verfügbar oder zu alt, werden Anwendungsaktionen für normale Benutzer abgelehnt. Lokale Benutzer-/Personen-, Geräte- und Musikkontozuordnungen bleiben für Identität und Eigentum erhalten; Rechte werden zentral vergeben.
-
+Install Family Access Manager 1.1.0 or newer first. Before central access is configured, legacy grants remain in effect. After configuration, unavailable or incompatible providers fail closed for ordinary users; actual HA administrators retain recovery access. Local device, person and music-account mappings remain intact.
 
 ## 1.7.3
 

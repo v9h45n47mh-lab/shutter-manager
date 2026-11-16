@@ -22,12 +22,13 @@ from homeassistant.helpers.sun import get_astral_event_date
 
 from .family_access import allows, require, register
 from . import vacation_client
+from . import manual
 
 from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 from .wecker import async_planned_wecker
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.10.0'
+INTEGRATION_VERSION = '1.11.0'
 TILT_TO_HEIGHT_DELAY_SECONDS = 2.0
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 7
@@ -42,22 +43,26 @@ def utcnow():
 
 async def async_setup(hass, config):
     card_path = str(Path(__file__).parent / 'frontend' / 'shutter-manager-card.js')
+    manual_path = str(Path(__file__).parent / 'frontend' / 'shutter-manual-card.js')
     ui_path = str(Path(__file__).parent / 'frontend' / 'family-ui')
     await hass.http.async_register_static_paths([
         StaticPathConfig('/rollladenplaner/rollladenplaner-card.js', card_path, False),
         StaticPathConfig('/shutter-manager/shutter-manager-card.js', card_path, False),
+        StaticPathConfig('/rollladenplaner/shutter-manual-card.js', manual_path, False),
+        StaticPathConfig('/shutter-manager/shutter-manual-card.js', manual_path, False),
         StaticPathConfig('/rollladenplaner/family-ui', ui_path, False),
         StaticPathConfig('/shutter-manager/family-ui', ui_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.10.0')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.10.0')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.11.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.11.0')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manual-card.js?v=1.11.0')
     async def set_vacation(call):
         await vacation_client.set_via_service(hass, call)
 
     hass.services.async_register(DOMAIN, 'set_vacation', set_vacation,
                                  vol.Schema({vol.Required('enabled'): bool}))
-    for command in (ws_get, ws_save, ws_action):
+    for command in (ws_get, ws_save, ws_action, ws_manual_get, ws_manual_save, ws_manual_action):
         websocket_api.async_register_command(hass, command)
     return True
 
@@ -102,6 +107,8 @@ class Manager:
         self.unsub = lambda: None
         self._saved = None
         self.migration_backup = None
+        self.manual_cards = {}
+        self.version = INTEGRATION_VERSION
         self._reported_errors = set()
 
     @staticmethod
@@ -134,6 +141,7 @@ class Manager:
             self.engine.rt['edges'] = {}
             self.engine.rt['opening_edges'] = {}
             self.revision = data.get('revision', 0)
+            self.manual_cards = deepcopy(data.get('manual_cards', {}))
 
     def states(self):
         return {s.entity_id: {'state': s.state, 'attributes': dict(s.attributes)} for s in self.hass.states.async_all()}
@@ -143,6 +151,8 @@ class Manager:
 
     async def persist(self):
         data = {'config': self.engine.config, 'runtime': self.engine.rt, 'revision': self.revision}
+        if self.manual_cards:
+            data['manual_cards'] = self.manual_cards
         if self.migration_backup is not None:
             data['migration_backup'] = self.migration_backup
         if data != self._saved:
@@ -153,7 +163,7 @@ class Manager:
         async with asyncio.timeout(15):
             await self.hass.services.async_call('cover', service, {'entity_id': window['cover'], **data}, blocking=True)
 
-    async def stop(self, wid):
+    async def stop(self, wid, *, raise_errors=False):
         moving = self.moving.pop(wid, None)
         if not moving:
             return
@@ -168,6 +178,8 @@ class Manager:
                 await self.command(w, 'stop_cover')
             except Exception as err:
                 _LOGGER.warning('Stop für %s fehlgeschlagen: %s', w['cover'], err)
+                if raise_errors:
+                    raise
 
     @staticmethod
     def reached(state, value, attr):
@@ -696,4 +708,44 @@ async def ws_action(hass, connection, msg):
         await m.action(connection.user, msg)
         connection.send_result(msg['id'], await m.async_snapshot(connection.user))
     except (ValueError, KeyError, TypeError, StopIteration, PermissionError) as err:
+        connection.send_error(msg['id'], 'not_allowed', str(err))
+
+
+@websocket_api.websocket_command({vol.Required('type'): DOMAIN + '/manual/get',
+                                  vol.Required('card_id'): str})
+@websocket_api.async_response
+async def ws_manual_get(hass, connection, msg):
+    try:
+        connection.send_result(msg['id'], manual.snapshot(manager(hass), connection.user, msg['card_id'], utcnow()))
+    except (ValueError, KeyError, TypeError, PermissionError) as err:
+        connection.send_error(msg['id'], 'not_allowed', str(err))
+
+
+@websocket_api.websocket_command({vol.Required('type'): DOMAIN + '/manual/save',
+                                  vol.Required('card_id'): str, vol.Required('card_revision'): int,
+                                  vol.Required('settings'): dict})
+@websocket_api.async_response
+async def ws_manual_save(hass, connection, msg):
+    try:
+        m = manager(hass)
+        await manual.save(m, connection.user, msg)
+        connection.send_result(msg['id'], manual.snapshot(m, connection.user, msg['card_id'], utcnow()))
+    except (ValueError, KeyError, TypeError, PermissionError) as err:
+        connection.send_error(msg['id'], 'not_allowed', str(err))
+
+
+@websocket_api.websocket_command({vol.Required('type'): DOMAIN + '/manual/action',
+                                  vol.Required('card_id'): str, vol.Required('action'): str, vol.Required('target'): str,
+                                  vol.Optional('position', default=None): vol.Any(float, int, type(None)),
+                                  vol.Optional('tilt', default=None): vol.Any(float, int, type(None)),
+                                  vol.Optional('mode', default='timer'): str,
+                                  vol.Optional('minutes', default=15): int, vol.Optional('time', default=''): str})
+@websocket_api.async_response
+async def ws_manual_action(hass, connection, msg):
+    try:
+        m = manager(hass)
+        result = await manual.action(m, connection.user, msg, utcnow())
+        view = manual.snapshot(m, connection.user, msg['card_id'], utcnow())
+        connection.send_result(msg['id'], {**view, 'result': result})
+    except (ValueError, KeyError, TypeError, PermissionError) as err:
         connection.send_error(msg['id'], 'not_allowed', str(err))

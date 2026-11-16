@@ -1,5 +1,16 @@
 # Shutter Manager
 
+## New in 1.11.0: manual-control card
+
+Add **Shutter Manager – Bedienung** from the dashboard card picker, or use:
+
+```yaml
+type: custom:shutter-manual-card
+card_id: default
+```
+
+Restart HA after updating, then reload the browser/app. Open the top-right gear as a HA administrator, select the covers already configured in Shutter Manager, and choose sliders or up to four fixed positions for each axis. Presets are edited individually using value/add/trash actions, matching alarm quick times. Plan timer or clock-based movements using the device clock icon; they appear in the regular Schedule. Existing roles and native HA device permissions apply; card setup itself remains HA-admin-only. See [HOWTO.md](HOWTO.md) and [dashboard-manual.yaml](dashboard-manual.yaml).
+
 ## Neu in 1.10.0
 
 Manuell sortierbare Einträge werden am gemeinsamen Sortiergriff gedrückt gehalten und an die gewünschte Position gezogen. Die bisherigen Auf-/Ab-Pfeile entfallen. Maus, Touch und Tastatur am Griff werden unterstützt; Escape bricht den Vorgang ab. HA UI Kit 1.7.0 liefert Griff, Rückmeldung und Interaktion gemeinsam. Bestehende Rechte und gespeicherte Daten bleiben erhalten.

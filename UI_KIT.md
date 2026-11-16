@@ -21,3 +21,10 @@ Skip and restore controls match Light Manager: icon-only skip-once/restore-sched
 The failed-history dashboard view uses UI_CSS directly, the shared row heading and time/name history rows, without local typography, color, icon or spacing overrides.
 
 The compact failed-history dashboard keeps the shared time/name history-row structure and UI_CSS unchanged. The original detailed Settings history retains its target and failure-reason fields. Native whole-section visibility is controlled by HA using the aggregate diagnostic sensor, outside the UI Kit.
+
+
+## Manual card in 1.11.0
+
+The separate card imports the same pinned, released 1.7.0 module. Navigation, rows, buttons, icons, ranges, numeric/time/select fields, multi-selection, dialogs, feedback and version information use upstream components and unchanged UI_CSS. Local CSS owns only the device grid, equal preset columns, the value/delete layout and the requested narrower planning/value dialogs. Axis label rows are the last child of their wrapper, using the Kit's existing border-free final-row rule instead of overriding shared CSS.
+
+Preset setup matches alarm quick-time maintenance: one centered shared value button and one shared trash icon per row, followed by a shared plus/add button. Authorization, numeric validation, persisted card settings and scheduling are enforced by the application.

@@ -137,16 +137,19 @@ class AdapterTests(IsolatedAsyncioTestCase):
         self.assertEqual(path, '/rollladenplaner/rollladenplaner-card.js')
         self.assertTrue(Path(filename).is_file())
         self.assertFalse(cache)
-        self.assertEqual(add_js.call_count, 2)
+        self.assertEqual(add_js.call_count, 3)
+        self.assertTrue(any('/shutter-manager/shutter-manual-card.js?v=' in call.args[1] for call in add_js.call_args_list))
         self.assertEqual(add_js.call_args_list[0].args[1], '/rollladenplaner/rollladenplaner-card.js?v='+adapter.INTEGRATION_VERSION)
         self.assertEqual(add_js.call_args_list[1].args[1], '/shutter-manager/shutter-manager-card.js?v='+adapter.INTEGRATION_VERSION)
         self.assertEqual(hass.http.async_register_static_paths.call_args.args[0][1][0], '/shutter-manager/shutter-manager-card.js')
         paths=hass.http.async_register_static_paths.call_args.args[0]
-        self.assertEqual([row[0] for row in paths[2:]], ['/rollladenplaner/family-ui','/shutter-manager/family-ui'])
-        for _, directory, cache in paths[2:]:
+        self.assertEqual([row[0] for row in paths[2:4]], ['/rollladenplaner/shutter-manual-card.js','/shutter-manager/shutter-manual-card.js'])
+        self.assertTrue(all(Path(row[1]).is_file() and row[2] is False for row in paths[2:4]))
+        self.assertEqual([row[0] for row in paths[4:]], ['/rollladenplaner/family-ui','/shutter-manager/family-ui'])
+        for _, directory, cache in paths[4:]:
             self.assertTrue((Path(directory)/'1.4.1/family-ui.js').is_file())
             self.assertFalse(cache)
-        self.assertEqual(register_ws.call_count, 3)
+        self.assertEqual(register_ws.call_count, 6)
 
     async def test_product_rename_preserves_custom_entry_names(self):
         from unittest.mock import Mock

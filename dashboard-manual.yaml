@@ -1,0 +1,4 @@
+# Add a manual card in any Home Assistant dashboard.
+# Different card_id values have independent, server-stored administrator settings.
+type: custom:shutter-manual-card
+card_id: default
