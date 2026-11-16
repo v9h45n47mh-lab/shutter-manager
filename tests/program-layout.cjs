@@ -10,13 +10,13 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   await page.route('http://program-layout.test/**',async route=>{
    if(await serveFamilyUI(route))return;
    if(new URL(route.request().url()).pathname==='/card.js')return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(frontend,'shutter-manager-card.js'))});
-   await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{margin:0;padding:8px;--ha-font-family-body:"Noto Sans",Arial,sans-serif;--primary-color:#03a9f4;--primary-text-color:#212121;--secondary-text-color:#727272;--divider-color:#ddd;--card-background-color:#fff;--text-primary-color:#fff}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.pair>div{min-width:0}h2{font:14px Arial;margin:0 0 8px}@media(max-width:600px){.pair{grid-template-columns:1fr}}</style><script type="module" src="/card.js"></script><div class="pair"><div><h2>Shutter Manager</h2><rollladenplaner-card></rollladenplaner-card></div><div><h2>HA UI Kit 1.7.0 reference</h2><ui-kit-reference></ui-kit-reference></div></div></html>'});
+   await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{margin:0;padding:8px;--ha-font-family-body:"Noto Sans",Arial,sans-serif;--primary-color:#03a9f4;--primary-text-color:#212121;--secondary-text-color:#727272;--divider-color:#ddd;--card-background-color:#fff;--text-primary-color:#fff}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.pair>div{min-width:0}h2{font:14px Arial;margin:0 0 8px}@media(max-width:600px){.pair{grid-template-columns:1fr}}</style><script type="module" src="/card.js"></script><div class="pair"><div><h2>Shutter Manager</h2><shutter-manager-card></shutter-manager-card></div><div><h2>HA UI Kit 1.7.0 reference</h2><ui-kit-reference></ui-kit-reference></div></div></html>'});
   });
-  await page.goto('http://program-layout.test');await page.waitForFunction(()=>customElements.get('rollladenplaner-card'));
+  await page.goto('http://program-layout.test');await page.waitForFunction(()=>customElements.get('shutter-manager-card'));
   await page.evaluate(async()=>{
    const UI=await import('/family-ui/1.7.0/family-ui.js');window.UI=UI;
    customElements.define('ui-kit-reference',class extends HTMLElement{constructor(){super();this.attachShadow({mode:'open'});}});
-   const card=document.querySelector('rollladenplaner-card');window.card=card;
+   const card=document.querySelector('shutter-manager-card');window.card=card;
    const make=(id,name,time)=>({id,name,kind:'time',enabled:id!=='q',days:[0,1,2,3,4],pause_in_vacation:id!=='p',rides:[{id:'r'+id,name:'Wohnen',targets:['w'],enabled:id!=='q',event:'fixed',time,offset:0,earliest:'00:00',latest:'23:59',position:0,tilt:50}]});
    const programs=[make('p','Wochentag','07:00'),make('q','Wochenende und Feiertage','08:00')];
    window.model={backend_version:'1.7.1',config_schema:7,admin:true,controls:{p:true,q:false},revision:1,time_zone:'Europe/Berlin',config:{enabled:true,vacation:false,sensors:[],sensor_names:{},windows:[{id:'w',name:'Wohnen',cover:'cover.reference',cover_type:'blind',enabled:true,contacts:[],sensor_rules:[]}],programs},pending:{},moving:[],planned:[],sun_times:{},daily_history:[]};
@@ -65,7 +65,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
     return {title:offset(row.querySelector('.program-title>span')),metadata:offset(row.querySelector('.tags>span')),actions:[...row.querySelectorAll('.ride-info strong')].map(offset)};
    }));
    for(const row of alignment){assert.equal(row.title,28,'program title has the shared 28 px indent');assert.equal(row.metadata,row.title,'metadata aligns with the program title');for(const action of row.actions)assert.equal(action,row.title,'action text aligns with the program title');}
-   const card=page.locator('rollladenplaner-card');
+   const card=page.locator('shutter-manager-card');
    assert.equal(await card.locator('[data-action="toggle-vacation-filter"]').count(),0);
    assert.equal(await card.locator('[data-action="edit-program"]').count(),admin?2:0,'administrative controls retain their permission boundary');
    assert.equal(await card.locator('[data-action="program"][data-program="q"]').isDisabled(),!admin,'unpermitted program switches remain disabled');

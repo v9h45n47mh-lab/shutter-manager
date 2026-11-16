@@ -1,7 +1,9 @@
-# Shutter Manager 1.11.2
+# Shutter Manager 1.11.3
 
-- New manual cards added through the dashboard card picker now receive unique persistent IDs, allowing independent device selections, order, control modes, columns and presets on the same or different dashboards.
-- Added New configuration to the HA-admin-only visual card editor for detaching copied cards into a fresh independent configuration. Existing configurations, explicit shared IDs and the legacy default profile are retained.
-- Isolated late read/write replies when an existing element switches configuration IDs, preventing old-profile data from populating the new card. Added production storage, cross-card selection authorization and simultaneous multi-card browser regressions across desktop/mobile and light/dark themes. Updated both guides and packaged a two-card YAML example.
+- Manual-card presets and sliders now run from 100 on the left to 0 on the right. Height endpoint buttons read Unten/Down (100) and Oben/Up (0), including one-time planning; tilt remains numeric. Stored presets and submitted target values are unchanged.
+- Added per-card cover display names, edited with the pencil beside each selected cover. Empty names restore the Shutter Manager name. Names survive restarts, remain independent between card IDs and are filtered by native read permissions; global names are unchanged.
+- Moved the manual card's admin-only Settings gear to the bottom right and added a per-card switch for the Up/Stop/Down row. Removed bottom success notices while retaining actionable errors and planning details. The main program card keeps its existing navigation.
+- Removed the legacy rollladenplaner-card element and picker entry. Existing dashboards using that type must switch to custom:shutter-manager-card; the integration domain and resource compatibility routes remain intact.
+- Preserved admin-only setup, central/native control permissions, independent card profiles, scheduling and the two-second tilt-to-height handoff. Added backend and responsive light/dark browser regressions and updated both guides.
 
-Restart HA Core and reload the browser/app. New cards are independent automatically; for existing copies choose New configuration in the visual card editor.
+Restart HA Core and reload the browser/app. If a dashboard still uses custom:rollladenplaner-card, replace its type with custom:shutter-manager-card. Manual cards keep their IDs and saved configuration.

@@ -28,14 +28,26 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
   {id:'blind',name:'Jalousie',blind:true,position:35,tilt:50,can_control:true,enabled:true,state:'open',features:143},
   ...['shutter','third','fourth'].map(id=>({id,name:id,blind:false,position:60,can_control:true,enabled:true,state:'open',features:15}))]};
  const blind=card.find('blind'),shutter=card.find('shutter');
+ const orderOf=markup=>[...markup.matchAll(/data-value="(\d+)"/g)].map(match=>Number(match[1]));
+ const unsorted=[0,50,100,75],unchanged=[...unsorted];
+ const descending=card.presetMarkup({id:'test',label:'Lamellen',value:50,values:unsorted,action:'test'});
+ assert.deepEqual(orderOf(descending),[100,75,50,0]);assert.deepEqual(unsorted,unchanged,'display ordering does not mutate stored presets');
+ card.settings.names={blind:'Essbereich <img src=x>'};
+ assert.equal(card.displayName(blind),'Essbereich <img src=x>');assert.ok(card.deviceMarkup(blind).includes('Essbereich &lt;img src=x&gt;'));assert.ok(!card.deviceMarkup(blind).includes('<img'));
+ assert.equal(card.displayName(blind,{names:{}}),blind.name);
+ card.settings.show_controls=false;assert.ok(!card.deviceMarkup(blind).includes('manual-transport'));assert.ok(card.deviceMarkup(blind).includes('data-action="plan"'));card.settings.show_controls=true;assert.ok(card.deviceMarkup(blind).includes('manual-transport'));
  for(const mode of ['presets','sliders']){
   card.settings.mode=mode;
   assert.deepEqual(Array.from(card.axisValues(blind,'height')),[0,100]);assert.ok(!card.axisMarkup(blind,'height').includes('type="range"'));
   assert.equal(card.axisMarkup(blind,'tilt').includes('type="range"'),mode==='sliders');
   assert.equal(card.axisMarkup(shutter,'height').includes('type="range"'),mode==='sliders');
+  assert.deepEqual(orderOf(card.axisMarkup(blind,'height')),[100,0]);
+  assert.match(card.axisMarkup(blind,'height'),/data-value="100"[^>]*><span>Unten<\/span>/);assert.match(card.axisMarkup(blind,'height'),/data-value="0"[^>]*><span>Oben<\/span>/);
+  if(mode==='sliders'){assert.ok(card.axisMarkup(blind,'tilt').includes('data-reverse="true"'));assert.ok(card.axisMarkup(shutter,'height').includes('data-reverse="true"'));}
   assert.ok(!card.deviceMarkup(shutter).includes('Lamellen'));
   card.editor={type:'plan',target:'blind',mode:'timer',minutes:15,position:null,tilt:null};
   const plan=card.planMarkup();assert.ok(plan.includes('id="plan-position-control"'));assert.ok(!plan.includes('id="plan-position" type="range"'));
+  assert.ok(plan.includes('Essbereich &lt;img src=x&gt;'));if(mode==='sliders')assert.ok(plan.includes('data-reverse="true"'));
  }
  card.render=()=>{};card.updatePlanControls=()=>{};card.updateSelectedDevices=()=>{};
  const calls=[];card.request=async(kind,message)=>{calls.push({kind,...message});return true;};
@@ -58,5 +70,5 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
  for(const data of [{program:'missing',offset:'1'},{program:'blind',offset:'9'},{program:'blind',offset:'NaN'},{program:'blind',offset:'0'}]){await card.onAction({action:'reorder-devices',data});assert.equal(JSON.stringify(card.editor.settings.selected),ordered);}
  const orderMarkup=card.selectedOrderMarkup();assert.equal((orderMarkup.match(/data-ui="order"/g)||[]).length,3);assert.ok(orderMarkup.includes('data-icon="drag"'));assert.ok(!orderMarkup.includes('data-icon="up"'));
  card._hass.user.is_admin=false;await card.onAction({action:'reorder-devices',data:{program:'blind',offset:'1'}});assert.equal(JSON.stringify(card.editor.settings.selected),ordered);
- console.log('PASS: unique persistent card IDs with crypto fallback, legacy default retained, late replies isolated after retargeting; blind/shutter policy, guarded targets, shared draft ordering and admin-only setup.');
+ console.log('PASS: descending presets without stored-value mutation, original Kit reversed ranges, escaped per-card names in controls/planning, independent IDs and stale-reply isolation, blind/shutter policy and admin-only setup.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

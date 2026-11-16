@@ -19,7 +19,7 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   await page.goto('http://instances.test');await page.waitForFunction(()=>customElements.get('shutter-manual-card'));
   const configs=await page.evaluate(()=>[customElements.get('shutter-manual-card').getStubConfig(),customElements.get('shutter-manual-card').getStubConfig()]);
   assert.notEqual(configs[0].card_id,configs[1].card_id);assert.ok(configs.every(config=>/^manual_[a-f0-9]{32}$/.test(config.card_id)));
-  const a={selected:['w'],mode:'presets',columns:'1',height_values:[0,25,50,100],tilt_values:[0,50,100]},b={selected:['bad','max'],mode:'sliders',columns:'2',height_values:[10,90],tilt_values:[25,75]};
+  const a={selected:['w'],mode:'presets',columns:'1',height_values:[0,25,50,100],tilt_values:[0,50,100],names:{},show_controls:true},b={selected:['bad','max'],mode:'sliders',columns:'2',height_values:[10,90],tilt_values:[25,75],names:{},show_controls:false};
   for(const [index,settings] of [[0,a],[1,b]])request({type:'rollladenplaner/manual/save',card_id:configs[index].card_id,card_revision:0,settings});
   const seed=fs.readFileSync(store,'utf8'),first=page.locator('#first'),second=page.locator('#second'),results=path.resolve(__dirname,'../.ci/ui-kit-results');fs.mkdirSync(results,{recursive:true});
   async function open(){
@@ -28,22 +28,32 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    await page.waitForFunction(()=>cards.every(card=>card.loaded));
   }
   const selected=card=>card.locator('[data-manual-device]').evaluateAll(elements=>elements.map(element=>element.dataset.manualDevice));
+  async function rename(card,id,value){await card.locator(`#manual-selected-order [data-action="edit-name"][data-device="${id}"]`).click();await card.locator('#manual-cover-name').fill(value);await card.locator('#manual-name-dialog footer').getByRole('button',{name:'Übernehmen',exact:true}).click();await card.locator('#manual-name-dialog').waitFor({state:'detached'});}
   const applyTheme=appearance=>page.evaluate(appearance=>{const dark=appearance==='dark';for(const [key,value] of Object.entries({'--primary-color':dark?'#90caf9':'#81d2eb','--primary-text-color':dark?'#eee':'#212121','--secondary-text-color':dark?'#aaa':'#727272','--text-primary-color':dark?'#102030':'#18333e','--card-background-color':dark?'#202124':'#fff','--ha-card-background':dark?'#202124':'#fff','--secondary-background-color':dark?'#303134':'#f5f5f5','--divider-color':dark?'#444':'#ddd'}))document.body.style.setProperty(key,value);document.body.style.background=dark?'#121212':'#f5f7fa';document.documentElement.style.colorScheme=appearance;},appearance);
   for(const appearance of ['light','dark'])for(const width of [320,390,1100]){
    role='admin';fs.writeFileSync(store,seed);await page.setViewportSize({width,height:1000});await open();
    await applyTheme(appearance);
    assert.deepEqual(await selected(first),['w']);assert.deepEqual(await selected(second),['bad','max']);
    assert.equal(await first.locator('input[type="range"]').count(),0);assert.equal(await second.locator('input[type="range"]').count(),2);
+   assert.equal(await first.locator('.manual-transport').count(),1);assert.equal(await second.locator('.manual-transport').count(),0,'arrow visibility is configured per card');
    await first.getByRole('button',{name:'Einstellungen',exact:true}).click();await first.locator('#manual-devices input[value="bad"]').check();
+   await rename(first,'bad','Bad unten');assert.deepEqual(request({type:'rollladenplaner/manual/get',card_id:configs[0].card_id}).settings.names,{},'name editing remains a draft until the main Apply');
+   if(appearance==='light'&&width===320){await rename(first,'bad','');assert.equal(await first.locator('[data-manual-selected="bad"] .row-text strong').innerText(),'Rollladen Bad');await rename(first,'bad','Bad unten');}
    await first.locator('#manual-columns').selectOption('2');await first.locator('#manual-selected-order [data-program="bad"]').focus();await page.keyboard.press('Home');
    await first.locator('#manual-dialog footer').getByRole('button',{name:'Übernehmen',exact:true}).click();await first.locator('#manual-dialog').waitFor({state:'detached'});
    assert.deepEqual(await selected(first),['bad','w']);assert.deepEqual(await selected(second),['bad','max']);assert.equal(await second.locator('input[type="range"]').count(),2);
    assert.deepEqual(request({type:'rollladenplaner/manual/get',card_id:configs[1].card_id}).settings,b,'saving the first card never changes the second profile');
-   await second.getByRole('button',{name:'Einstellungen',exact:true}).click();await second.locator('#manual-mode').selectOption('presets');await second.locator('#manual-selected-order [data-program="max"]').focus();await page.keyboard.press('Home');await second.locator('#manual-dialog footer').getByRole('button',{name:'Übernehmen',exact:true}).click();await second.locator('#manual-dialog').waitFor({state:'detached'});
+   await second.getByRole('button',{name:'Einstellungen',exact:true}).click();await rename(second,'bad','Bad oben');await second.locator('#manual-mode').selectOption('presets');await second.locator('#manual-selected-order [data-program="max"]').focus();await page.keyboard.press('Home');await second.locator('#manual-dialog footer').getByRole('button',{name:'Übernehmen',exact:true}).click();await second.locator('#manual-dialog').waitFor({state:'detached'});
    await first.evaluate(card=>card.refresh());assert.deepEqual(await selected(first),['bad','w']);assert.deepEqual(await selected(second),['max','bad']);
    const storedA=request({type:'rollladenplaner/manual/get',card_id:configs[0].card_id}).settings;assert.deepEqual(storedA.selected,['bad','w']);assert.deepEqual(storedA.tilt_values,a.tilt_values);
    await open();await applyTheme(appearance);assert.deepEqual(await selected(first),['bad','w']);assert.deepEqual(await selected(second),['max','bad']);
-   assert.deepEqual(await first.locator('#height-bad-control .manual-values button').allTextContents(),['0 %','25 %','50 %','100 %']);assert.deepEqual(await second.locator('#height-bad-control .manual-values button').allTextContents(),['10 %','90 %']);
+   assert.equal(await first.locator('.manual-transport').count(),2);assert.equal(await second.locator('.manual-transport').count(),0);
+   await second.getByRole('button',{name:'Einstellungen',exact:true}).click();await second.getByRole('switch',{name:'Fahrpfeile und Stopp anzeigen',exact:true}).click();await second.locator('#manual-dialog footer').getByRole('button',{name:'Übernehmen',exact:true}).click();await second.locator('#manual-dialog').waitFor({state:'detached'});assert.equal(await second.locator('.manual-transport').count(),2);assert.equal(await first.locator('.manual-transport').count(),2);
+   await second.getByRole('button',{name:'Einstellungen',exact:true}).click();await second.getByRole('switch',{name:'Fahrpfeile und Stopp anzeigen',exact:true}).click();await second.locator('#manual-dialog footer').getByRole('button',{name:'Übernehmen',exact:true}).click();await second.locator('#manual-dialog').waitFor({state:'detached'});assert.equal(await second.locator('.manual-transport').count(),0);
+   assert.equal(await first.locator('[data-manual-device="bad"] .row-text strong').first().innerText(),'Bad unten');assert.equal(await second.locator('[data-manual-device="bad"] .row-text strong').first().innerText(),'Bad oben');
+   assert.equal(request({type:'rollladenplaner/get'}).config.windows.find(window=>window.id==='bad').name,'Rollladen Bad','per-card display names do not rename the integration cover');
+   await first.locator('[data-manual-device="bad"] [data-action="plan"]').click();assert.equal(await first.locator('#manual-plan-form .row-text strong').first().innerText(),'Bad unten');await first.locator('#manual-dialog footer').getByRole('button',{name:'Abbrechen',exact:true}).click();await first.locator('#manual-dialog').waitFor({state:'detached'});
+   assert.deepEqual(await first.locator('#height-bad-control .manual-values button').allTextContents(),['Unten','50 %','25 %','Oben']);assert.deepEqual(await second.locator('#height-bad-control .manual-values button').allTextContents(),['90 %','10 %']);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
    await page.screenshot({path:path.join(results,`manual-instances-${appearance}-${width}.png`),fullPage:true});
   }
@@ -63,6 +73,6 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
   role='reader';await open();assert.equal(await page.locator('shutter-manual-card [data-action="navigate"]').count(),0);
   assert.equal(call({type:'rollladenplaner/manual/save',card_id:configs[0].card_id,card_revision:1,settings:a}).ok,false);
   assert.deepEqual(errors,[]);
-  console.log('PASS: two simultaneous cards with independent generated IDs, device selections, order, modes, presets and revisions; edits isolated in both directions across reloads, stale reply guard, independent copy editor, admin permissions and 320/390/1100px light/dark views.');
+  console.log('PASS: two simultaneous cards with independent selections, order, modes, descending presets and display names; aliases persist per card, stay draft until Apply, reset when empty and do not rename the integration cover; stale-reply/copy guards and 320/390/1100px light/dark views.');
  }finally{await browser.close();fs.rmSync(directory,{recursive:true,force:true});}
 })().catch(error=>{console.error(error);process.exitCode=1;});

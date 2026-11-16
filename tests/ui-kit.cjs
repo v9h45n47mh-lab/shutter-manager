@@ -31,3 +31,5 @@ assert.ok(!/(?:font-(?:family|size|weight|style)|line-height|letter-spacing|text
 assert.ok(!/(?:^|[;{])\s*(?:color|background(?:-color)?|fill|stroke)\s*:/.test(localCSS),'colors and symbols must come from the UI Kit');
 assert.ok(!/Light Manager program typography/.test(card),'the local compatibility profile is removed');
 console.log('PASS: pinned UI 1.7.0 module, CSS, license, checksums and shared program controls.');
+assert.ok(!card.includes("customElements.define('rollladenplaner-card'"),'the removed legacy custom element must not be registered');
+assert.ok(!card.includes("type:'rollladenplaner-card'"),'the removed legacy card must not be added to the picker');

@@ -16,3 +16,8 @@ Zum Entziehen eines Rechts alle zugewiesenen Rollen einschließlich übernommene
 - Card setup requires an actual HA administrator. An application `manage` role alone cannot change device selection, presets or card settings. These checks also apply to direct WebSocket requests.
 - Only devices selected in the server-stored card configuration can be operated. Unreadable covers are omitted. Multiple card IDs maintain independent setup; identical IDs share setup.
 - Role changes and device revocations are checked on every request; the frontend polls visible data every five seconds. Contacts, shading and opening holds remain effective.
+
+
+## Manual-card names and transport visibility (1.11.3)
+
+Per-card display names and the direction/Stop visibility option are setup data and require an actual HA administrator on every save. Names are filtered by native device read access. Hiding controls does not create or revoke permissions; all command and planning requests retain the existing central/native checks. Aliases never rename global Shutter Manager or HA entities. Older clients may omit these new fields without erasing saved options.

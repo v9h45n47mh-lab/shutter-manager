@@ -1,5 +1,11 @@
 # Shutter Manager
 
+## New in 1.11.3: manual-card controls and names
+
+Height endpoint buttons read **Unten/Down** at 100% on the left and **Oben/Up** at 0% on the right. Presets and sliders descend left to right, including one-time planning. Configure card-local cover names with the pencil beside each selected cover; clear the name to restore its original. Each card can show or hide its direction/Stop icons. The admin-only Settings gear is at the bottom right of the manual card, and bottom success notices are removed.
+
+The legacy `custom:rollladenplaner-card` type is removed. Replace it with `custom:shutter-manager-card` in existing dashboard YAML. The integration folder/domain stays `rollladenplaner`; `custom:shutter-manual-card` remains the separate manual card.
+
 ## New in 1.11.2: independent manual cards
 
 Add multiple manual cards on any dashboards. Newly added cards receive independent persistent IDs automatically. For a copied card, choose **New configuration** in the visual card editor or assign a different `card_id`. Each ID stores its own cover selection, order, control mode, columns and presets. Existing cards retain their setup; identical IDs intentionally share it. See [dashboard-manual-multiple.yaml](dashboard-manual-multiple.yaml).
@@ -17,7 +23,7 @@ type: custom:shutter-manual-card
 card_id: default
 ```
 
-Restart HA after updating, then reload the browser/app. Open the top-right gear as a HA administrator, select the covers already configured in Shutter Manager, and choose sliders or up to four fixed positions for each axis. Presets are edited individually using value/add/trash actions, matching alarm quick times. Plan timer or clock-based movements using the device clock icon; they appear in the regular Schedule. Existing roles and native HA device permissions apply; card setup itself remains HA-admin-only. See [HOWTO.md](HOWTO.md) and [dashboard-manual.yaml](dashboard-manual.yaml).
+Restart HA after updating, then reload the browser/app. Open the bottom-right gear as a HA administrator, select the covers already configured in Shutter Manager, and choose sliders or up to four fixed positions for each axis. Presets are edited individually using value/add/trash actions, matching alarm quick times. Plan timer or clock-based movements using the device clock icon; they appear in the regular Schedule. Existing roles and native HA device permissions apply; card setup itself remains HA-admin-only. See [HOWTO.md](HOWTO.md) and [dashboard-manual.yaml](dashboard-manual.yaml).
 
 ## Neu in 1.10.0
 
@@ -46,7 +52,7 @@ Automationen können `family_access_manager.set_vacation` mit `enabled: true/fal
 
 A local Home Assistant integration and dashboard card for cover schedules, sensor shading, and window-contact opening programs.
 
-**Version 1.10.0 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
+**Version 1.11.3 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
 
 Shutter Manager controls existing `cover` entities. Manage covers, sensor assignments, and programs in one dashboard card. Choose German 🇩🇪 or English 🇬🇧 in Settings.
 
@@ -85,7 +91,7 @@ grid_options:
   rows: auto
 ```
 
-The integration registers the card resource automatically. A separate dashboard resource is normally unnecessary. The legacy card type `custom:rollladenplaner-card` and old resource URL remain available for existing dashboards.
+The integration registers the card resource automatically. A separate dashboard resource is normally unnecessary. The old resource URL remains supported. The removed legacy type `custom:rollladenplaner-card` must be replaced by `custom:shutter-manager-card` in existing dashboard YAML.
 
 The Home Assistant integration domain and folder stay `rollladenplaner` to preserve existing installations and stored configuration. The visible product name, card type, new resource URL, and release file names use **Shutter Manager**.
 

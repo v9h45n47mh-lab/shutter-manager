@@ -219,3 +219,60 @@ class ManualTests(IsolatedAsyncioTestCase):
             with self.assertRaises(PermissionError):
                 await manual.action(self.m,self.user,{'card_id':key,'target':target,'action':'position','position':100},self.now)
         self.hass.services.async_call.assert_not_called()
+
+    async def test_names_are_per_card_and_survive_restart_without_global_renaming(self):
+        original=self.m.engine.config['windows'][0]['name']
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':{**self.setup,'names':{'w':'Essbereich'}}})
+        await manual.save(self.m,self.user,{'card_id':'other','card_revision':0,'settings':{**self.setup,'names':{'w':'Terrasse'}}})
+        self.assertEqual(manual.snapshot(self.m,self.user,'test',self.now)['settings']['names'],{'w':'Essbereich'})
+        self.assertEqual(manual.snapshot(self.m,self.user,'other',self.now)['settings']['names'],{'w':'Terrasse'})
+        self.assertEqual(self.m.engine.config['windows'][0]['name'],original)
+        fresh=adapter.Manager(self.hass);fresh.solar=self.m.solar;fresh.store.async_load.return_value=deepcopy(self.m.store.async_save.call_args.args[0]);await fresh.load()
+        self.assertEqual(manual.snapshot(fresh,self.user,'test',self.now)['settings']['names'],{'w':'Essbereich'})
+        self.assertEqual(manual.snapshot(fresh,self.user,'other',self.now)['settings']['names'],{'w':'Terrasse'})
+        self.hass.services.async_call.assert_not_called()
+
+    async def test_names_validate_trim_and_empty_values_restore_the_default(self):
+        before=deepcopy(self.m.manual_cards)
+        for names in (None,[],{'missing':'Unknown'},{'w':100},{'w':'x'*101}):
+            with self.subTest(names=names),self.assertRaises(ValueError):
+                await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':{**self.setup,'names':names}})
+            self.assertEqual(self.m.manual_cards,before)
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':{**self.setup,'names':{'w':'  Küche Süd  '}}})
+        self.assertEqual(manual.snapshot(self.m,self.user,'test',self.now)['settings']['names'],{'w':'Küche Süd'})
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':2,'settings':{**self.setup,'names':{'w':'  '}}})
+        self.assertEqual(manual.snapshot(self.m,self.user,'test',self.now)['settings']['names'],{})
+
+    async def test_old_settings_payloads_preserve_names_and_legacy_records_get_empty_names(self):
+        self.m.manual_cards['test']['settings'].pop('names',None)
+        self.assertEqual(manual.snapshot(self.m,self.user,'test',self.now)['settings']['names'],{})
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':{**self.setup,'names':{'w':'Wohnen'}}})
+        old=deepcopy(self.setup);old.pop('names');old['columns']='1'
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':2,'settings':old})
+        self.assertEqual(manual.snapshot(self.m,self.user,'test',self.now)['settings']['names'],{'w':'Wohnen'})
+
+    async def test_names_follow_native_visibility_and_admin_settings_permissions(self):
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':{**self.setup,'names':{'w':'Private name'}}})
+        self.user=self.role({'view':True,'manage':True},native=False)
+        self.assertEqual(manual.snapshot(self.m,self.user,'test',self.now)['settings']['names'],{})
+        with self.assertRaises(PermissionError):
+            await manual.save(self.m,self.user,{'card_id':'test','card_revision':2,'settings':{**self.setup,'names':{'w':'Changed'}}})
+
+    async def test_transport_visibility_is_independent_per_card_and_validated(self):
+        for value in (0,1,'false',None):
+            with self.subTest(value=value),self.assertRaises(ValueError):
+                await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':{**self.setup,'show_controls':value}})
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':{**self.setup,'show_controls':False}})
+        await manual.save(self.m,self.user,{'card_id':'other','card_revision':0,'settings':{**self.setup,'show_controls':True}})
+        self.assertFalse(manual.snapshot(self.m,self.user,'test',self.now)['settings']['show_controls'])
+        self.assertTrue(manual.snapshot(self.m,self.user,'other',self.now)['settings']['show_controls'])
+        self.hass.services.async_call.assert_not_called()
+
+    async def test_legacy_payloads_retain_visibility_and_records_default_to_visible(self):
+        self.m.manual_cards['test']['settings'].pop('show_controls',None)
+        self.assertTrue(manual.snapshot(self.m,self.user,'test',self.now)['settings']['show_controls'])
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':{**self.setup,'show_controls':False,'names':{'w':'Name'}}})
+        old=deepcopy(self.setup);old.pop('show_controls');old.pop('names')
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':2,'settings':old})
+        view=manual.snapshot(self.m,self.user,'test',self.now)['settings']
+        self.assertFalse(view['show_controls']);self.assertEqual(view['names'],{'w':'Name'})

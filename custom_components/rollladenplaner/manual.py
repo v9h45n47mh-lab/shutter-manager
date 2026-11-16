@@ -15,7 +15,7 @@ from .family_access import allows, require
 
 DOMAIN = 'rollladenplaner'
 DEFAULTS = {'selected': [], 'mode': 'presets', 'height_values': [0, 25, 50, 100],
-            'tilt_values': [0, 50, 100], 'columns': 'auto'}
+            'tilt_values': [0, 50, 100], 'columns': 'auto', 'names': {}, 'show_controls': True}
 
 
 def card_key(value):
@@ -44,7 +44,8 @@ def snapshot(manager, user, key, now):
     require(manager.hass, user, DOMAIN, 'view', True)
     key = card_key(key)
     record = manager.manual_cards.get(key, {})
-    settings = deepcopy(record.get('settings', DEFAULTS))
+    settings = deepcopy(DEFAULTS)
+    settings.update(deepcopy(record.get('settings', {})))
     visible = []
     control = can_control(manager, user)
     for window in manager.engine.config['windows']:
@@ -60,6 +61,8 @@ def snapshot(manager, user, key, now):
                         'can_control': control and manager.permitted(user, window['cover'], POLICY_CONTROL)})
     visible_ids = {window['id'] for window in visible}
     settings['selected'] = [wid for wid in settings['selected'] if wid in visible_ids]
+    names = settings.get('names')
+    settings['names'] = {wid:name for wid,name in names.items() if wid in visible_ids and isinstance(name, str)} if isinstance(names, dict) else {}
     return {'backend_version': manager.version, 'now': now.isoformat(), 'time_zone': manager.hass.config.time_zone,
             'card_id': key, 'card_revision': record.get('revision', 0), 'configured': bool(record),
             'can_configure': is_admin(user), 'settings': settings, 'available': visible}
@@ -72,7 +75,7 @@ async def save(manager, user, message):
         raise PermissionError('Die Karteneinstellungen sind nur für HA-Administratoren verfügbar.')
     key = card_key(message['card_id'])
     proposed = message['settings']
-    if not isinstance(proposed, dict) or set(proposed) != set(DEFAULTS):
+    if not isinstance(proposed, dict) or not (set(DEFAULTS) - {'names','show_controls'} <= set(proposed) <= set(DEFAULTS)):
         raise ValueError('Ungültige Karteneinstellungen.')
     selected = proposed['selected']
     if not isinstance(selected, list) or any(not isinstance(wid, str) for wid in selected) or len(set(selected)) != len(selected):
@@ -88,6 +91,15 @@ async def save(manager, user, message):
         windows = manager.engine.windows()
         if any(wid not in windows or not manager.permitted(user, windows[wid]['cover'], POLICY_CONTROL) for wid in selected):
             raise PermissionError('Keine Geräteberechtigung für diese Auswahl.')
+        # Older clients may omit names; retain existing per-card aliases.
+        names = proposed.get('names', {wid:name for wid,name in record.get('settings', {}).get('names', {}).items() if wid in windows})
+        if not isinstance(names, dict) or any(not isinstance(wid, str) or wid not in windows or not isinstance(name, str) or len(name.strip()) > 100 for wid,name in names.items()):
+            raise ValueError('Anzeigenamen müssen gültigen Rollläden zugeordnet sein und höchstens 100 Zeichen enthalten.')
+        checked['names'] = {wid:name.strip() for wid,name in names.items() if name.strip()}
+        show_controls = proposed.get('show_controls', record.get('settings', {}).get('show_controls', True))
+        if type(show_controls) is not bool:
+            raise ValueError('Die Sichtbarkeit der Fahrpfeile muss ein Schalterwert sein.')
+        checked['show_controls'] = show_controls
         manager.manual_cards[key] = {'revision': record.get('revision', 0) + 1, 'settings': checked}
         await manager.persist()
 

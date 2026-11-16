@@ -9,9 +9,11 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await page.route('http://planner.test/**',async route=>{
    if(await serveFamilyUI(route))return;
   if(route.request().url().endsWith('/card.js'))await route.fulfill({contentType:'application/javascript',body:fs.readFileSync(path.join(__dirname,'../custom_components/rollladenplaner/frontend/shutter-manager-card.js'),'utf8')});
-  else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{font-family:Arial;background:#f5f7fa;padding:24px;--primary-text-color:#243449;--secondary-text-color:#63748b;--primary-color:#087eaa;--card-background-color:white;--divider-color:#dce3eb}rollladenplaner-card{max-width:920px;display:block;margin:auto}ha-card{display:block}</style><script type="module" src="/card.js"></script><rollladenplaner-card></rollladenplaner-card></html>'});
+  else await route.fulfill({contentType:'text/html',body:'<html lang="de"><meta charset="utf-8"><style>body{font-family:Arial;background:#f5f7fa;padding:24px;--primary-text-color:#243449;--secondary-text-color:#63748b;--primary-color:#087eaa;--card-background-color:white;--divider-color:#dce3eb}shutter-manager-card{max-width:920px;display:block;margin:auto}ha-card{display:block}</style><script type="module" src="/card.js"></script><shutter-manager-card></shutter-manager-card></html>'});
  });
- await page.goto('http://planner.test');await page.waitForFunction(()=>customElements.get('rollladenplaner-card'));
+ await page.goto('http://planner.test');await page.waitForFunction(()=>customElements.get('shutter-manager-card'));
+ assert.equal(await page.evaluate(()=>Boolean(customElements.get('rollladenplaner-card'))),false,'the old legacy card type is removed');
+ assert.equal(await page.evaluate(()=>window.customCards.some(card=>card.type==='rollladenplaner-card')),false,'the picker contains no legacy card');
  // HA's real ha-card renders its shadow slot asynchronously. Recreating that
  // host briefly makes all modal dimensions zero and defeats synchronous restore.
  await page.evaluate(()=>customElements.define('ha-card',class extends HTMLElement {
@@ -36,9 +38,9 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    }
    return structuredClone(model);
   }};
-  const card=document.querySelector('rollladenplaner-card');card.setConfig({type:'custom:rollladenplaner-card'});card.settingsSections={covers:true,sensors:true,status:false,'daily-history':true};card.hass=host;
+  const card=document.querySelector('shutter-manager-card');card.setConfig({type:'custom:shutter-manager-card'});card.settingsSections={covers:true,sensors:true,status:false,'daily-history':true};card.hass=host;
  });
- const card=page.locator('rollladenplaner-card'),dialog=card.getByRole('dialog');
+ const card=page.locator('shutter-manager-card'),dialog=card.getByRole('dialog');
  const assertCompactSummaries=async()=>{
   for(const text of await card.locator('.program .tags span').allTextContents()){
    assert.doesNotMatch(text,/^(?:\d+ (?:Fahrt|Fahrten|action|actions)|Zeitprogramm|Sensorprogramm|Öffnungsprogramm|Schedule|Sensor program|Opening program|Pause im Urlaub|Paused during vacation)$/,'program summaries omit action counts and program types');
@@ -58,7 +60,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   const make=(id,pause)=>({...structuredClone(base),id,name:id,pause_in_vacation:pause,rides:base.rides.map((r,i)=>({...structuredClone(r),id:id+'_'+i}))});
   model.config.programs=[make('holiday_a',false),make('paused_time',true),make('holiday_b',false)];
   model.controls=Object.fromEntries(model.config.programs.map(p=>[p.id,true]));
-  const card=document.querySelector('rollladenplaner-card');card.vacationFilter=true;await card.refresh();
+  const card=document.querySelector('shutter-manager-card');card.vacationFilter=true;await card.refresh();
  });
  assert.equal(await card.locator('.program').count(),3,'old transient filter state never hides programs');
  await card.locator('[data-action="move-program"][data-program="holiday_b"]').focus();await card.locator('[data-action="move-program"][data-program="holiday_b"]').press('ArrowUp');
@@ -67,11 +69,11 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  const dragA=await grip.boundingBox(),dragB=await destination.boundingBox();await page.mouse.move(dragA.x+dragA.width/2,dragA.y+dragA.height/2);await page.mouse.down();await page.waitForTimeout(230);await page.mouse.move(dragB.x+dragB.width/2,dragB.y+dragB.height/2,{steps:8});await page.mouse.up();
  await page.waitForFunction(()=>model.config.programs[2].id==='holiday_a');
  await grip.press('Home');await page.waitForFunction(()=>model.config.programs[0].id==='holiday_a');
- await page.evaluate(async()=>{model.admin=false;await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.admin=false;await document.querySelector('shutter-manager-card').refresh();});
  assert.equal(await card.locator('[data-action="new-program"]').count(),0);
  assert.equal(await card.locator('[data-action="toggle-vacation-filter"]').count(),0);
- await page.evaluate(async()=>{model.admin=true;model.config.programs=programOriginal.programs;model.controls=programOriginal.controls;model.revision=programOriginal.revision;await document.querySelector('rollladenplaner-card').refresh();delete window.programOriginal;});
- await page.evaluate(async()=>{model.sun_times={date:'2026-10-30',sunrise:'2026-10-30T06:30:00Z',sunset:'2026-10-30T17:00:00Z'};model.time_zone='Europe/Berlin';await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.admin=true;model.config.programs=programOriginal.programs;model.controls=programOriginal.controls;model.revision=programOriginal.revision;await document.querySelector('shutter-manager-card').refresh();delete window.programOriginal;});
+ await page.evaluate(async()=>{model.sun_times={date:'2026-10-30',sunrise:'2026-10-30T06:30:00Z',sunset:'2026-10-30T17:00:00Z'};model.time_zone='Europe/Berlin';await document.querySelector('shutter-manager-card').refresh();});
  const overview=card.getByRole('region',{name:'Sonnenzeiten und Sensorwerte'});
  assert.equal(await overview.locator('.overview-item').count(),3,'three distinct assigned sensors, separate from solar row');
  assert.equal(await overview.locator('.sun-row [aria-label="Sonnenaufgang 07:30"]').count(),1);
@@ -80,24 +82,24 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await overview.getByText('Leistung',{exact:true}).count(),0,'unused sensors stay out');
  assert.deepEqual(await overview.locator('.overview-group h4').allTextContents(),['Öffnungssensoren','Temperatur','Helligkeit']);
  assert.equal(await overview.locator('[data-icon="lock"]').count(),1);
- await page.evaluate(()=>{host.states['binary_sensor.fenster'].state='on';host.states['sensor.temp'].state='11.77';host.states['sensor.lux'].state='20300';document.querySelector('rollladenplaner-card').hass=host;});
+ await page.evaluate(()=>{host.states['binary_sensor.fenster'].state='on';host.states['sensor.temp'].state='11.77';host.states['sensor.lux'].state='20300';document.querySelector('shutter-manager-card').hass=host;});
  assert.equal(await overview.locator('[data-icon="unlock"]').count(),1);
  assert.equal(await overview.getByText('11,8 °C',{exact:true}).count(),1);
  assert.equal(await overview.getByText('20.300 lx',{exact:true}).count(),1);
- await page.evaluate(()=>{host.states['sensor.lux'].state='20.3';host.states['sensor.lux'].attributes.unit_of_measurement='klx';document.querySelector('rollladenplaner-card').hass=host;});
+ await page.evaluate(()=>{host.states['sensor.lux'].state='20.3';host.states['sensor.lux'].attributes.unit_of_measurement='klx';document.querySelector('shutter-manager-card').hass=host;});
  assert.equal(await overview.getByText('20.300 lx',{exact:true}).count(),1,'kilolux sensor units are converted before full-value formatting');
  await page.evaluate(async()=>{
    model.config.windows[0].sensor_rules.push({id:'test',name:'Test',temp_entity:'sensor.alpha',lux_entity:'sensor.alpha_lux'});
    host.states['sensor.alpha']={state:'18.5',attributes:{friendly_name:'Alpha Temperatur',unit_of_measurement:'°C'}};
    host.states['sensor.alpha_lux']={state:'500',attributes:{friendly_name:'Alpha Licht',unit_of_measurement:'lx'}};
-   await document.querySelector('rollladenplaner-card').refresh();
+   await document.querySelector('shutter-manager-card').refresh();
  });
  assert.deepEqual(await overview.getByRole('region',{name:'Temperatur',exact:true}).locator('.sensor-label').allTextContents(),['Alpha Temperatur','Temperatur']);
  assert.deepEqual(await overview.getByRole('region',{name:'Helligkeit',exact:true}).locator('.sensor-label').allTextContents(),['Alpha Licht','Helligkeit']);
  assert.equal(await overview.getByText('500 lx',{exact:true}).count(),1);
  await card.getByRole('button',{name:'Messwerte',exact:true}).press('Space');
  assert.equal(await overview.isVisible(),false);
- await page.evaluate(()=>document.querySelector('rollladenplaner-card').refresh());
+ await page.evaluate(()=>document.querySelector('shutter-manager-card').refresh());
  assert.equal(await card.locator('.overview').isVisible(),false,'fold state survives refresh');
  await card.getByRole('button',{name:'Zeitprogramm',exact:true}).click();
  assert.equal(await card.locator('.overview-panel').count(),0);
@@ -107,7 +109,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.locator('.overview').isVisible(),false,'fold state survives tab changes');
  await card.getByRole('button',{name:'Messwerte',exact:true}).press('Enter');
  assert.equal(await overview.isVisible(),true);
- await page.evaluate(async()=>{model.config.windows[0].sensor_rules.pop();host.states['binary_sensor.fenster'].state='off';host.states['sensor.temp'].state='22';host.states['sensor.lux'].state='10000';host.states['sensor.lux'].attributes.unit_of_measurement='lx';await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.config.windows[0].sensor_rules.pop();host.states['binary_sensor.fenster'].state='off';host.states['sensor.temp'].state='22';host.states['sensor.lux'].state='10000';host.states['sensor.lux'].attributes.unit_of_measurement='lx';await document.querySelector('shutter-manager-card').refresh();});
  assert.equal(await card.getByRole('button',{name:'Verlauf',exact:true}).count(),0);
  assert.equal(await card.locator('header').count(),0);
  assert.equal(await card.getByText('Beschattungsmanager',{exact:true}).count(),0);
@@ -115,7 +117,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByText(/Nächste Fahrt:|Keine bevorstehende Zeitfahrt/).count(),0);
  assert.equal(await card.locator('.ride').count(),0,'program starts collapsed');
  await card.getByRole('button',{name:'Programm kopieren',exact:true}).click();
- const copied=await page.evaluate(()=>{const e=document.querySelector('rollladenplaner-card').editor;return {program:e.item,source:model.config.programs[0]};});
+ const copied=await page.evaluate(()=>{const e=document.querySelector('shutter-manager-card').editor;return {program:e.item,source:model.config.programs[0]};});
  assert.notEqual(copied.program.id,copied.source.id,'copied program receives a new ID');
  assert.notEqual(copied.program.rides[0].id,copied.source.rides[0].id,'copied actions receive new IDs');
  assert.equal(copied.program.name,'Wohnbereich · Wochentage (Kopie)');
@@ -139,7 +141,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 
  await card.locator('[data-action="fold-program"]').click();
  assert.equal(await card.locator('[data-action="fold-program"]').getAttribute('aria-expanded'),'true');
- await page.evaluate(()=>document.querySelector('rollladenplaner-card').refresh());
+ await page.evaluate(()=>document.querySelector('shutter-manager-card').refresh());
  assert.equal(await card.locator('.ride').count(),1,'fold survives refresh');
  assert.equal(await card.locator('[data-action="skip"]').count(),0,'skip only belongs in planned tab');
  assert.equal(await card.locator('[data-action="master"]').count(),0);
@@ -152,13 +154,13 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   await fold.click();
   const changed=initial==='true'?'false':'true';
   assert.equal(await card.locator(`#settings-${section}-content`).isVisible(),changed==='true');
-  await page.evaluate(()=>document.querySelector('rollladenplaner-card').refresh());
+  await page.evaluate(()=>document.querySelector('shutter-manager-card').refresh());
   assert.equal(await card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).first().getAttribute('aria-expanded'),changed,`${section} fold state survives refresh`);
   await card.locator(`button[data-action="toggle-settings-section"][data-section="${section}"]`).first().click();
  }
  await card.locator('[data-selected-sensor="sensor.temp"] [data-action="edit-sensor-name"]').click();
  await dialog.locator('label').filter({hasText:'sensor.temp'}).locator('input').fill('Außen Süd');
- await page.evaluate(()=>{host.states['sensor.temp'].state='0';document.querySelector('rollladenplaner-card').hass=host;});
+ await page.evaluate(()=>{host.states['sensor.temp'].state='0';document.querySelector('shutter-manager-card').hass=host;});
  assert.equal(await overview.count(),0,'overview belongs only in Programme');
  assert.equal(await dialog.locator('label').filter({hasText:'sensor.temp'}).locator('input').inputValue(),'Außen Süd','live update keeps draft');
  await dialog.getByRole('button',{name:'Speichern',exact:true}).click();
@@ -166,12 +168,12 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await overview.getByText('Außen Süd',{exact:true}).count(),1);
  assert.match(await overview.innerText(),/0,0 °C/);
  assert.equal(await page.evaluate(()=>host.states['sensor.temp'].attributes.friendly_name),'Temperatur');
- await page.evaluate(()=>{host.states['sensor.temp'].state='unavailable';document.querySelector('rollladenplaner-card').hass=host;});
+ await page.evaluate(()=>{host.states['sensor.temp'].state='unavailable';document.querySelector('shutter-manager-card').hass=host;});
  assert.equal(await overview.getByText('Nicht verfügbar',{exact:true}).count(),1);
- await page.evaluate(()=>{host.states['sensor.temp'].state='22';document.querySelector('rollladenplaner-card').hass=host;});
+ await page.evaluate(()=>{host.states['sensor.temp'].state='22';document.querySelector('shutter-manager-card').hass=host;});
  await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
  assert.equal(await card.getByRole('switch',{name:'Urlaubsmodus',exact:true}).count(),0);
- await page.evaluate(async()=>{model.config.vacation=true;await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.config.vacation=true;await document.querySelector('shutter-manager-card').refresh();});
  assert.equal(await page.evaluate(()=>model.config.vacation),true);
  assert.equal(await card.getByRole('button',{name:'Sicherung erstellen',exact:true}).count(),1);
  await card.getByRole('button',{name:'Programme',exact:true}).click();
@@ -238,9 +240,9 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await dialog.locator('[data-value-for="rides.0.position"]').innerText(),'0 %','height percentages keep the existing HA convention');
  assert.equal(await dialog.locator('[data-key="rides.0.defer_minutes"]').count(),0);
  await range('[data-key="rides.0.position"]',0);
- assert.equal(await page.evaluate(()=>document.querySelector('rollladenplaner-card').editor.item.rides[0].position),0);
+ assert.equal(await page.evaluate(()=>document.querySelector('shutter-manager-card').editor.item.rides[0].position),0);
  await range('[data-key="rides.0.position"]',100);
- assert.equal(await page.evaluate(()=>document.querySelector('rollladenplaner-card').editor.item.rides[0].position),100);
+ assert.equal(await page.evaluate(()=>document.querySelector('shutter-manager-card').editor.item.rides[0].position),100);
  const timing=await dialog.locator('.timing-grid .field').evaluateAll(fields=>fields.map(f=>({y:f.querySelector('input,select').getBoundingClientRect().top,width:f.getBoundingClientRect().width})));
  assert.equal(timing.length,4);assert.ok(timing.every(f=>Math.abs(f.y-timing[0].y)<1 && f.width<200),'all four time fields in one narrow desktop row');
  await range('[data-key="rides.0.position"]',60);
@@ -339,11 +341,11 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await dialog.getByRole('button',{name:'+ Fahrt hinzufügen',exact:true}).click();
  await dialog.locator('[data-ride-target="2"]').selectOption('w');
  await dialog.locator('[data-key="rides.2.time"]').fill('19:15');
- const draft=await page.evaluate(()=>JSON.stringify(document.querySelector('rollladenplaner-card').editor.item));
+ const draft=await page.evaluate(()=>JSON.stringify(document.querySelector('shutter-manager-card').editor.item));
  await dialog.getByRole('button',{name:'Alle zuklappen',exact:true}).click();
  assert.equal(await dialog.locator('.ride-editor-body:visible').count(),0);
  assert.equal(await dialog.locator('.ride-fold[aria-expanded="false"]').count(),3);
- assert.equal(await page.evaluate(()=>JSON.stringify(document.querySelector('rollladenplaner-card').editor.item)),draft,'fold actions never change the program data');
+ assert.equal(await page.evaluate(()=>JSON.stringify(document.querySelector('shutter-manager-card').editor.item)),draft,'fold actions never change the program data');
  await dialog.locator('.ride-fold').nth(1).click();
  assert.equal(await dialog.locator('.ride-editor-body:visible').count(),1);
  assert.equal(await dialog.locator('[data-key="rides.1.time"]').inputValue(),'08:40');
@@ -385,7 +387,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await dialog.locator('[data-ride-target="0"]').selectOption(kitchenId);
  assert.equal(await dialog.locator('[data-key="rides.0.tilt"]').count(),1,'manual type enables tilt editor');
  await dialog.getByRole('button',{name:'Abbrechen',exact:true}).click();
- await page.evaluate(async()=>{model.config.windows.find(w=>w.cover==='cover.essen').sensor_rules=[{id:'east',name:'Ostseite',temp_entity:'sensor.temp',temp_on:26,temp_off:24,release_delay_seconds:300}];await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.config.windows.find(w=>w.cover==='cover.essen').sensor_rules=[{id:'east',name:'Ostseite',temp_entity:'sensor.temp',temp_on:26,temp_off:24,release_delay_seconds:300}];await document.querySelector('shutter-manager-card').refresh();});
  await card.getByRole('button',{name:'+ Programm',exact:true}).click();
  await dialog.locator('[data-key="name"]').fill('Zusätzliche Sensorfahrt');
  await dialog.locator('[data-key="kind"]').selectOption('sensor');
@@ -433,11 +435,11 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await dialog.locator('[data-ride-target="0"]').selectOption(kitchenId);
  await dialog.locator('[data-key="kind"]').selectOption('sensor');
  assert.equal(await dialog.locator('[data-ride-target="0"]').inputValue(),'');
- assert.deepEqual(await page.evaluate(()=>document.querySelector('rollladenplaner-card').editor.item.rides[0].targets),[]);
+ assert.deepEqual(await page.evaluate(()=>document.querySelector('shutter-manager-card').editor.item.rides[0].targets),[]);
  await dialog.getByRole('button',{name:'Abbrechen',exact:true}).click();
 
  // Backend supplies only today's eligible definitions, including paused ones.
- await page.evaluate(async()=>{model.config.enabled=true;model.config.vacation=false;model.sensor_programs=[{id:'program:'+model.config.programs[1].id,source:'program',name:'Zusätzliche Sensorfahrt',targets:['w'],season:{enabled:true,start:'04-01',end:'10-31'},paused:false,triggered:true,blocked_reason:'',can_control:true},{id:'program:essen',source:'program',name:'Essen',targets:[model.config.windows[1].id],season:{enabled:false},paused:false,triggered:false,blocked_reason:'',can_control:true}];await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.config.enabled=true;model.config.vacation=false;model.sensor_programs=[{id:'program:'+model.config.programs[1].id,source:'program',name:'Zusätzliche Sensorfahrt',targets:['w'],season:{enabled:true,start:'04-01',end:'10-31'},paused:false,triggered:true,blocked_reason:'',can_control:true},{id:'program:essen',source:'program',name:'Essen',targets:[model.config.windows[1].id],season:{enabled:false},paused:false,triggered:false,blocked_reason:'',can_control:true}];await document.querySelector('shutter-manager-card').refresh();});
  await card.getByRole('button',{name:'Sensorprogramme',exact:true}).click();
  const sensorRow=card.locator('.sensor-row').filter({hasText:'Zusätzliche Sensorfahrt'});
  assert.equal(await sensorRow.getByText('Zusätzliche Sensorfahrt · Sensorprogramm · 01.04. – 31.10.',{exact:true}).count(),1);
@@ -461,7 +463,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await card.getByRole('button',{name:'Einstellungen',exact:true}).isVisible(),true);
  await page.setViewportSize({width:1100,height:1000});
  // A concrete planned occurrence, not an edit of skip_next.
- await page.evaluate(async()=>{model.planned=[{occurrence:'2026-10-30:r',program:'p',ride:'r',name:'Wohnbereich / Morgens',kind:'time',time:'2026-10-30T18:00:00Z',targets:['w'],position:0,tilt:100,status:'planned',reason:'',skip:false,can_undo:true,can_control:true,expires:null}];await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.planned=[{occurrence:'2026-10-30:r',program:'p',ride:'r',name:'Wohnbereich / Morgens',kind:'time',time:'2026-10-30T18:00:00Z',targets:['w'],position:0,tilt:100,status:'planned',reason:'',skip:false,can_undo:true,can_control:true,expires:null}];await document.querySelector('shutter-manager-card').refresh();});
  await card.getByRole('button',{name:'Zeitprogramm',exact:true}).click();
  await card.getByRole('button',{name:'Skip',exact:true}).click();
  assert.equal(await page.evaluate(()=>calls.at(-1).action),'skip_today');
@@ -473,12 +475,12 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await page.screenshot({path:path.join(__dirname,'../../planner-planned-mobile.png'),fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
  // Cancel a blocked sensor occurrence; no nonexistent parent program required.
- await page.evaluate(async()=>{model.planned=[{occurrence:'contact-skipped',program:'p',ride:'r',name:'Wohnen / Morgens',kind:'time',time:'2026-10-30T07:00:00Z',targets:['w'],position:0,tilt:100,status:'contact_skipped',reason:'Fensterkontakt: binary_sensor.fenster (on)',blocked_contacts:[{entity:'binary_sensor.fenster',unavailable:false,policy:'skip'}],skip:true,can_undo:false,can_control:true},{occurrence:'contact-waiting',program:'p',ride:'r2',name:'Wohnen / Abends',kind:'time',time:'2026-10-30T18:00:00Z',targets:['w'],position:0,tilt:50,status:'pending',reason:'Fensterkontakt: binary_sensor.fenster (on)',blocked_contacts:[{entity:'binary_sensor.fenster',unavailable:false,policy:'defer'}],skip:false,can_undo:false,can_control:true}];await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.planned=[{occurrence:'contact-skipped',program:'p',ride:'r',name:'Wohnen / Morgens',kind:'time',time:'2026-10-30T07:00:00Z',targets:['w'],position:0,tilt:100,status:'contact_skipped',reason:'Fensterkontakt: binary_sensor.fenster (on)',blocked_contacts:[{entity:'binary_sensor.fenster',unavailable:false,policy:'skip'}],skip:true,can_undo:false,can_control:true},{occurrence:'contact-waiting',program:'p',ride:'r2',name:'Wohnen / Abends',kind:'time',time:'2026-10-30T18:00:00Z',targets:['w'],position:0,tilt:50,status:'pending',reason:'Fensterkontakt: binary_sensor.fenster (on)',blocked_contacts:[{entity:'binary_sensor.fenster',unavailable:false,policy:'defer'}],skip:false,can_undo:false,can_control:true}];await document.querySelector('shutter-manager-card').refresh();});
  assert.equal(await card.locator('.planned-row').count(),1,'discarded occurrence is absent from the open-work list');
  assert.match(await card.locator('.planned-reason').first().innerText(),/Ausgesetzt bis Tür geschlossen.*wird nachgeholt/);
  await page.screenshot({path:path.join(__dirname,'../../planner-contact-status-mobile.png'),fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
- await page.evaluate(async()=>{model.planned=[{occurrence:'sensor-concrete',program:'@shade_w',ride:'active',name:'Wohnen / Beschattung',kind:'shade',time:'2026-10-30T08:00:00Z',targets:['w'],position:0,tilt:100,status:'pending',reason:'Fenster offen',skip:false,can_undo:false,can_control:true,expires:'2026-10-30T20:00:00Z'}];await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.planned=[{occurrence:'sensor-concrete',program:'@shade_w',ride:'active',name:'Wohnen / Beschattung',kind:'shade',time:'2026-10-30T08:00:00Z',targets:['w'],position:0,tilt:100,status:'pending',reason:'Fenster offen',skip:false,can_undo:false,can_control:true,expires:'2026-10-30T20:00:00Z'}];await document.querySelector('shutter-manager-card').refresh();});
  await card.getByRole('button',{name:'Skip',exact:true}).click();
  assert.equal(await page.evaluate(()=>model.planned.length),0);
  assert.deepEqual(await page.evaluate(()=>calls.at(-1).entity_id),['cover.wohnen']);
@@ -512,7 +514,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await page.evaluate(async()=>{
    model.config.programs.splice(1,0,{id:'p2',name:'Zweites Zeitprogramm',kind:'time',enabled:true,days:[0,1,2,3,4],pause_in_vacation:true,rides:[]});
    model.revision++;
-   await document.querySelector('rollladenplaner-card').refresh();
+   await document.querySelector('shutter-manager-card').refresh();
  });
  assert.equal(await card.locator('.program-group-head').count(),2,'time and sensor programs have separate groups');
  assert.equal(await card.locator('[data-action="fold-program-group"][data-group="sensor"]').getAttribute('aria-expanded'),'true');
@@ -554,9 +556,9 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.equal(await layoutProgram.locator('[data-action="move-program"]').isVisible(),true,'desktop sorting returns after resizing');
  // XSS-safe names and fold persistence across full element recreation.
  const expandedBeforeRecreate=await card.locator('[data-action="fold-program"][data-program="p"]').getAttribute('aria-expanded');
- await page.evaluate(async()=>{model.config.programs[0].name='<img src=x onerror="window.injected=true">';await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.config.programs[0].name='<img src=x onerror="window.injected=true">';await document.querySelector('shutter-manager-card').refresh();});
  assert.equal(await card.locator('img').count(),0);assert.equal(await page.evaluate(()=>window.injected),undefined);
- await page.evaluate(async()=>{model.config.programs[0].name='Wohnbereich · Wochentage';const old=document.querySelector('rollladenplaner-card');old.remove();const c=document.createElement('rollladenplaner-card');c.setConfig({type:'custom:rollladenplaner-card'});document.body.append(c);c.hass=host;});
+ await page.evaluate(async()=>{model.config.programs[0].name='Wohnbereich · Wochentage';const old=document.querySelector('shutter-manager-card');old.remove();const c=document.createElement('shutter-manager-card');c.setConfig({type:'custom:shutter-manager-card'});document.body.append(c);c.hass=host;});
  await card.locator('[data-action="fold-program"]').first().waitFor();
  assert.equal(await card.locator('[data-action="fold-program"][data-program="p"]').getAttribute('aria-expanded'),expandedBeforeRecreate);
  await card.locator('[data-action="fold-program"]').first().click();
@@ -570,16 +572,16 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  await page.screenshot({path:path.join(__dirname,'../../planner-dark.png'),fullPage:true});
  assert.equal(await card.locator('ha-card').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(28, 28, 28)');
  // No configuration edits for non-admin and no controls without permissions.
- await page.evaluate(async()=>{model.admin=false;model.controls={p:false};model.planned=[{occurrence:'restricted',program:'p',ride:'r',name:'Restricted',kind:'time',time:'2026-10-30T18:00:00Z',targets:['w'],position:0,tilt:50,status:'planned',skip:false,can_control:false,can_undo:true}];await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.admin=false;model.controls={p:false};model.planned=[{occurrence:'restricted',program:'p',ride:'r',name:'Restricted',kind:'time',time:'2026-10-30T18:00:00Z',targets:['w'],position:0,tilt:50,status:'planned',skip:false,can_control:false,can_undo:true}];await document.querySelector('shutter-manager-card').refresh();});
  assert.equal(await card.getByRole('button',{name:'Programm bearbeiten',exact:true}).count(),0);
  assert.equal(await card.locator('[data-action="master"]').count(),0);
  assert.equal(await card.locator('[data-action="program"]').first().isDisabled(),true);
  await card.getByRole('button',{name:'Zeitprogramm',exact:true}).click();
  assert.equal(await card.locator('[data-action="skip-today"]').isDisabled(),true);
- await page.evaluate(async()=>{model.sensor_programs.forEach(r=>r.can_control=false);await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.sensor_programs.forEach(r=>r.can_control=false);await document.querySelector('shutter-manager-card').refresh();});
  await card.getByRole('button',{name:'Sensorprogramme',exact:true}).click();
  assert.equal(await card.locator('[data-action="sensor-pause"]').first().isDisabled(),true);
- await page.evaluate(async()=>{model.config.enabled=true;model.config.vacation=false;model.sensor_programs=[];await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.config.enabled=true;model.config.vacation=false;model.sensor_programs=[];await document.querySelector('shutter-manager-card').refresh();});
  assert.equal(await card.getByText(/Heute sind keine Sensorprogramme/).count(),1);
  await card.getByRole('button',{name:'Einstellungen',exact:true}).click();
  assert.equal(await card.getByRole('switch',{name:'Urlaubsmodus',exact:true}).count(),0);
@@ -602,7 +604,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
  assert.ok(englishProgramText.includes('Position '+target.position+'%') && englishProgramText.includes('Tilt '+target.tilt+'%'),'dynamic height and tilt summaries are translated');
  assert.equal(englishProgramText.includes('Höhe'),false);
  assert.equal(englishProgramText.includes('Lamellen'),false);
- await page.evaluate(async()=>{model.sensor_programs=[{id:'program:opening',source:'program',name:'Lüften',sensor_mode:'opening',targets:['w'],season:{enabled:false},paused:false,triggered:false,blocked_reason:'Außerhalb des Zeitfensters',can_control:true}];await document.querySelector('rollladenplaner-card').refresh();});
+ await page.evaluate(async()=>{model.sensor_programs=[{id:'program:opening',source:'program',name:'Lüften',sensor_mode:'opening',targets:['w'],season:{enabled:false},paused:false,triggered:false,blocked_reason:'Außerhalb des Zeitfensters',can_control:true}];await document.querySelector('shutter-manager-card').refresh();});
  await card.getByRole('button',{name:'Sensor programs',exact:true}).click();
  const englishSensorText=await card.locator('main').innerText();
  assert.ok(englishSensorText.includes('Opening program'));

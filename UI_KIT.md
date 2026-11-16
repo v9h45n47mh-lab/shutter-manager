@@ -42,3 +42,8 @@ The host selects shared buttons or rangeControl according to device type: blind 
 ## Multiple manual instances in 1.11.2
 
 All instances use the same unchanged pinned module and isolated ShadowRoot bindings. The visual editor uses shared field, button, add icon and feedback components for ID selection and fresh independent configurations. No shared presentation overrides are introduced. Dashboard-stored IDs, profile persistence and stale-reply guards are application responsibilities.
+
+
+## Manual-card presentation in 1.11.3
+
+The unchanged Kit 1.7.0 owns reverse range presentation and event conversion through rangeControl({reverse:true}). The host renders descending preset values and height endpoint text without changing target values. Shared row, pencil iconButton, toggle, field and dialog components provide card-local aliases and transport visibility. The Settings toolbar uses layout-only end alignment after the device grid. No shared font, color, spacing, icon or control overrides are introduced. Main-card navigation stays unchanged; the obsolete legacy element and picker entry are removed.
