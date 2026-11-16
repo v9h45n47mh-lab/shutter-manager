@@ -37,7 +37,7 @@ const translations = {
   'Für diesen Rollladen ist bereits eine Einzelfahrt vorgemerkt.':'This cover already has a scheduled one-time movement.',
   'Einzelfahrt eingeplant.':'One-time movement scheduled.','Fahrbefehl übergeben.':'Movement command submitted.',
   'Gestoppt.':'Stopped.','Karteneinstellungen gespeichert.':'Card settings saved.',
-  'Keine Geräte ausgewählt. Als Administrator unten rechts die Einstellungen öffnen.':'No covers selected. Open Settings above as an administrator.',
+  'Keine Geräte ausgewählt. Als Administrator unten rechts die Einstellungen öffnen.':'No covers selected. As an administrator, open Settings at the bottom right.',
   'Keine freigegebenen Geräte in dieser Karte.':'No permitted covers in this card.',
   'Bis zu vier Werte je Auswahl. Zum Ändern einen Wert antippen.':'Up to four values per selection. Tap a value to edit it.',
   'Name oder Entität suchen':'Search name or entity','Alle sichtbaren auswählen':'Select all visible','Auswahl aufheben':'Clear selection',
