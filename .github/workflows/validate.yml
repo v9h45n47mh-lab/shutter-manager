@@ -40,6 +40,7 @@ jobs:
       - run: node tests/ui-kit.cjs
       - run: node tests/sensor-selection.cjs
       - run: node tests/schedule-time.cjs
+      - run: node tests/manual-controls.cjs
       - run: node --check custom_components/rollladenplaner/frontend/shutter-manager-card.js
       - run: node --check custom_components/rollladenplaner/frontend/shutter-manual-card.js
       - run: python scripts/build_release.py --check-only

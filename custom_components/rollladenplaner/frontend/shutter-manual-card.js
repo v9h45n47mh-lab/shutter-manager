@@ -1,7 +1,7 @@
-import {UI_CSS, UI_VERSION, navigation, row, button, iconButton, rangeControl, dialog, field, numberControl, selectField, multiSelect, filterButton, formError, feedback, loadingState, emptyState, bindUI, escapeHtml, versionInfo} from './family-ui/1.7.0/family-ui.js';
+import {UI_CSS, UI_VERSION, navigation, row, button, iconButton, orderHandle, rangeControl, dialog, field, numberControl, selectField, multiSelect, filterButton, formError, feedback, loadingState, emptyState, bindUI, escapeHtml, versionInfo} from './family-ui/1.7.0/family-ui.js';
 
 /* Shutter Manager manual dashboard. All shared presentation belongs to HA UI Kit. */
-const MANUAL_CARD_VERSION = '1.11.0';
+const MANUAL_CARD_VERSION = '1.11.1';
 const copy = value => JSON.parse(JSON.stringify(value));
 const layout = `
 .manual-devices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--fui-section-padding);align-items:start}
@@ -44,6 +44,13 @@ const translations = {
   'Nur HA-Administratoren dürfen die Karte einrichten.':'Only HA administrators can configure the card.',
   'Oberfläche':'Interface','Neu laden':'Reload','Start:':'Start:'
 };
+Object.assign(translations,{
+  'Reihenfolge':'Order',
+  'Ausgewählte Rollläden und Jalousien':'Selected shutters and blinds',
+  'Reihenfolge ändern':'Change order',
+  'Höhenpositionen für Rollläden (%)':'Shutter height positions (%)',
+  'Jalousien: Höhe über die Buttons 0 % und 100 % steuern. Nur die Lamellen sind einstellbar.':'Blinds: use the 0% and 100% height buttons. Only tilt is configurable.'
+});
 
 class ShutterManualCard extends HTMLElement {
   static getStubConfig() { return {type:'custom:shutter-manual-card',card_id:'default'}; }
@@ -90,6 +97,8 @@ class ShutterManualCard extends HTMLElement {
   clockNow() { const server=Date.parse(this.data?.now);return Number.isFinite(server)&&this.receivedAt?server+(Date.now()-this.receivedAt):Date.now(); }
   label(value) { const number=this.safeNumber(value);return number===null?'—':number+' %'; }
   usable(device,feature,allowDisabled=false) { return Boolean(device.can_control&&(allowDisabled||device.enabled)&&!['unknown','unavailable',''].includes(device.state)&&(device.features&feature)); }
+  usesPresets(device,axis) { return device.blind&&axis==='height'||this.settings.mode==='presets'; }
+  axisValues(device,axis) { return device.blind&&axis==='height'?[0,100]:this.settings[axis==='tilt'?'tilt_values':'height_values']; }
   async refresh() {
     if(!this._hass||!this.config||this.loading||this.busy||this.editor)return;
     this.loading=true;
@@ -118,7 +127,7 @@ class ShutterManualCard extends HTMLElement {
   }
   axisMarkup(device,axis) {
     const tilt=axis==='tilt',label=this.t(tilt?'Lamellen':'Höhe'),value=this.safeNumber(device[tilt?'tilt':'position']),disabled=!this.usable(device,tilt?128:4),id=axis+'-'+device.id;
-    return this.settings.mode==='presets'?this.presetMarkup({id,label,value,values:this.settings[tilt?'tilt_values':'height_values'],action:'position-preset',data:{device:device.id,axis},disabled}):rangeControl({id,label,value,allowKeep:false,action:'position-range',disabled}).replace('data-ui-range','data-device="'+escapeHtml(device.id)+'" data-axis="'+axis+'" data-ui-range');
+    return this.usesPresets(device,axis)?this.presetMarkup({id,label,value,values:this.axisValues(device,axis),action:'position-preset',data:{device:device.id,axis},disabled}):rangeControl({id,label,value,allowKeep:false,action:'position-range',disabled}).replace('data-ui-range','data-device="'+escapeHtml(device.id)+'" data-axis="'+axis+'" data-ui-range');
   }
   deviceMarkup(device) {
     return `<article class="subpanel manual-device" data-manual-device="${escapeHtml(device.id)}">${row({title:device.name,trailing:iconButton({icon:'schedule',label:this.t('Einzelfahrt planen')+' · '+device.name,action:'plan',data:{device:device.id},disabled:!this.usable(device,4)})})}<div class="toolbar manual-transport" role="group" aria-label="${escapeHtml(device.name)}">${[['up','Hoch',5],['media-stop','Stopp',8],['down','Runter',6]].map(([icon,text,feature])=>iconButton({icon,label:this.t(text)+' · '+device.name,action:text==='Hoch'?'up':text==='Runter'?'down':'stop',data:{device:device.id},disabled:!this.usable(device,feature,text==='Stopp')})).join('')}</div>${this.axisMarkup(device,'height')}${device.blind?this.axisMarkup(device,'tilt'):''}</article>`;
@@ -139,11 +148,22 @@ class ShutterManualCard extends HTMLElement {
   }
   presetEditorMarkup(axis) {
     const values=this.editor.settings[axis==='height'?'height_values':'tilt_values'];
-    return `<div>${row({title:this.t(axis==='height'?'Höhenpositionen (%)':'Lamellenpositionen (%)')})}</div>${values.map((value,index)=>`<div class="manual-preset-entry">${button({label:value+' %',action:'edit-value',data:{axis,index},compact:true})}${iconButton({icon:'trash',label:this.t('Entfernen')+' · '+value+' %',action:'remove-value',data:{axis,index}})}</div>`).join('')}${button({label:this.t('Wert hinzufügen'),icon:'add',action:'add-value',data:{axis},disabled:values.length>=4})}`;
+    return `<div>${row({title:this.t(axis==='height'?'Höhenpositionen für Rollläden (%)':'Lamellenpositionen (%)')})}</div>${values.map((value,index)=>`<div class="manual-preset-entry">${button({label:value+' %',action:'edit-value',data:{axis,index},compact:true})}${iconButton({icon:'trash',label:this.t('Entfernen')+' · '+value+' %',action:'remove-value',data:{axis,index}})}</div>`).join('')}${button({label:this.t('Wert hinzufügen'),icon:'add',action:'add-value',data:{axis},disabled:values.length>=4})}`;
+  }
+  selectedOrderMarkup() {
+    const selected=this.editor.settings.selected;
+    return `<div>${row({title:this.t('Reihenfolge')})}</div><div role="list" aria-label="${escapeHtml(this.t('Ausgewählte Rollläden und Jalousien'))}">${selected.map((id,index)=>{const device=this.find(id);return device?`<div role="listitem" data-manual-selected="${escapeHtml(id)}">${row({title:device.name,trailing:orderHandle({id,index,count:selected.length,action:'reorder-devices',group:'manual-selected',label:this.t('Reihenfolge ändern')+' · '+device.name})})}</div>`:'';}).join('')}</div>`;
+  }
+  updateSelectedDevices() {
+    const selected=this.editor.settings.selected;
+    this.get('manual-selected-order').innerHTML=this.selectedOrderMarkup();
+    this.get('manual-height-values').hidden=!selected.some(id=>this.find(id)&&!this.find(id).blind);
+    this.get('manual-tilt-values').hidden=!selected.some(id=>this.find(id)?.blind);
+    this.get('manual-blind-hint').hidden=!selected.some(id=>this.find(id)?.blind);
   }
   setupMarkup() {
     const settings=this.editor.settings;
-    return `<div class="grid"><div class="full">${selectField({id:'manual-mode',label:this.t('Bedienung'),value:settings.mode,options:[{value:'presets',label:this.t('Feste Positionen')},{value:'sliders',label:this.t('Schieberegler')}]})}</div><div class="full" id="manual-presets"${settings.mode==='presets'?'':' hidden'}><div class="grid"><div class="full" id="manual-height-values">${this.presetEditorMarkup('height')}</div><div class="full" id="manual-tilt-values"${settings.selected.some(id=>this.find(id)?.blind)?'':' hidden'}>${this.presetEditorMarkup('tilt')}</div><p class="hint full">${escapeHtml(this.t('Bis zu vier Werte je Auswahl. Zum Ändern einen Wert antippen.'))}</p></div></div><div class="full">${multiSelect({id:'manual-devices',label:this.t('Rollläden und Jalousien'),items:this.available.map(device=>({value:device.id,label:device.name,hint:device.cover})),values:settings.selected,selectedFirst:true,action:'select-devices',searchLabel:this.t('Name oder Entität suchen'),allLabel:this.t('Alle sichtbaren auswählen'),clearLabel:this.t('Auswahl aufheben'),emptyLabel:this.t('Keine Treffer für diese Auswahl.')})}</div><div class="full">${selectField({id:'manual-columns',label:this.t('Spalten auf breiten Ansichten'),value:settings.columns,options:[['auto','Automatisch'],['1','Eine Spalte'],['2','Zwei Spalten'],['3','Drei Spalten']].map(([value,label])=>({value,label:this.t(label)}))})}</div><div class="full" data-manual-dialog-error></div></div>${versionInfo({frontend:MANUAL_CARD_VERSION,backend:this.data.backend_version,ui:UI_VERSION,label:this.t('Oberfläche')})}`;
+    return `<div class="grid"><div class="full">${selectField({id:'manual-mode',label:this.t('Bedienung'),value:settings.mode,options:[{value:'presets',label:this.t('Feste Positionen')},{value:'sliders',label:this.t('Schieberegler')}]})}</div><p class="hint full" id="manual-blind-hint"${settings.selected.some(id=>this.find(id)?.blind)?'':' hidden'}>${escapeHtml(this.t('Jalousien: Höhe über die Buttons 0 % und 100 % steuern. Nur die Lamellen sind einstellbar.'))}</p><div class="full" id="manual-presets"${settings.mode==='presets'?'':' hidden'}><div class="grid"><div class="full" id="manual-height-values"${settings.selected.some(id=>this.find(id)&&!this.find(id).blind)?'':' hidden'}>${this.presetEditorMarkup('height')}</div><div class="full" id="manual-tilt-values"${settings.selected.some(id=>this.find(id)?.blind)?'':' hidden'}>${this.presetEditorMarkup('tilt')}</div><p class="hint full">${escapeHtml(this.t('Bis zu vier Werte je Auswahl. Zum Ändern einen Wert antippen.'))}</p></div></div><div class="full">${multiSelect({id:'manual-devices',label:this.t('Rollläden und Jalousien'),items:this.available.map(device=>({value:device.id,label:device.name,hint:device.cover})),values:settings.selected,selectedFirst:true,action:'select-devices',searchLabel:this.t('Name oder Entität suchen'),allLabel:this.t('Alle sichtbaren auswählen'),clearLabel:this.t('Auswahl aufheben'),emptyLabel:this.t('Keine Treffer für diese Auswahl.')})}</div><div class="full" id="manual-selected-order">${this.selectedOrderMarkup()}</div><div class="full">${selectField({id:'manual-columns',label:this.t('Spalten auf breiten Ansichten'),value:settings.columns,options:[['auto','Automatisch'],['1','Eine Spalte'],['2','Zwei Spalten'],['3','Drei Spalten']].map(([value,label])=>({value,label:this.t(label)}))})}</div><div class="full" data-manual-dialog-error></div></div>${versionInfo({frontend:MANUAL_CARD_VERSION,backend:this.data.backend_version,ui:UI_VERSION,label:this.t('Oberfläche')})}`;
   }
   openSetup(element) {
     if(!this.canConfigure)return;
@@ -163,7 +183,7 @@ class ShutterManualCard extends HTMLElement {
   }
   planMarkup() {
     const editor=this.editor,device=this.find(editor.target);
-    const axis=(key,label)=>this.settings.mode==='presets'?this.presetMarkup({id:'plan-'+key,label:this.t(label),value:editor[key],values:this.settings[key==='position'?'height_values':'tilt_values'],action:'plan-preset',data:{axis:key},allowKeep:true}):rangeControl({id:'plan-'+key,label:this.t(label),value:editor[key],action:'plan-range',allowKeep:true});
+    const axis=(key,label)=>this.usesPresets(device,key==='position'?'height':'tilt')?this.presetMarkup({id:'plan-'+key,label:this.t(label),value:editor[key],values:this.axisValues(device,key==='position'?'height':'tilt'),action:'plan-preset',data:{axis:key},allowKeep:true}):rangeControl({id:'plan-'+key,label:this.t(label),value:editor[key],action:'plan-range',allowKeep:true});
     return `<form id="manual-plan-form"><div class="grid"><div class="full">${row({title:device.name})}</div><div class="toolbar full">${filterButton({label:this.t('Timer'),action:'timer-mode',selected:editor.mode==='timer'})}${filterButton({label:this.t('Uhrzeit'),action:'clock-mode',selected:editor.mode==='clock'})}</div><div class="full">${editor.mode==='timer'?numberControl({id:'manual-minutes',label:this.t('Start in Minuten'),value:editor.minutes,min:1,max:1440,step:1,required:true,presets:[5,15,30,60],action:'minutes-change'}):field({id:'manual-clock',label:this.t('Start um'),type:'time',value:editor.time,required:true,step:60})}</div><div class="full">${axis('position','Zielhöhe')}</div>${device.blind?`<div class="full">${axis('tilt','Lamellen')}</div>`:''}<div class="full" data-manual-start aria-live="polite"></div><div class="full" data-manual-dialog-error></div></div></form>`;
   }
   startSummary() {
@@ -176,7 +196,8 @@ class ShutterManualCard extends HTMLElement {
     const device=this.find(id);if(!device||!this.usable(device,4))return;
     this.closeDialog();this.opener=element;this.error='';
     const time=new Intl.DateTimeFormat('en-GB',{timeZone:this.data.time_zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(this.clockNow()+30*60000));
-    this.editor={type:'plan',target:id,mode:'timer',minutes:15,time,position:this.safeNumber(device.position)??100,tilt:null};
+    const position=this.safeNumber(device.position);
+    this.editor={type:'plan',target:id,mode:'timer',minutes:15,time,position:device.blind?([0,100].includes(position)?position:null):position??100,tilt:null};
     this.mountDialog(this.t('Einzelfahrt planen'),this.planMarkup(),button({label:this.t('Abbrechen'),action:'cancel-dialog'})+button({label:this.t('Einplanen'),action:'save-plan',variant:'primary'}));this.startSummary();
   }
   updatePlanControls() {
@@ -194,13 +215,23 @@ class ShutterManualCard extends HTMLElement {
     this.startSummary();
   }
   async onAction({action,data={},value,phase,element}) {
-    const setupActions=['save-settings','select-devices','add-value','edit-value','remove-value','save-value','cancel-value'];
+    const setupActions=['save-settings','select-devices','reorder-devices','add-value','edit-value','remove-value','save-value','cancel-value'];
     if((setupActions.includes(action)||action==='navigate'&&data.page==='settings')&&!this.canConfigure)return;
     if(this.busy)return;
     if(action==='navigate'&&data.page==='settings'){this.openSetup(element);return;}
     if(action==='reload'){this.closeDialog();await this.refresh();return;}
     if(action==='cancel-dialog'){this.closeDialog();this.error='';this.render();return;}
-    if(action==='select-devices'&&this.editor?.type==='setup'){this.editor.settings.selected=value;this.get('manual-tilt-values').hidden=!value.some(id=>this.find(id)?.blind);return;}
+    if(action==='select-devices'&&this.editor?.type==='setup'){
+      if(!Array.isArray(value)||value.some(id=>!this.find(id)))return;
+      const previous=this.editor.settings.selected;
+      this.editor.settings.selected=[...previous.filter(id=>value.includes(id)),...value.filter(id=>!previous.includes(id))];
+      this.updateSelectedDevices();return;
+    }
+    if(action==='reorder-devices'&&this.editor?.type==='setup'){
+      const selected=this.editor.settings.selected,from=selected.indexOf(data.program),offset=Number(data.offset),to=from+offset;
+      if(from<0||!Number.isInteger(offset)||!offset||to<0||to>=selected.length)return;
+      selected.splice(to,0,...selected.splice(from,1));this.updateSelectedDevices();return;
+    }
     if(action==='save-settings'&&this.editor?.type==='setup'){
       const settings=this.editor.settings;settings.mode=this.get('manual-mode').value;settings.columns=this.get('manual-columns').value;
       if(await this.request('save',{settings,card_revision:this.editor.revision})){this.closeDialog();this.message='Karteneinstellungen gespeichert.';this.render();}return;
@@ -220,8 +251,8 @@ class ShutterManualCard extends HTMLElement {
     if(action==='plan'){this.openPlan(data.device,element);return;}
     if((action==='timer-mode'||action==='clock-mode')&&this.editor?.type==='plan'){this.editor.mode=action==='timer-mode'?'timer':'clock';this.get('manual-dialog').querySelector('.modal-body').innerHTML=this.planMarkup();this.startSummary();return;}
     if(action==='minutes-change'&&this.editor?.type==='plan'){this.editor.minutes=value;this.startSummary();return;}
-    if(action==='plan-preset'&&this.editor?.type==='plan'&&['position','tilt'].includes(data.axis)){const number=data.value==='keep'?null:Number(data.value);if(number!==null&&!this.settings[data.axis==='position'?'height_values':'tilt_values'].includes(number))return;this.editor[data.axis]=number;this.updatePlanControls();return;}
-    if(action==='plan-range'&&this.editor?.type==='plan'){const axis=element.id==='plan-position-control'?'position':'tilt';this.editor[axis]=value;return;}
+    if(action==='plan-preset'&&this.editor?.type==='plan'&&['position','tilt'].includes(data.axis)){const number=data.value==='keep'?null:Number(data.value),device=this.find(this.editor.target),axis=data.axis==='position'?'height':'tilt';if(!this.usesPresets(device,axis)||number!==null&&!this.axisValues(device,axis).includes(number))return;this.editor[data.axis]=number;this.updatePlanControls();return;}
+    if(action==='plan-range'&&this.editor?.type==='plan'){const axis=element.id==='plan-position-control'?'position':'tilt';if(this.usesPresets(this.find(this.editor.target),axis==='position'?'height':'tilt'))return;this.editor[axis]=value;return;}
     if(action==='save-plan'&&this.editor?.type==='plan'){
       if(!this.get('manual-plan-form').reportValidity())return;
       if(this.editor.mode==='timer')this.editor.minutes=Number(this.get('manual-minutes').value);else this.editor.time=this.get('manual-clock').value;
@@ -235,13 +266,13 @@ class ShutterManualCard extends HTMLElement {
       await this.request('action',{action,target:device.id});this.render();return;
     }
     if(action==='position-preset'){
-      if(!['height','tilt'].includes(data.axis)||data.axis==='tilt'&&!device.blind)return;
+      if(!['height','tilt'].includes(data.axis)||!this.usesPresets(device,data.axis)||data.axis==='tilt'&&!device.blind)return;
       const number=Number(data.value),tilt=data.axis==='tilt';
-      if(!this.settings[tilt?'tilt_values':'height_values'].includes(number)||!this.usable(device,tilt?128:4))return;
+      if(!this.axisValues(device,data.axis).includes(number)||!this.usable(device,tilt?128:4))return;
       await this.request('action',{action:'position',target:device.id,position:tilt?null:number,tilt:tilt?number:null});this.render();return;
     }
     if(action==='position-range'){
-      const tilt=data.axis==='tilt';if(!['height','tilt'].includes(data.axis)||tilt&&!device.blind||!this.usable(device,tilt?128:4))return;
+      const tilt=data.axis==='tilt';if(!['height','tilt'].includes(data.axis)||this.usesPresets(device,data.axis)||tilt&&!device.blind||!this.usable(device,tilt?128:4))return;
       this.interacting=phase==='input';if(phase!=='change')return;
       if(!Number.isFinite(value)||value<0||value>100)return;
       await this.request('action',{action:'position',target:device.id,position:tilt?null:value,tilt:tilt?value:null});this.render();

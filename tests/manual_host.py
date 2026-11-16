@@ -15,11 +15,13 @@ async def main():
     now=at(message.pop('fixture_now','2026-11-16T12:00'))
     role=message.pop('fixture_role','admin');denied=set(message.pop('fixture_denied',[]));fail=message.pop('fixture_fail',False)
     states={'cover.wohnen':{'state':'open','attributes':{'device_class':'blind','supported_features':140,'current_position':35,'current_tilt_position':50}},
-            'cover.bad':{'state':'open','attributes':{'device_class':'shutter','supported_features':15,'current_position':65}}}
+            'cover.bad':{'state':'open','attributes':{'device_class':'shutter','supported_features':15,'current_position':65}},
+            'cover.max':{'state':'open','attributes':{'device_class':'shutter','supported_features':15,'current_position':100}}}
     if not path.exists():
         config,_=fixture();config['programs']=[]
         config['windows'][0].update(name='Jalousie Essen',contacts=[],sensor_rules=[],climate=None,cover_type='blind')
         config['windows'].append({'id':'bad','name':'Rollladen Bad','cover':'cover.bad','enabled':True,'cover_type':'shutter','contacts':[]})
+        config['windows'].append({'id':'max','name':'Rollladen Maximilian','cover':'cover.max','enabled':True,'cover_type':'shutter','contacts':[]})
         path.write_text(json.dumps({'config':config,'runtime':{},'revision':0}))
     states.update(json.loads(path.read_text()).get('_test_states',{}))
     calls=[]

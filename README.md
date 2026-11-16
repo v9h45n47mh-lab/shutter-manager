@@ -1,5 +1,9 @@
 # Shutter Manager
 
+## New in 1.11.1
+
+Reorder the manual card’s selected covers in Settings by holding and dragging the shared handle. Apply persists the order across reloads and restarts. Blinds always use 0%/100% height buttons and configure only tilt; shutters retain height presets or a height slider. This also applies to one-time planning. Existing card IDs and permissions remain unchanged.
+
 ## New in 1.11.0: manual-control card
 
 Add **Shutter Manager – Bedienung** from the dashboard card picker, or use:

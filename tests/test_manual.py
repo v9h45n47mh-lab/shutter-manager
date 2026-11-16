@@ -184,3 +184,14 @@ class ManualTests(IsolatedAsyncioTestCase):
             with self.assertRaises(ValueError):manual.snapshot(self.m,self.user,invalid,self.now)
         self.assertEqual(manual.snapshot(self.m,self.user,'another',self.now)['settings']['selected'],[])
         self.assertEqual(manual.snapshot(self.m,self.user,'test',self.now)['settings']['selected'],['w'])
+
+    async def test_selected_cover_order_is_preserved_across_save_and_restart(self):
+        for wid in ['second','third']:
+            self.m.engine.config['windows'].append({**deepcopy(self.m.engine.config['windows'][0]),'id':wid,'cover':'cover.'+wid,'name':wid})
+        settings={**self.setup,'selected':['third','w','second']}
+        await manual.save(self.m,self.user,{'card_id':'test','card_revision':1,'settings':settings})
+        self.assertEqual(manual.snapshot(self.m,self.user,'test',self.now)['settings']['selected'],['third','w','second'])
+        fresh=adapter.Manager(self.hass);fresh.solar=self.m.solar
+        fresh.store.async_load.return_value=deepcopy(self.m.store.async_save.call_args.args[0]);await fresh.load()
+        self.assertEqual(manual.snapshot(fresh,self.user,'test',self.now)['settings']['selected'],['third','w','second'])
+        self.hass.services.async_call.assert_not_called()

@@ -30,3 +30,10 @@ The separate card imports the same pinned, released 1.7.0 module. Navigation, ro
 Preset setup matches alarm quick-time maintenance: one centered shared value button and one shared trash icon per row, followed by a shared plus/add button. Authorization, numeric validation, persisted card settings and scheduling are enforced by the application.
 
 Native HA open/close services are used for direction icons where supported, avoiding an assumed device percentage convention. Plan summaries use the backend clock and HA timezone. Service acknowledgements are not recorded as confirmed positions.
+
+
+## Manual card order and axes in 1.11.1
+
+Selected covers render shared rows and `orderHandle` with a dedicated group. `bindUI` owns pointer, touch, keyboard, focus and drag feedback. The host updates a setup draft and persists only on Apply. No local ordering icons, typography, theme colors or spacing overrides are introduced.
+
+The host selects shared buttons or rangeControl according to device type: blind height is always 0/100, blind tilt follows the chosen mode, and shutter height follows the chosen mode. Blind-only setup omits configurable shutter height values.
