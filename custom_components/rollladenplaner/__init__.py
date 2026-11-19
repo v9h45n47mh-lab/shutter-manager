@@ -28,7 +28,7 @@ from .engine import Engine, TRAVEL_TIMEOUT_SECONDS, is_blind, validate_config
 from .wecker import async_planned_wecker
 
 DOMAIN = 'rollladenplaner'
-INTEGRATION_VERSION = '1.11.4'
+INTEGRATION_VERSION = '1.11.5'
 TILT_TO_HEIGHT_DELAY_SECONDS = 2.0
 # CONFIG_SCHEMA is reserved by HA for YAML validation; this is our WS protocol.
 CONFIG_SCHEMA_VERSION = 7
@@ -54,9 +54,9 @@ async def async_setup(hass, config):
         StaticPathConfig('/shutter-manager/family-ui', ui_path, False),
     ])
     # Keep the old resource URL working for existing dashboards while publishing the new name.
-    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.11.4')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.11.4')
-    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manual-card.js?v=1.11.4')
+    frontend.add_extra_js_url(hass, '/rollladenplaner/rollladenplaner-card.js?v=1.11.5')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manager-card.js?v=1.11.5')
+    frontend.add_extra_js_url(hass, '/shutter-manager/shutter-manual-card.js?v=1.11.5')
     async def set_vacation(call):
         await vacation_client.set_via_service(hass, call)
 

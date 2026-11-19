@@ -127,7 +127,7 @@ def scheduled_time(message, now, engine):
 async def replace_immediate(manager, window, now):
     """Check interlocks before replacing a current goal; preserve future timers."""
     target = window['id']
-    _, reason = manager.engine.guard(window, {'kind':'time'}, manager.states(), {target:False})
+    _, reason = manager.engine.guard(window, {'kind':'time','manual_immediate':True}, manager.states(), {target:False}, now)
     if reason:
         raise ValueError(reason)
     if any(item['target'] == target and not item.get('manual_immediate') and datetime.fromisoformat(item['scheduled']) <= now and item.get('status') != 'error'

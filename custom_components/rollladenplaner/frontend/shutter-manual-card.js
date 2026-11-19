@@ -1,7 +1,7 @@
 import {UI_CSS, UI_VERSION, row, button, iconButton, orderHandle, toggle, rangeControl, dialog, field, numberControl, selectField, multiSelect, filterButton, formError, feedback, loadingState, emptyState, bindUI, escapeHtml, versionInfo} from './family-ui/1.7.0/family-ui.js';
 
 /* Shutter Manager manual dashboard. All shared presentation belongs to HA UI Kit. */
-const MANUAL_CARD_VERSION = '1.11.4';
+const MANUAL_CARD_VERSION = '1.11.5';
 const copy = value => JSON.parse(JSON.stringify(value));
 const newCardId = () => 'manual_' + (crypto.randomUUID ? crypto.randomUUID().replaceAll('-','') : Array.from(crypto.getRandomValues(new Uint8Array(16)),value=>value.toString(16).padStart(2,'0')).join(''));
 const layout = `

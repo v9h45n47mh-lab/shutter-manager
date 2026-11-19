@@ -98,6 +98,29 @@ const {serveFamilyUI,frontend}=require('./frontend.cjs');
    await card.getByRole('button',{name:'Stopp · Jalousie Essen',exact:true}).click();assert.equal(await page.evaluate(()=>requests.filter(message=>message.action==='stop').length),1);
    assert.doesNotMatch(await card.locator('ha-card').innerText(),/Fahrbefehl übergeben|Einzelfahrt eingeplant|Karteneinstellungen gespeichert|Gestoppt\./,'success/status text is omitted below the controls');
   }
+  // Direct controls use opening-program validity; planned/automatic protection is unchanged.
+  for(const appearance of ['light','dark'])for(const width of [320,1100]){
+   role='operator';denied=[];await page.setViewportSize({width,height:1000});
+   for(const mode of ['missing','disabled','outside','valid']){
+    const saved=JSON.parse(seed),contact={entity:'binary_sensor.manual_window',open_state:'on',policy:'defer'};
+    saved.config.windows.find(window=>window.id==='bad').contacts=[contact];
+    saved._test_states['binary_sensor.manual_window']={state:'on',attributes:{}};
+    saved.config.programs=mode==='missing'?[]:[{id:'opening',name:'Fenster offen',kind:'sensor',sensor_mode:'opening',enabled:mode!=='disabled',pause_in_vacation:true,days:[0,1,2,3,4,5,6],start_on_high:false,opening_start:'00:00',opening_end:'23:59',season:{enabled:mode==='outside',start:'07-01',end:'07-31'},rides:[{id:'open_bad',targets:['bad'],position:100,tilt:null,enabled:true}]}];
+    fs.writeFileSync(store,JSON.stringify(saved));await open();await theme(appearance);
+    await card.getByRole('button',{name:'Hoch · Rollladen Bad',exact:true}).click();
+    if(mode==='valid'){
+     await card.getByRole('alert').waitFor();assert.match(await card.getByRole('alert').innerText(),/Fensterkontakt/);
+     assert.equal(JSON.parse(fs.readFileSync(store))._test_states['cover.bad'].attributes.current_position,65);
+     assert.equal(JSON.parse(fs.readFileSync(store)).runtime.one_time.length,0,'blocked direct commands create no pending movement');
+    }else{
+     await page.waitForFunction(()=>card.data.available.find(device=>device.id==='bad').position===100);
+     await card.locator('#height-bad-control').getByRole('button',{name:'25 %',exact:true}).click();
+     await page.waitForFunction(()=>card.data.available.find(device=>device.id==='bad').position===25);
+     assert.equal(await card.getByRole('alert').count(),0);assert.deepEqual(JSON.parse(fs.readFileSync(store)).runtime.opening_holds,{});
+     if(mode==='outside')await page.screenshot({path:path.join(results,`manual-contact-outside-${appearance}-${width}.png`),fullPage:true});
+    }
+   }
+  }
   for(const currentRole of ['reader','operator','manager']){
    role=currentRole;fs.writeFileSync(store,seed);await open();assert.equal(await card.getByRole('button',{name:'Einstellungen',exact:true}).count(),0);assert.equal(await card.getByRole('button',{name:'Hoch · Rollladen Bad',exact:true}).isDisabled(),role==='reader');
    const saved=JSON.parse(fs.readFileSync(store)).manual_cards;await page.evaluate(()=>{card.onAction({action:'save-settings'});card.onAction({action:'reorder-devices',data:{program:'w',offset:'1'}});card.onAction({action:'edit-name',data:{device:'w'}});card.onAction({action:'save-name'});});assert.deepEqual(JSON.parse(fs.readFileSync(store)).manual_cards,saved);

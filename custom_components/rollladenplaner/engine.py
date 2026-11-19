@@ -1017,7 +1017,7 @@ class Engine:
                 reason = hold.get('return_reason', '')
             slots['opening'] = self.opening_intent(window, hold, now, goal, 'release', reason)
 
-    def guard(self, window, intent, states, climates):
+    def guard(self, window, intent, states, climates, now=None):
         if not window['enabled']:
             return 'skip', 'Fenster deaktiviert'
         hold = self.rt['opening_holds'].get(window['id'])
@@ -1032,10 +1032,18 @@ class Engine:
             return 'defer', 'Öffnungskontakt nicht verfügbar'
         if intent['kind'] == 'opening' and intent.get('restore_reason'):
             return 'defer', intent['restore_reason']
-        # Explicitly assigned contacts always precede the heat/brightness gate.
+        # Direct card commands only inherit a known-open contact's interlock
+        # from an eligible opening program for this cover. Timed actions and
+        # unavailable contacts retain their existing fail-closed policy.
+        protect_open = not intent.get('manual_immediate') or now is None or any(
+            program.get('sensor_mode') == 'opening' and self.opening_eligible(program, now)
+            and any(ride['enabled'] and window['id'] in ride['targets'] for ride in program['rides'])
+            for program in self.config['programs'])
         decisions = []
         for c in window['contacts']:
             value = states.get(c['entity'], {}).get('state', 'unknown')
+            if value == c['open_state'] and not protect_open:
+                continue
             if value == c['open_state'] or value in ('unknown', 'unavailable', ''):
                 if c['policy'] != 'drive':
                     decisions.append((c['policy'], f"Fensterkontakt: {c['entity']} ({value})"))
@@ -1193,7 +1201,7 @@ class Engine:
                 end_release = bool(intent.get('end_of_program') and p and self.climate_enabled(p, now))
                 if target not in windows or (not synthetic and not end_release and intent['program'] not in enabled_ids):
                     slots.pop(kind); continue
-                policy, reason = self.guard(windows[target], intent, states, climates)
+                policy, reason = self.guard(windows[target], intent, states, climates, now)
                 intent['blocked_contacts'] = self.blocking_contacts(windows[target], states)
                 if policy == 'skip':
                     if intent['blocked_contacts']:
@@ -1227,7 +1235,9 @@ class Engine:
                       'ride': action['id'], 'window': target, 'name': 'Einzelfahrt', 'kind': 'time',
                       'one_time': True, 'position': action['position'], 'tilt': action.get('tilt'),
                       'created': action['created'], 'scheduled': action['scheduled'], 'reason': ''}
-            policy, reason = self.guard(window, intent, states, climates)
+            if action.get('manual_immediate'):
+                intent['manual_immediate'] = True
+            policy, reason = self.guard(window, intent, states, climates, now)
             if policy == 'skip':
                 self.rt['one_time'].remove(action)
                 self.log(now, 'skipped', window['name']+': Einzelfahrt wegen Öffnungskontakt ausgelassen.', window=target)

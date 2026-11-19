@@ -112,12 +112,132 @@ class ManualTests(IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):await self.action(position=None,tilt=None)
         self.hass.services.async_call.assert_not_called()
 
-    async def test_contact_and_opening_holds_refuse_immediate_commands(self):
-        self.m.engine.config['windows'][0]['contacts']=[{'entity':'binary_sensor.fenster','open_state':'on','policy':'defer'}]
+    def contact_program(self, *, missing=False, **changes):
+        from test_opening import opening_fixture
+        config=deepcopy(self.m.engine.config)
+        config['windows'][0]['contacts']=[{'entity':'binary_sensor.fenster','open_state':'on','policy':'defer'}]
+        program=deepcopy(opening_fixture()[0]['programs'][0])
+        program.update({'opening_start':'00:00','opening_end':'23:59',**changes})
+        config['programs']=[] if missing else [program]
+        self.m.engine=adapter.Engine(config);self.m.engine.last=self.now
         self.s['binary_sensor.fenster']['state']='on'
-        with self.assertRaises(ValueError):await self.action()
+
+    async def test_open_contact_without_opening_program_allows_immediate_position(self):
+        self.contact_program(missing=True)
+        await self.action(position=25)
+        self.assertEqual(self.hass.services.async_call.call_args.args[1:3],('set_cover_position',{'entity_id':'cover.wohnen','position':25}))
+        self.assertNotIn('w',self.m.engine.rt['opening_holds'])
+
+    async def test_open_contact_outside_opening_validity_allows_immediate_commands(self):
+        cases=[{'enabled':False},{'opening_start':'08:00','opening_end':'18:00'},
+               {'days':[5]},{'season':{'enabled':True,'start':'07-01','end':'07-31'}}]
+        for changes in cases:
+            for operation in ['position','up','down','tilt']:
+                with self.subTest(changes=changes,operation=operation):
+                    self.setUp();self.contact_program(**changes)
+                    self.s['cover.wohnen']['attributes']['supported_features']=143
+                    values={'position':25} if operation=='position' else {'position':None,'tilt':60} if operation=='tilt' else {'action':operation}
+                    await self.action(**values)
+                    expected={'position':'set_cover_position','up':'open_cover','down':'close_cover','tilt':'set_cover_tilt_position'}[operation]
+                    self.assertEqual(self.hass.services.async_call.call_args.args[1],expected)
+                    self.assertNotIn('w',self.m.engine.rt['opening_holds'])
+
+    async def test_disabled_opening_ride_and_manual_pause_do_not_interlock_direct_commands(self):
+        for mode in ['ride','pause','vacation']:
+            with self.subTest(mode=mode):
+                self.setUp();self.contact_program()
+                if mode=='ride':self.m.engine.config['programs'][0]['rides'][0]['enabled']=False
+                elif mode=='pause':self.m.engine.rt['sensor_pauses']['program:opening']=str(self.now.astimezone(self.m.engine.zone).date())
+                else:self.m.engine.config['vacation']=True
+                await self.action(position=25)
+                self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_position')
+
+    async def test_valid_opening_program_still_refuses_direct_commands_before_first_tick(self):
+        self.contact_program()
+        for operation in ['position','up','down']:
+            with self.subTest(operation=operation),self.assertRaisesRegex(ValueError,'Fensterkontakt'):
+                self.s['cover.wohnen']['attributes']['supported_features']=143
+                await self.action(action=operation)
         self.assertEqual(self.m.engine.rt['one_time'],[])
         self.hass.services.async_call.assert_not_called()
+
+    async def test_existing_opening_hold_protects_after_validity_ends_and_after_restart(self):
+        self.contact_program(start_on_high=True)
+        await self.m._pulse_locked()
+        self.assertIn('w',self.m.engine.rt['opening_holds'])
+        self.m.engine.config['programs'][0]['enabled']=False
+        saved=deepcopy(self.m.engine.rt)
+        self.m.engine=adapter.Engine(self.m.engine.config,saved)
+        for operation in ['position','up','down']:
+            with self.subTest(operation=operation),self.assertRaisesRegex(ValueError,'hält Position'):
+                await self.action(action=operation)
+
+    async def test_unavailable_contact_remains_fail_closed_without_opening_program(self):
+        self.contact_program(missing=True)
+        for value in ['unknown','unavailable','']:
+            self.s['binary_sensor.fenster']['state']=value
+            with self.subTest(value=value),self.assertRaisesRegex(ValueError,'Fensterkontakt'):
+                await self.action()
+        self.hass.services.async_call.assert_not_called()
+
+    async def test_planned_one_time_movement_keeps_contact_interlock_without_opening_program(self):
+        self.contact_program(missing=True)
+        await self.action(action='plan',mode='timer',minutes=1)
+        self.now+=timedelta(minutes=1);await self.m._pulse_locked()
+        self.hass.services.async_call.assert_not_called()
+        item=self.m.engine.rt['one_time'][0]
+        self.assertEqual(item['status'],'pending');self.assertIn('Fensterkontakt',item['reason'])
+
+    async def test_regular_time_program_contact_policies_are_unchanged(self):
+        from test_engine import fixture
+        for policy in ['defer','skip']:
+            with self.subTest(policy=policy):
+                self.setUp();config,_=fixture();config['windows'][0]['contacts'][0]['policy']=policy
+                self.m.engine=adapter.Engine(config)
+                self.s['binary_sensor.fenster']['state']='on'
+                self.m.engine.tick(self.now-timedelta(seconds=5),self.s,self.m.solar)
+                await self.m._pulse_locked();self.hass.services.async_call.assert_not_called()
+                if policy=='defer':
+                    intent=self.m.engine.rt['pending']['w']['time']
+                    self.assertIn('Fensterkontakt',intent['reason']);self.assertNotIn('manual_immediate',intent)
+                else:
+                    self.assertFalse(self.m.engine.rt['pending'])
+                    self.assertTrue(self.m.engine.rt['contact_skips'])
+
+    async def test_direct_goal_stays_manual_after_restart_and_becomes_interlocked_when_validity_starts(self):
+        self.contact_program(opening_start='08:00',opening_end='18:00')
+        await self.action(position=25)
+        runtime=deepcopy(self.m.engine.rt)
+        self.m.engine=adapter.Engine(self.m.engine.config,runtime)
+        self.hass.services.async_call.reset_mock();self.m.moving.clear()
+        self.now+=timedelta(seconds=5);await self.m._pulse_locked()
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_position')
+        self.now=at('2026-10-30T08:00');await self.m._pulse_locked()
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'stop_cover')
+        self.assertIn('Fensterkontakt',self.m.engine.rt['one_time'][0]['reason'])
+
+    async def test_opening_program_for_another_cover_does_not_interlock_direct_goal(self):
+        self.contact_program()
+        other={**deepcopy(self.m.engine.config['windows'][0]),'id':'other','cover':'cover.other'}
+        self.m.engine.config['windows'].append(other)
+        self.m.engine.config['programs'][0]['rides'][0]['targets']=['other']
+        await self.action(position=25)
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_position')
+
+    async def test_skip_contact_policy_outside_opening_validity_allows_direct_goal(self):
+        self.contact_program(opening_start='08:00',opening_end='18:00')
+        self.m.engine.config['windows'][0]['contacts'][0]['policy']='skip'
+        await self.action(position=25)
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_position')
+
+    async def test_validity_start_during_tilt_delay_stops_before_height_command(self):
+        self.contact_program(opening_start='08:00',opening_end='18:00')
+        self.now=at('2026-10-30T07:59:59')
+        await self.action(position=25,tilt=60)
+        self.assertEqual(self.hass.services.async_call.call_args.args[1],'set_cover_tilt_position')
+        self.now=at('2026-10-30T08:00:01');await self.m._pulse_locked()
+        services=[call.args[1] for call in self.hass.services.async_call.call_args_list]
+        self.assertEqual(services,['set_cover_tilt_position','stop_cover'])
 
     async def test_timer_is_in_main_schedule_and_survives_restart(self):
         await self.action(action='plan',mode='timer',minutes=15,position=60)

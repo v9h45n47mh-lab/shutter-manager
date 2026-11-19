@@ -1,5 +1,11 @@
 # Shutter Manager
 
+## New in 1.11.5: direct commands and opening validity
+
+Direct manual-card commands now work with a known-open contact when no eligible opening program applies to that cover. The check includes enabled programs/rides, weekday, time window, season and pauses. A hold already triggered during a valid opening program remains protected until confirmed closure.
+
+This correction applies **only to immediate commands**. Recurring time programs, sensor programs and scheduled one-time actions retain their previous contact rules. Permissions, stored configurations and the two-second tilt-to-height delay are unchanged.
+
 ## New in 1.11.4: endpoint labels and existing dashboards
 
 Height uses **Oben/Up at 100%** and **Unten/Down at 0%**, including current values, live sliders and one-time planning. Intermediate height values and every tilt value remain percentages. The bottom-right manual-card gear now matches the shared UI Kit Settings presentation.
@@ -58,7 +64,7 @@ Automationen können `family_access_manager.set_vacation` mit `enabled: true/fal
 
 A local Home Assistant integration and dashboard card for cover schedules, sensor shading, and window-contact opening programs.
 
-**Version 1.11.4 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
+**Version 1.11.5 · Home Assistant Core 2026.10.0 or newer · German and English card UI**
 
 Shutter Manager controls existing `cover` entities. Manage covers, sensor assignments, and programs in one dashboard card. Choose German 🇩🇪 or English 🇬🇧 in Settings.
 
